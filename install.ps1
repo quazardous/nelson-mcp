@@ -1,4 +1,4 @@
-# install.ps1 — Set up the LocalWriter development environment (Windows).
+# install.ps1 — Set up the Nelson MCP development environment (Windows).
 #
 # Usage:
 #   .\install.ps1          Install dev dependencies
@@ -15,7 +15,7 @@ function Write-Warn($msg) { Write-Host "[WARN] $msg" -ForegroundColor Yellow }
 function Write-Err($msg) { Write-Host "[ERROR] $msg" -ForegroundColor Red }
 
 Write-Host ""
-Write-Host "LocalWriter Development Setup"
+Write-Host "Nelson MCP Development Setup"
 Write-Host "=============================="
 Write-Host ""
 

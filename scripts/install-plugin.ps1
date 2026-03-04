@@ -1,4 +1,4 @@
-# Build and install the LocalWriter extension (.oxt).
+# Build and install the Nelson MCP extension (.oxt).
 #
 # Adapted from mcp-libre/scripts/install-plugin.sh.
 #
@@ -29,8 +29,8 @@ $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectRoot = Split-Path -Parent $ScriptDir
 $BuildDir = Join-Path $ProjectRoot "build"
-$OxtFile = Join-Path $BuildDir "localwriter.oxt"
-$ExtensionId = "org.extension.localwriter"
+$OxtFile = Join-Path $BuildDir "nelson.oxt"
+$ExtensionId = "org.extension.nelson"
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -92,7 +92,7 @@ function Confirm-LOStopped {
 
 function Build-Oxt {
     Write-Host ""
-    Write-Host "=== Building localwriter.oxt (modules: $Modules) ==="
+    Write-Host "=== Building nelson.oxt (modules: $Modules) ==="
     Write-Host ""
 
     if (-not (Test-Path $BuildDir)) {
@@ -214,7 +214,7 @@ function Install-ToCache {
     $extDir = $null
     $tmpDirs = Get-ChildItem -Path $packagesDir -Directory -Filter "*.tmp_" -ErrorAction SilentlyContinue
     foreach ($d in $tmpDirs) {
-        $oxtDir = Join-Path $d.FullName "localwriter.oxt"
+        $oxtDir = Join-Path $d.FullName "nelson.oxt"
         if (Test-Path $oxtDir) {
             $extDir = $oxtDir
             break
@@ -247,7 +247,7 @@ function Install-ToCache {
             $deployed++
         }
     }
-    foreach ($dir in @("META-INF", "assets", "registration", "registry", "LocalWriterDialogs")) {
+    foreach ($dir in @("META-INF", "assets", "registration", "registry", "NelsonDialogs")) {
         $src = Join-Path $ProjectRoot "extension\$dir"
         if (Test-Path $src) {
             $dst = Join-Path $extDir $dir
@@ -281,7 +281,7 @@ function Install-ToCache {
 
 Write-Host ""
 Write-Host "========================================"
-Write-Host "  LocalWriter Plugin Installer"
+Write-Host "  Nelson MCP Plugin Installer"
 Write-Host "========================================"
 Write-Host ""
 

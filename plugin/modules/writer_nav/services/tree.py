@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """TreeService — heading tree, content strategies, AI annotations.
 
 Ported from mcp-libre services/writer/tree.py.
@@ -5,7 +10,7 @@ Ported from mcp-libre services/writer/tree.py.
 
 import logging
 
-log = logging.getLogger("localwriter.writer.nav.tree")
+log = logging.getLogger("nelson.writer.nav.tree")
 
 
 class TreeService:

@@ -1,4 +1,4 @@
-# check-setup.ps1 — Verify the LocalWriter development stack (Windows).
+# check-setup.ps1 — Verify the Nelson MCP development stack (Windows).
 #
 # Usage:
 #   .\scripts\check-setup.ps1
@@ -28,7 +28,7 @@ function Write-Fail($msg) {
 $ProjectRoot = Split-Path -Parent (Split-Path -Parent $PSCommandPath)
 
 Write-Host ""
-Write-Host "LocalWriter - Development Stack Check" -ForegroundColor White
+Write-Host "Nelson MCP - Development Stack Check" -ForegroundColor White
 Write-Host "======================================"
 Write-Host ""
 
@@ -223,10 +223,10 @@ if (Test-Path "$ProjectRoot\vendor") {
     Write-Warn "vendor/ missing - run: make vendor"
 }
 
-$oxtPath = Join-Path $ProjectRoot "build\localwriter.oxt"
+$oxtPath = Join-Path $ProjectRoot "build\nelson.oxt"
 if (Test-Path $oxtPath) {
     $oxtSize = (Get-Item $oxtPath).Length
-    Write-Ok "build/localwriter.oxt exists ($oxtSize bytes)"
+    Write-Ok "build/nelson.oxt exists ($oxtSize bytes)"
 } else {
     Write-Warn "No .oxt built yet - run: make build"
 }
@@ -236,7 +236,7 @@ if (Test-Path $oxtPath) {
 if ($unopkg) {
     $unopkgExe = if ($unopkg -is [System.Management.Automation.CommandInfo]) { $unopkg.Source } else { $unopkg }
     $extList = & $unopkgExe list 2>&1 | Out-String
-    if ($extList -match "org.extension.localwriter") {
+    if ($extList -match "org.extension.nelson") {
         Write-Ok "Extension registered in LibreOffice"
     } else {
         Write-Warn "Extension not registered - run: make deploy"

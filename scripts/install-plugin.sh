@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build and install the LocalWriter extension (.oxt).
+# Build and install the Nelson MCP extension (.oxt).
 #
 # Adapted from mcp-libre/scripts/install-plugin.sh.
 #
@@ -16,9 +16,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 BUILD_DIR="$PROJECT_ROOT/build"
-OXT_FILE="$BUILD_DIR/localwriter.oxt"
+OXT_FILE="$BUILD_DIR/nelson.oxt"
 
-EXTENSION_ID="org.extension.localwriter"
+EXTENSION_ID="org.extension.nelson"
 
 # Parse args
 FORCE=false
@@ -104,7 +104,7 @@ ensure_lo_stopped() {
 
 build_oxt() {
     echo ""
-    echo "=== Building localwriter.oxt (modules: $MODULES) ==="
+    echo "=== Building nelson.oxt (modules: $MODULES) ==="
     echo ""
 
     mkdir -p "$BUILD_DIR"
@@ -227,8 +227,8 @@ install_to_cache() {
     # Find the *.tmp_ directory containing our extension
     local ext_dir=""
     for d in "$packages_dir"/*.tmp_; do
-        if [ -d "$d/localwriter.oxt" ]; then
-            ext_dir="$d/localwriter.oxt"
+        if [ -d "$d/nelson.oxt" ]; then
+            ext_dir="$d/nelson.oxt"
             break
         fi
     done
@@ -257,7 +257,7 @@ install_to_cache() {
             deployed=$((deployed + 1))
         fi
     done
-    for dir in META-INF assets registration registry LocalWriterDialogs; do
+    for dir in META-INF assets registration registry NelsonDialogs; do
         if [ -d "$PROJECT_ROOT/extension/$dir" ]; then
             rsync -av --delete "$PROJECT_ROOT/extension/$dir/" "$ext_dir/$dir/"
             echo "    $dir/ synced"
@@ -285,7 +285,7 @@ install_to_cache() {
 
 echo ""
 echo "========================================"
-echo "  LocalWriter Plugin Installer"
+echo "  Nelson MCP Plugin Installer"
 echo "========================================"
 echo ""
 

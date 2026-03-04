@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Structural tools: list_sections, goto_page, get_page_objects, refresh_indexes,
 read_section, resolve_bookmark, update_fields."""
 

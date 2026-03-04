@@ -1,10 +1,15 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Document diagnostics tools: health checks, protection."""
 
 import logging
 
 from plugin.framework.tool_base import ToolBase
 
-log = logging.getLogger("localwriter.common")
+log = logging.getLogger("nelson.common")
 
 
 class DocumentHealthCheck(ToolBase):

@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """File operation tools: save, export, lifecycle, metadata."""
 
 import logging
@@ -9,7 +14,7 @@ from com.sun.star.beans import PropertyValue
 from plugin.framework.tool_base import ToolBase
 from plugin.framework.uno_context import get_ctx
 
-log = logging.getLogger("localwriter.common")
+log = logging.getLogger("nelson.common")
 
 _PDF_FILTERS = {
     "writer": "writer_pdf_Export",

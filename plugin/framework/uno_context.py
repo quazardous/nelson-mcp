@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Global UNO component context provider.
 
 Services are singletons that outlive the UNO component that created them.
@@ -12,7 +17,7 @@ storing a ctx reference from ``initialize()``.
 
 import logging
 
-log = logging.getLogger("localwriter.context")
+log = logging.getLogger("nelson.context")
 
 _fallback_ctx = None
 

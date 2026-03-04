@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Writer helper operations used by tools.
 
 Low-level UNO helpers for paragraph navigation, selection ranges,
@@ -7,7 +12,7 @@ duplicating UNO details.
 
 import logging
 
-log = logging.getLogger("localwriter.writer")
+log = logging.getLogger("nelson.writer")
 
 
 def find_paragraph_for_range(anchor, para_ranges, text_obj):

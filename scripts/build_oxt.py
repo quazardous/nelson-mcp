@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 #!/usr/bin/env python3
 """Build an .oxt LibreOffice extension from the plugin/ directory.
 
@@ -205,13 +210,13 @@ def zip_bundle(base_dir, output):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build LocalWriter .oxt extension")
+    parser = argparse.ArgumentParser(description="Build Nelson MCP .oxt extension")
     parser.add_argument(
         "--modules", nargs="+", default=None,
         help="Modules to include (default: auto-discover all)")
     parser.add_argument(
-        "--output", default="build/localwriter.oxt",
-        help="Output file (default: build/localwriter.oxt)")
+        "--output", default="build/nelson.oxt",
+        help="Output file (default: build/nelson.oxt)")
     parser.add_argument(
         "--repack", action="store_true",
         help="Only re-zip build/bundle/ (skip assembly)")

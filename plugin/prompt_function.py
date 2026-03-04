@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """PROMPT() Calc cell function — LLM-powered spreadsheet AddIn.
 
 Provides =PROMPT(message, [system_prompt], [model], [max_tokens])
@@ -11,7 +16,7 @@ import logging
 import os
 import sys
 
-log = logging.getLogger("localwriter.prompt_function")
+log = logging.getLogger("nelson.prompt_function")
 
 # Ensure plugin parent on path
 _plugin_dir = os.path.dirname(os.path.abspath(__file__))
@@ -22,7 +27,7 @@ if _parent not in sys.path:
 try:
     import uno
     import unohelper
-    from org.extension.localwriter.PromptFunction import XPromptFunction
+    from org.extension.nelson.PromptFunction import XPromptFunction
 
     class PromptFunction(unohelper.Base, XPromptFunction):
 
@@ -143,7 +148,7 @@ try:
         # ── XServiceInfo ──────────────────────────────────────────
 
         def getImplementationName(self):
-            return "org.extension.localwriter.PromptFunction"
+            return "org.extension.nelson.PromptFunction"
 
         def supportsService(self, name):
             return name in self.getSupportedServiceNames()
@@ -154,7 +159,7 @@ try:
     g_ImplementationHelper = unohelper.ImplementationHelper()
     g_ImplementationHelper.addImplementation(
         PromptFunction,
-        "org.extension.localwriter.PromptFunction",
+        "org.extension.nelson.PromptFunction",
         ("com.sun.star.sheet.AddIn",),
     )
 

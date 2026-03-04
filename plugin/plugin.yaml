@@ -1,9 +1,9 @@
 name: main
-title: LocalWriter global settings
+title: Nelson MCP global settings
 
 actions:
   about:
-    title: "About LocalWriter"
+    title: "About Nelson MCP"
 
 menus:
   - separator: true

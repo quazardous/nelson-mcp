@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 # Tests for core/api.py streaming and edge cases.
 # Edge-case behavior and test ideas adapted from LiteLLM (BerriAI/litellm);
 # see inline comments and core/api.py LiteLLM references for source locations.

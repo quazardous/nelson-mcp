@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """BookmarkService — heading bookmarks (stable IDs) for Writer documents.
 
 Ported from mcp-libre services/writer/tree.py (bookmark methods).
@@ -6,7 +11,7 @@ Ported from mcp-libre services/writer/tree.py (bookmark methods).
 import logging
 import uuid
 
-log = logging.getLogger("localwriter.writer.nav.bookmarks")
+log = logging.getLogger("nelson.writer.nav.bookmarks")
 
 
 class BookmarkService:

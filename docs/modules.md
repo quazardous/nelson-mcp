@@ -19,9 +19,9 @@ plugin/modules/my_module/
 ## module.yaml
 
 ```yaml
-name: chatbot                              # Dotted for submodules: tunnel.ngrok
-title: AI chat sidebar
-requires: [document, config, events, ai]   # Service dependencies
+name: my_module                            # Dotted for submodules: tunnel.ngrok
+title: My module
+requires: [document, config, events]       # Service dependencies
 provides_services: []                      # Exported services
 
 actions:
@@ -81,13 +81,13 @@ cfg.get("port")                      # Auto-prefixed: "my_module.port"
 cfg.set("port", 9000)                # Writes to LO registry
 ```
 
-Cross-module reads work only for `public: true` fields. Environment overrides: `LOCALWRITER_SET_CONFIG="key=val"`.
+Cross-module reads work only for `public: true` fields. Environment overrides: `NELSON_SET_CONFIG="key=val"`.
 
 ## Events
 
 Synchronous pub/sub: `events.subscribe("config:changed", callback)` / `events.emit("my:event", **data)`.
 
-Key events: `config:changed`, `tool:executing`, `tool:completed`, `tool:failed`, `menu:update`, `ai:instance_status`.
+Key events: `config:changed`, `tool:executing`, `tool:completed`, `tool:failed`, `menu:update`.
 
 ## Submodules and config_inline
 

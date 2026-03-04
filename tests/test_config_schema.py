@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Tests for plugin.framework.config_schema (build-time XCS/XCU generation)."""
 
 import pytest
@@ -36,7 +41,7 @@ class TestGenerateXcs:
         xcs = generate_xcs("mcp", SAMPLE_CONFIG)
         assert "<?xml version=" in xcs
         assert 'oor:name="mcp"' in xcs
-        assert 'oor:package="org.localwriter.mcp"' in xcs
+        assert 'oor:package="org.nelson.mcp"' in xcs
         assert "<oor:component-schema" in xcs
         assert "<component>" in xcs
 
@@ -69,7 +74,7 @@ class TestGenerateXcu:
         xcu = generate_xcu("mcp", SAMPLE_CONFIG)
         assert "<?xml version=" in xcu
         assert 'oor:name="mcp"' in xcu
-        assert 'oor:package="org.localwriter.mcp"' in xcu
+        assert 'oor:package="org.nelson.mcp"' in xcu
         assert "<oor:component-data" in xcu
 
     def test_boolean_default(self):

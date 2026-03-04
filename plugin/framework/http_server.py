@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Generic threaded HTTP server with route dispatch.
 
 Extracted from the MCP module so any module can register HTTP endpoints.
@@ -12,7 +17,7 @@ import threading
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
-log = logging.getLogger("localwriter.framework.http_server")
+log = logging.getLogger("nelson.framework.http_server")
 
 
 class _ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):

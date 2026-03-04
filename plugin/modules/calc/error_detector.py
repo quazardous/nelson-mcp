@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Error detector — finds and explains formula errors in Calc cells.
 
 Ported from core/calc_error_detector.py for the plugin framework.
@@ -15,7 +20,7 @@ except ImportError:
     EMPTY, VALUE, TEXT, FORMULA = 0, 1, 2, 3
     UNO_AVAILABLE = False
 
-logger = logging.getLogger("localwriter.calc")
+logger = logging.getLogger("nelson.calc")
 
 # LibreOffice Calc error types and descriptions
 ERROR_TYPES = {

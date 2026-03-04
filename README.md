@@ -1,52 +1,68 @@
-# LocalWriter
+# Nelson MCP
 
-> **WIP (refactor)** — The `framework` branch is an ongoing architectural refactor. Expect breaking changes.
+A LibreOffice extension that turns your documents into an MCP server. External AI clients connect over HTTP and get full access to document tools — reading, editing, navigating, formatting, and more.
 
-A LibreOffice extension that adds AI capabilities to Writer, Calc, and Draw — local-first, modular, and extensible.
+Works with any MCP-compatible client: Claude Code, OpenCode, Goose, ollmcp, etc.
+
+## How it works
+
+Nelson MCP runs an HTTP server inside LibreOffice and speaks the [Model Context Protocol](https://modelcontextprotocol.io/). AI agents connect to it and use tools to interact with your open document — no copy-paste, no file export.
+
+```
+┌─────────────┐       HTTP/MCP        ┌──────────────┐
+│  AI Client   │ ──────────────────── │  LibreOffice  │
+│ (Claude Code,│   tools/call         │  + Nelson MCP │
+│  OpenCode…)  │ ◄──────────────────  │               │
+└─────────────┘    tool results       └──────────────┘
+```
 
 ## Features
 
-- **Chat Sidebar** — multi-turn AI chat with tool-calling to read and edit your document
-- **MCP Server** — expose tools to external AI clients (Cursor, Claude Desktop, scripts) via HTTP
+- **40+ document tools** — read content, edit text, manage styles, insert images, handle tables, track changes, navigate headings, search, and more
+- **Writer, Calc, Draw** — tools adapt to the active document type
 - **Calc `=PROMPT()`** — call an LLM directly from a spreadsheet cell
-- **Image Generation** — generate and edit images from chat (AI Horde, local backends)
-- **Edit/Extend Selection** — hotkeys to rewrite or continue selected text (`Ctrl+E` / `Ctrl+Q`)
-- **Tunnels** — expose MCP externally via ngrok, Cloudflare, bore, or Tailscale
-
-## Backends
-
-Any OpenAI-compatible API: Ollama, LM Studio, OpenRouter, OpenAI, text-generation-webui, etc.
+- **Tunnels** — expose the MCP server externally via ngrok, Cloudflare, bore, or Tailscale
+- **SSL** — optional HTTPS with auto-generated certificates
+- **Modular** — each feature is a self-contained module with its own config, services, and tools
 
 ## Install
 
 1. Download the latest `.oxt` from the [releases page](https://github.com/quazardous/localwriter/releases)
 2. In LibreOffice: **Tools > Extension Manager > Add**
 3. Restart LibreOffice
-4. Configure your endpoint in **LocalWriter > Settings**
+4. The MCP server starts automatically (default: `http://localhost:8765/mcp`)
 
-## Architecture
+## Quick start
 
-LocalWriter uses a modular framework where each feature is a self-contained module with its own config, services, and tools. See [DEVEL.md](DEVEL.md) for the full developer guide.
+Once installed, point your MCP client at the server:
 
-### Modules
+```json
+{
+  "mcpServers": {
+    "nelson": {
+      "url": "http://localhost:8765/mcp"
+    }
+  }
+}
+```
+
+Open a document in LibreOffice, then ask your AI client to read or edit it.
+
+## Modules
 
 | Module | Description |
 |--------|-------------|
-| `core` | Document access, config, events, LLM, image, formatting |
-| `writer` | Writer document editing tools (content, comments, styles, tables, tracking) |
+| `core` | Document access, config, events, formatting |
+| `writer` | Content editing, comments, styles, tables, change tracking |
 | `writer.nav` | Heading tree, bookmarks, proximity navigation |
 | `writer.index` | Full-text search with Snowball stemming |
-| `calc` | Spreadsheet tools (cells, sheets, formulas, charts) |
-| `draw` | Draw/Impress tools (shapes, pages/slides) |
-| `common` | Cross-document tools (info, export) |
+| `calc` | Cells, sheets, formulas, charts |
+| `draw` | Shapes, pages, slides (Draw and Impress) |
+| `images` | Image generation and editing (pluggable providers) |
 | `batch` | Multi-tool execution with variable chaining |
-| `chatbot` | AI chat sidebar |
-| `ai_openai` | OpenAI-compatible LLM backend |
-| `ai_ollama` | Ollama LLM backend |
-| `ai_horde` | AI Horde image generation |
 | `http` | Shared HTTP server with optional SSL |
-| `mcp` | MCP JSON-RPC protocol |
-| `tunnel` | Tunnel manager (ngrok, cloudflare, bore, tailscale) |
+| `mcp` | MCP JSON-RPC protocol handler |
+| `tunnel` | Tunnel manager (ngrok, Cloudflare, bore, Tailscale) |
 
 ## Development
 
@@ -56,13 +72,15 @@ make deploy               # Build + install + restart LO + show log
 make test                 # Run tests
 ```
 
-See [DEVEL.md](DEVEL.md) for the complete developer guide.
+See [DEVEL.md](DEVEL.md) for the complete developer guide and [docs/modules.md](docs/modules.md) for the module framework reference.
 
-## Credits
+## Acknowledgments
 
-Built on the work of:
-- [LibreCalc AI Assistant](https://extensions.libreoffice.org/en/extensions/show/99509) — Calc AI integration
-- [LibreOffice MCP Extension](https://github.com/quazardous/mcp-libre) — MCP server and Writer tools
+Nelson MCP is the result of merging and reworking two other projects:
+
+- **[LocalWriter](https://github.com/KeithCu/localwriter)** — a LibreOffice extension that embedded a chatbot sidebar with AI providers (OpenAI-compatible APIs, Ollama, AI Horde). Originally created as **LibreCalc AI Assistant** by [Umut Çelik](https://extensions.libreoffice.org/en/extensions/show/99509), then forked and expanded by [@balisujohn](https://github.com/balisujohn/localwriter) and significantly developed by [@KeithCu](https://github.com/KeithCu) (Keith Curtis) who added AI Horde support, multi-provider management, the chatbot sidebar, and Calc `=PROMPT()` integration. The module framework, the tool system, and the per-module config architecture were developed by [@quazardous](https://github.com/quazardous).
+
+- **[mcp-libre](https://github.com/patrup/mcp-libre)** — a standalone LibreOffice MCP server that exposed Writer tools to external AI clients via MCP. It demonstrated that the MCP approach (external AI + document tools) was more flexible than an embedded chatbot. Nelson MCP adopts this MCP-first architecture: the chatbot and AI provider modules have been removed, and the extension focuses entirely on being a tool server for external clients.
 
 ## License
 

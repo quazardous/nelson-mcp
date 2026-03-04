@@ -1,10 +1,15 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Cloudflare tunnel provider — quick or named tunnels via cloudflared."""
 
 import logging
 
 from plugin.framework.module_base import ModuleBase
 
-log = logging.getLogger("localwriter.tunnel.cloudflare")
+log = logging.getLogger("nelson.tunnel.cloudflare")
 
 
 class CloudflareProvider:

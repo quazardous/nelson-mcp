@@ -1,4 +1,4 @@
-# Makefile — LocalWriter extension build & dev tools.
+# Makefile — Nelson MCP extension build & dev tools.
 #
 # Cross-platform: detects Windows vs Linux/macOS and calls .ps1 or .sh scripts.
 #
@@ -28,7 +28,7 @@
 # Info:
 #   make help                      Show this help
 
-EXTENSION_NAME = localwriter
+EXTENSION_NAME = nelson
 
 # ── Local overrides (gitignored) ────────────────────────────────────────────
 # Create Makefile.local with e.g. USE_DOCKER = 1
@@ -77,14 +77,14 @@ endif
         lo-start lo-start-full lo-kill lo-restart \
         clean-cache nuke-cache nuke-cache-force unbundle \
         log log-tail lo-log test check-ext check-setup deploy \
-        set-config vendor docker-build
+        set-config vendor docker-build rdb icons
 
 # ── Help ─────────────────────────────────────────────────────────────────────
 
 help:
 	@echo ""
-	@echo "LocalWriter — build & dev targets"
-	@echo "================================="
+	@echo "Nelson MCP — build & dev targets"
+	@echo "================================"
 	@echo ""
 	@echo "Build:"
 	@echo "  make build                  Build .oxt (all modules)"
@@ -130,13 +130,43 @@ vendor:
 
 docker-build:
 	UID=$$(id -u) GID=$$(id -g) docker compose -f builder/docker-compose.yml up --build
-	@echo "Done: build/localwriter.oxt"
+	@echo "Done: build/nelson.oxt"
+
+# ── RDB (UNO type library) ────────────────────────────────────────────────
+# Requires LibreOffice SDK (unoidl-write).
+
+LO_PROGRAM  ?= /usr/lib64/libreoffice/program
+UNOIDL_WRITE ?= /usr/lib64/libreoffice/sdk/bin/unoidl-write
+RDB_SOURCE   = idl/XPromptFunction.idl
+RDB_TARGET   = extension/XPromptFunction.rdb
+
+rdb: $(RDB_TARGET)
+
+$(RDB_TARGET): $(RDB_SOURCE)
+	$(UNOIDL_WRITE) $(LO_PROGRAM)/types.rdb $(LO_PROGRAM)/types/offapi.rdb $< $@
+	@echo "Generated $@"
+
+# ── Icons (SVG → PNG) ────────────────────────────────────────────────────
+ICON_SVG    = extension/assets/icon.svg
+ICON_PNGS   = extension/assets/icon_16.png extension/assets/icon_24.png extension/assets/logo.png
+MAGICK      ?= magick
+
+icons: $(ICON_PNGS)
+
+extension/assets/icon_16.png: $(ICON_SVG)
+	$(MAGICK) -background none -density 256 $< -resize 16x16 $@
+
+extension/assets/icon_24.png: $(ICON_SVG)
+	$(MAGICK) -background none -density 256 $< -resize 24x24 $@
+
+extension/assets/logo.png: $(ICON_SVG)
+	$(MAGICK) -background none -density 256 $< -resize 42x42 $@
 
 ifeq ($(USE_DOCKER),1)
 build:
 	@$(MAKE) docker-build
 else
-build: vendor manifest
+build: vendor manifest rdb icons
 	@echo "Building $(EXTENSION_NAME).oxt..."
 	$(PYTHON) $(SCRIPTS)/build_oxt.py --output build/$(EXTENSION_NAME).oxt
 	@echo "Done: build/$(EXTENSION_NAME).oxt  (bundle in build/bundle/)"
@@ -151,9 +181,9 @@ repack-deploy: repack
 	$(MAKE) lo-kill
 	@sleep 3
 	@rm -f $(LO_CONF)/.lock $(LO_CONF)/user/.lock
-	-unopkg remove org.extension.localwriter 2>/dev/null; sleep 1
+	-unopkg remove org.extension.nelson 2>/dev/null; sleep 1
 	unopkg add build/$(EXTENSION_NAME).oxt
-	@rm -f $(HOME_DIR)/localwriter.log
+	@rm -f $(HOME_DIR)/nelson.log
 	@sleep 1
 	$(MAKE) lo-start
 	@echo "Waiting for LO to load..."
@@ -212,7 +242,7 @@ endif
 # ── LibreOffice ──────────────────────────────────────────────────────────────
 
 lo-start:
-	LOCALWRITER_SET_CONFIG="$(LOCALWRITER_SET_CONFIG)" $(RUN_SH) $(SCRIPTS)/launch-lo-debug$(EXT)
+	NELSON_SET_CONFIG="$(NELSON_SET_CONFIG)" $(RUN_SH) $(SCRIPTS)/launch-lo-debug$(EXT)
 
 lo-start-full:
 ifeq ($(OS),Windows_NT)
@@ -259,9 +289,9 @@ deploy: build
 	$(MAKE) lo-kill
 	@sleep 3
 	@rm -f $(LO_CONF)/.lock $(LO_CONF)/user/.lock
-	-unopkg remove org.extension.localwriter 2>/dev/null; sleep 1
+	-unopkg remove org.extension.nelson 2>/dev/null; sleep 1
 	unopkg add build/$(EXTENSION_NAME).oxt
-	@rm -f $(HOME_DIR)/localwriter.log
+	@rm -f $(HOME_DIR)/nelson.log
 	@sleep 1
 	$(MAKE) lo-start
 	@echo "Waiting for LO to load..."
@@ -269,10 +299,10 @@ deploy: build
 	@$(MAKE) log
 
 log:
-	@cat $(HOME_DIR)/localwriter.log 2>/dev/null || echo "No localwriter.log found"
+	@cat $(HOME_DIR)/nelson.log 2>/dev/null || echo "No nelson.log found"
 
 log-tail:
-	@tail -f $(HOME_DIR)/localwriter.log
+	@tail -f $(HOME_DIR)/nelson.log
 
 lo-log:
 	@cat $(HOME_DIR)/soffice-debug.log 2>/dev/null || echo "No soffice-debug.log found"
@@ -291,7 +321,7 @@ test:
 # ── POC extension ───────────────────────────────────────────────────────────
 
 set-config:
-	@echo "Usage: make deploy LOCALWRITER_SET_CONFIG=\"mcp.port=9000,mcp.host=0.0.0.0\""
+	@echo "Usage: make deploy NELSON_SET_CONFIG=\"mcp.port=9000,mcp.host=0.0.0.0\""
 	@echo ""
 	@echo "Available config keys (module.key = default):"
 	@$(PYTHON) -c "from plugin._manifest import MODULES; \

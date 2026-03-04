@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """DocumentService — UNO document helpers and caching."""
 
 import logging
@@ -7,7 +12,7 @@ import time
 from plugin.framework.service_base import ServiceBase
 from plugin.framework.uno_context import get_ctx
 
-log = logging.getLogger("localwriter.document")
+log = logging.getLogger("nelson.document")
 
 # Yield-to-GUI counter (module-level, shared across all calls)
 _yield_counter = 0

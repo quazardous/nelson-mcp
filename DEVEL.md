@@ -50,7 +50,7 @@ make docker-build
 docker compose -f builder/docker-compose.yml up --build
 ```
 
-The built extension will be at `build/localwriter.oxt`. This is the recommended approach for contributors who don't have the full dev stack installed.
+The built extension will be at `build/nelson.oxt`. This is the recommended approach for contributors who don't have the full dev stack installed.
 
 To use Docker for **all** build targets (`deploy`, `install`, etc.):
 
@@ -120,10 +120,10 @@ Both do the same thing (build + unopkg remove/add), just with different levels o
 
 ## Config overrides
 
-Pass config at deploy time via `LOCALWRITER_SET_CONFIG`:
+Pass config at deploy time via `NELSON_SET_CONFIG`:
 
 ```bash
-make deploy LOCALWRITER_SET_CONFIG="mcp.port=9000,ai_openai.timeout=30"
+make deploy NELSON_SET_CONFIG="mcp.port=9000,ai_openai.timeout=30"
 ```
 
 List all available config keys:
@@ -184,16 +184,16 @@ If the requested backend is not installed, LO silently falls back to the default
 1. Sidebar chat panel — all 6 controls visible, no overlap
 2. Resize sidebar — controls reflow correctly
 3. Settings panel — AI dropdowns render and respond to clicks
-4. Modal dialogs (Tools > LocalWriter options) — layout is acceptable
+4. Modal dialogs (Tools > Nelson MCP options) — layout is acceptable
 
 ## Logs and debugging
 
 | File | Content |
 |------|---------|
-| `~/localwriter.log` | Plugin log (overwritten each LO session) |
+| `~/nelson.log` | Plugin log (overwritten each LO session) |
 | `~/soffice-debug.log` | LO internal errors |
 
-Symlinks exist in the project root for convenience (`./localwriter.log`, `./soffice-debug.log`). Created by `scripts/check-setup.sh`.
+Symlinks exist in the project root for convenience (`./nelson.log`, `./soffice-debug.log`). Created by `scripts/check-setup.sh`.
 
 ```bash
 make log          # Show plugin log
@@ -204,7 +204,7 @@ make lo-log       # Show LO error log
 **Empty log = extension not loaded.** Check:
 
 1. `make check-ext` — verify extension is registered
-2. LO sidebar: View > Sidebar > LocalWriter panel
+2. LO sidebar: View > Sidebar > Nelson MCP panel
 3. If crash on startup, try `make nuke-cache` then `make deploy`
 
 ## Cache management
@@ -225,7 +225,7 @@ make lo-log       # Show LO error log
 ```bash
 make build
 gh release create v1.x.y --target framework --title "v1.x.y" --notes "changelog"
-gh release upload v1.x.y build/localwriter.oxt
+gh release upload v1.x.y build/nelson.oxt
 ```
 
 ## Tests
@@ -251,9 +251,9 @@ make deploy
 
 ### Panel is empty / no sidebar
 
-1. Check `~/localwriter.log` — if empty, extension didn't load
+1. Check `~/nelson.log` — if empty, extension didn't load
 2. `make nuke-cache && make deploy`
-3. In LO: View > Sidebar, look for the LocalWriter panel
+3. In LO: View > Sidebar, look for the Nelson MCP panel
 
 ### LO crashes on second startup
 

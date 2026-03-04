@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — Set up the LocalWriter development environment (Linux/macOS).
+# install.sh — Set up the Nelson MCP development environment (Linux/macOS).
 #
 # Usage:
 #   ./install.sh          Install dev dependencies
@@ -21,7 +21,7 @@ if [[ "${1:-}" == "--check" ]]; then
     CHECK_ONLY=true
 fi
 
-echo "LocalWriter Development Setup"
+echo "Nelson MCP Development Setup"
 echo "=============================="
 echo ""
 

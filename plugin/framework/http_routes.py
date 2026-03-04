@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """HTTP route registry for the framework.
 
 Stores route handlers keyed by (method, path). Modules register their
@@ -7,7 +12,7 @@ handlers during initialize() and the HTTP server dispatches to them.
 import logging
 from collections import namedtuple
 
-log = logging.getLogger("localwriter.framework.http_routes")
+log = logging.getLogger("nelson.framework.http_routes")
 
 Route = namedtuple("Route", ["handler", "raw", "main_thread"])
 

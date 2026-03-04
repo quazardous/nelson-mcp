@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Tunnel module — manages tunnel providers for exposing HTTP externally.
 
 The parent module owns the subprocess lifecycle; each child provider supplies
@@ -11,7 +16,7 @@ import threading
 
 from plugin.framework.module_base import ModuleBase
 
-log = logging.getLogger("localwriter.tunnel")
+log = logging.getLogger("nelson.tunnel")
 
 # Windows: hide subprocess console window
 _CREATION_FLAGS = getattr(subprocess, "CREATE_NO_WINDOW", 0)

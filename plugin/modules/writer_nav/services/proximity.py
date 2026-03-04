@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """ProximityService — local heading navigation and surroundings discovery.
 
 Ported from mcp-libre services/writer/proximity.py.
@@ -7,7 +12,7 @@ Operates on the cached heading tree and bookmark map from TreeService.
 import bisect
 import logging
 
-log = logging.getLogger("localwriter.writer.nav.proximity")
+log = logging.getLogger("nelson.writer.nav.proximity")
 
 
 class ProximityService:

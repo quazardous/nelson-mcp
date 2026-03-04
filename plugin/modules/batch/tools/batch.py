@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Batch execution tool: execute_batch."""
 
 import logging
@@ -8,7 +13,7 @@ from plugin.modules.batch.batch_vars import (
     resolve_batch_vars, extract_step_info,
 )
 
-log = logging.getLogger("localwriter.batch")
+log = logging.getLogger("nelson.batch")
 
 # Keys in tool results that hint at a document location
 _LOCATION_KEYS = (

@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Build-time utilities for generating XCS/XCU from module manifests.
 
 This module is used by ``scripts/generate_manifest.py`` at build time.
@@ -57,7 +62,7 @@ def _to_xml_string(root):
 def generate_xcs(module_name, config_fields):
     """Generate XCS (schema) XML for a module's config fields."""
     safe = module_name.replace(".", "_")
-    package = f"org.localwriter.{safe}"
+    package = f"org.nelson.{safe}"
 
     root = ET.Element(_qn("oor", "component-schema"), {
         _qn("oor", "name"): safe,
@@ -87,7 +92,7 @@ def generate_xcs(module_name, config_fields):
 def generate_xcu(module_name, config_fields):
     """Generate XCU (defaults) XML for a module's config fields."""
     safe = module_name.replace(".", "_")
-    package = f"org.localwriter.{safe}"
+    package = f"org.nelson.{safe}"
 
     root = ET.Element(_qn("oor", "component-data"), {
         _qn("oor", "name"): safe,

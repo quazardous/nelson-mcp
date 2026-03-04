@@ -1,5 +1,5 @@
 #!/bin/bash
-# Clean / repair the LibreOffice extension cache for localwriter.
+# Clean / repair the LibreOffice extension cache for nelson.
 #
 # Adapted from mcp-libre/scripts/clean-cache.sh.
 #
@@ -13,9 +13,9 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-EXTENSION_ID="org.extension.localwriter"
-EXTENSION_OXT="localwriter.oxt"
-BUNDLE_NAME="localwriter"
+EXTENSION_ID="org.extension.nelson"
+EXTENSION_OXT="nelson.oxt"
+BUNDLE_NAME="nelson"
 
 # Parse args
 NUKE=false

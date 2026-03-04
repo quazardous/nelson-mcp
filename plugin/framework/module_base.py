@@ -1,13 +1,18 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Base class for all modules."""
 
 import logging
 from abc import ABC
 
-log = logging.getLogger("localwriter.module_base")
+log = logging.getLogger("nelson.module_base")
 
 
 class ModuleBase(ABC):
-    """Base class for all LocalWriter modules.
+    """Base class for all Nelson MCP modules.
 
     Modules declare their manifest in module.yaml (config, requires,
     provides_services). This class handles the runtime behavior:

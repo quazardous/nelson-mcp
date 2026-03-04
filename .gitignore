@@ -4,6 +4,8 @@ build/
 plugin/_manifest.py
 extension/META-INF/manifest.xml
 extension/description.xml
+extension/assets/icon_*.png
+extension/assets/logo.png
 
 # Vendored dependencies (make vendor)
 vendor/
@@ -16,11 +18,11 @@ __pycache__/
 .venv/
 
 # Secrets
-localwriter.json
+nelson.json
 
 # Logs
 log.txt
-localwriter.log
+nelson.log
 soffice-debug.log
 
 # Local dev config

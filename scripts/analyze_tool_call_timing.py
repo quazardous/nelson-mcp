@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Parse localwriter_debug.log and compute T1/T2 timing for tool-calling rounds.
+Parse nelson_debug.log and compute T1/T2 timing for tool-calling rounds.
 
 T1 = time from "Tool loop round N: sending" to stream end
      (one round's API time: connection + model streaming).
@@ -9,9 +9,9 @@ T2 = time from stream end to "Tool loop round N+1: sending"
      (our work: drain, execute tools, start next worker).
 
 Usage:
-  python scripts/analyze_tool_call_timing.py [path/to/localwriter_debug.log]
-  If no path given, tries ~/.config/libreoffice/4/user/localwriter_debug.log
-  and ~/localwriter_debug.log.
+  python scripts/analyze_tool_call_timing.py [path/to/nelson_debug.log]
+  If no path given, tries ~/.config/libreoffice/4/user/nelson_debug.log
+  and ~/nelson_debug.log.
 """
 
 import re
@@ -40,11 +40,11 @@ def parse_timestamp(s):
 def find_log_path():
     """Default log locations (extension writes to user config, sometimes under config/)."""
     candidates = [
-        Path.home() / ".config" / "libreoffice" / "4" / "user" / "config" / "localwriter_debug.log",
-        Path.home() / ".config" / "libreoffice" / "4" / "user" / "localwriter_debug.log",
-        Path.home() / ".config" / "libreoffice" / "24" / "user" / "config" / "localwriter_debug.log",
-        Path.home() / ".config" / "libreoffice" / "24" / "user" / "localwriter_debug.log",
-        Path.home() / "localwriter_debug.log",
+        Path.home() / ".config" / "libreoffice" / "4" / "user" / "config" / "nelson_debug.log",
+        Path.home() / ".config" / "libreoffice" / "4" / "user" / "nelson_debug.log",
+        Path.home() / ".config" / "libreoffice" / "24" / "user" / "config" / "nelson_debug.log",
+        Path.home() / ".config" / "libreoffice" / "24" / "user" / "nelson_debug.log",
+        Path.home() / "nelson_debug.log",
     ]
     for p in candidates:
         if p.exists():

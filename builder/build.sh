@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== LocalWriter Docker Build ==="
+echo "=== Nelson MCP Docker Build ==="
 
 # Use a temp working dir (writable by any UID)
 WORK=$(mktemp -d)
@@ -22,9 +22,9 @@ python3 scripts/generate_manifest.py
 
 # Build .oxt
 echo "Building .oxt..."
-python3 scripts/build_oxt.py --output /output/localwriter.oxt
+python3 scripts/build_oxt.py --output /output/nelson.oxt
 
 # Report result
 echo ""
 echo "=== Build complete ==="
-ls -lh /output/localwriter.oxt
+ls -lh /output/nelson.oxt

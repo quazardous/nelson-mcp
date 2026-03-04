@@ -1,10 +1,15 @@
-"""LocalWriter entry point — bootstraps the module framework.
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+"""Nelson MCP entry point — bootstraps the module framework.
 
 Responsibilities:
 1. Resolve module load order from dependency graph (_manifest.py)
 2. Initialize core services first, then all other modules
 3. Auto-discover tools from each module's tools/ subpackage
-4. Register UNO components (MainJob, sidebar panel factory)
+4. Register UNO components (MainJob, DispatchHandler)
 
 All runtime code lives under plugin/. This file is the single entry
 point registered in META-INF/manifest.xml.
@@ -16,12 +21,12 @@ import sys
 import threading
 
 # ── File logger (debug even when LO console is hidden) ──────────────────────
-# Set up on the 'localwriter' logger (not root) so it works regardless of
+# Set up on the 'nelson' logger (not root) so it works regardless of
 # root logger state configured by other extensions (e.g. mcp-libre).
 # Cannot import from plugin.framework here — sys.path isn't set up yet.
 
-_log_path = os.path.join(os.path.expanduser("~"), "localwriter.log")
-_logger = logging.getLogger("localwriter")
+_log_path = os.path.join(os.path.expanduser("~"), "nelson.log")
+_logger = logging.getLogger("nelson")
 _logger.handlers.clear()
 _logger.propagate = False
 _handler = logging.FileHandler(_log_path, mode="w", encoding="utf-8")
@@ -30,7 +35,7 @@ _handler.setFormatter(logging.Formatter(
 _logger.addHandler(_handler)
 _logger.setLevel(logging.DEBUG)
 
-log = logging.getLogger("localwriter.main")
+log = logging.getLogger("nelson.main")
 
 _version = "?"
 try:
@@ -42,10 +47,10 @@ try:
                 break
 except Exception:
     pass
-log.info("=== LocalWriter %s — main.py loaded ===", _version)
+log.info("=== Nelson MCP %s — main.py loaded ===", _version)
 
 # Extension identifier (matches description.xml)
-EXTENSION_ID = "org.extension.localwriter"
+EXTENSION_ID = "org.extension.nelson"
 
 # ── Singleton registries ──────────────────────────────────────────────
 
@@ -364,7 +369,7 @@ def shutdown():
 
 # ── Dynamic menu text infrastructure ─────────────────────────────────
 
-_DISPATCH_PROTOCOL = "org.extension.localwriter:"
+_DISPATCH_PROTOCOL = "org.extension.nelson:"
 
 _status_listeners = []  # [(listener, url)]
 _status_lock = threading.Lock()
@@ -619,13 +624,13 @@ try:
 
     class DispatchHandler(unohelper.Base, XDispatch, XDispatchProvider,
                           XInitialization, XServiceInfo):
-        """Protocol handler for org.extension.localwriter: URLs.
+        """Protocol handler for org.extension.nelson: URLs.
 
         Handles menu dispatch and supports dynamic menu text via
         FeatureStateEvent / addStatusListener.
         """
 
-        IMPL_NAME = "org.extension.localwriter.DispatchHandler"
+        IMPL_NAME = "org.extension.nelson.DispatchHandler"
         SERVICE_NAMES = ("com.sun.star.frame.ProtocolHandler",)
 
         def __init__(self, ctx):
@@ -695,7 +700,7 @@ try:
     g_ImplementationHelper = unohelper.ImplementationHelper()
     g_ImplementationHelper.addImplementation(
         MainJob,
-        "org.extension.localwriter.Main",
+        "org.extension.nelson.Main",
         ("com.sun.star.task.Job",),
     )
     g_ImplementationHelper.addImplementation(
@@ -719,7 +724,7 @@ try:
 
     threading.Thread(
         target=_module_autostart, daemon=True,
-        name="localwriter-autoboot").start()
+        name="nelson-autoboot").start()
     log.info("Auto-bootstrap thread started (will fire in 3s)")
 
 except ImportError as e:

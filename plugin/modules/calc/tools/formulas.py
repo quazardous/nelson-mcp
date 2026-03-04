@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Calc formula error detection tools.
 
 Each tool is a ToolBase subclass that instantiates CalcBridge,
@@ -11,7 +16,7 @@ from plugin.modules.calc.bridge import CalcBridge
 from plugin.modules.calc.inspector import CellInspector
 from plugin.modules.calc.error_detector import ErrorDetector
 
-logger = logging.getLogger("localwriter.calc")
+logger = logging.getLogger("nelson.calc")
 
 
 class DetectErrors(ToolBase):

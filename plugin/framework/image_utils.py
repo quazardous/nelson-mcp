@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Image insertion and gallery management for all document types.
 
 This is a stateless library — no services or context needed beyond
@@ -9,9 +14,9 @@ import shutil
 import logging
 from pathlib import Path
 
-log = logging.getLogger("localwriter.image_utils")
+log = logging.getLogger("nelson.image_utils")
 
-GALLERY_NAME = "localwriter_images"
+GALLERY_NAME = "nelson_images"
 
 
 def get_doc_type(model):

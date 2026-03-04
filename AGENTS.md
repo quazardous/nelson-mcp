@@ -5,7 +5,7 @@
 
 ## Project
 
-**LocalWriter** — LibreOffice extension (Python/UNO) adding AI editing to Writer, Calc, Draw via chatbot sidebar + MCP server.
+**Nelson MCP** — LibreOffice extension (Python/UNO) exposing document tools via MCP server.
 
 ## Where is what
 
@@ -30,7 +30,7 @@ install.ps1 / install.sh    Dev environment setup (installs bash, make, pyyaml, 
 ./install.sh                # Linux/macOS equivalent
 make build                  # Build .oxt
 make deploy                 # Build + reinstall + restart LO + show log
-make log                    # Show ~/localwriter.log
+make log                    # Show ~/nelson.log
 make test                   # Pytest
 make set-config             # List all config keys
 make help                   # All targets
@@ -43,8 +43,8 @@ make help                   # All targets
 git add -A && git commit -m "v1.x.y: description"
 git push
 make build
-gh release create v1.x.y --target framework --title "v1.x.y" --notes "changelog"
-gh release upload v1.x.y build/localwriter.oxt
+gh release create v1.x.y --target nelson --title "v1.x.y" --notes "changelog"
+gh release upload v1.x.y build/nelson.oxt
 ```
 
 ## Build pipeline
@@ -67,7 +67,7 @@ Auto-discovered at build time by `generate_manifest.py`.
 ## Critical rules
 
 - **UNO context**: NEVER store `ctx` from `initialize()`. Use `get_ctx()` from `framework/uno_context.py`.
-- **Config**: Namespaced `"module.key"`, access via `ModuleConfigProxy`. Override: `LOCALWRITER_SET_CONFIG="key=val,..."`.
+- **Config**: Namespaced `"module.key"`, access via `ModuleConfigProxy`. Override: `NELSON_SET_CONFIG="key=val,..."`.
 - **Document scoping**: `self.xFrame.getController().getModel()` — never `desktop.getCurrentComponent()`.
 - **Sidebar**: Panels use programmatic layout (`plugin/framework/panel_layout.py`), not XDL. Use `create_panel_window()` + `add_control()` for new panels.
 - **Writer drawing layer**: `hasattr(model, "getDrawPages")` is True for Writer. Use `supportsService()`.
@@ -87,8 +87,8 @@ Check: sidebar controls visible and non-overlapping, resize works, settings drop
 
 ## Debugging
 
-- `~/localwriter.log` — plugin log (overwritten each session)
+- `~/nelson.log` — plugin log (overwritten each session)
 - `~/soffice-debug.log` — LO internal errors
-- Symlinks exist in the project root (`./localwriter.log`, `./soffice-debug.log`) for convenience
+- Symlinks exist in the project root (`./nelson.log`, `./soffice-debug.log`) for convenience
 - Empty log = `main.py` never loaded = extension not installed
 - `make check-ext` — verify install + manifest

@@ -1,7 +1,12 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """ConfigService — namespaced config via LO's native configuration registry.
 
 Uses the XCS/XCU schema files generated at build time.  Each module's config
-lives in the LO registry under ``/org.localwriter.<module>.<Group>/<Group>``.
+lives in the LO registry under ``/org.nelson.<module>.<Group>/<Group>``.
 
 Access control:
   - Read own keys: always OK
@@ -17,7 +22,7 @@ import os
 from plugin.framework.service_base import ServiceBase
 from plugin.framework.uno_context import get_ctx
 
-log = logging.getLogger("localwriter.config")
+log = logging.getLogger("nelson.config")
 
 
 class ConfigAccessError(Exception):
@@ -167,13 +172,13 @@ class ConfigService(ServiceBase):
     # ── Environment overrides ────────────────────────────────────────
 
     def _apply_env_overrides(self):
-        """Apply config overrides from LOCALWRITER_SET_CONFIG env var.
+        """Apply config overrides from NELSON_SET_CONFIG env var.
 
         Format: "key=value,key=value,..."
         Values are coerced to the type declared in the module schema.
         Overrides are written to the LO registry.
         """
-        raw = os.environ.get("LOCALWRITER_SET_CONFIG", "").strip()
+        raw = os.environ.get("NELSON_SET_CONFIG", "").strip()
         if not raw:
             return
 
@@ -192,7 +197,7 @@ class ConfigService(ServiceBase):
             log.info("Config override: %s = %r", key, value)
 
         if count:
-            log.info("Applied %d config override(s) from LOCALWRITER_SET_CONFIG",
+            log.info("Applied %d config override(s) from NELSON_SET_CONFIG",
                      count)
 
     def _coerce_value(self, key, raw):
@@ -239,7 +244,7 @@ class ConfigService(ServiceBase):
         """Convert "module.field" to (nodepath, field_name) for LO registry."""
         module_name, field_name = self._parse_key(key)
         safe = module_name.replace(".", "_")
-        nodepath = f"/org.localwriter.{safe}.{safe}/{safe}"
+        nodepath = f"/org.nelson.{safe}.{safe}/{safe}"
         return nodepath, field_name
 
     def _registry_read(self, key):

@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Dialog utilities for LibreOffice UNO.
 
 Provides helpers for message boxes, clipboard operations, rich dialogs
@@ -24,9 +29,9 @@ XDL dialog loading (used by ModuleBase helpers)::
 import logging
 import threading
 
-log = logging.getLogger("localwriter.dialogs")
+log = logging.getLogger("nelson.dialogs")
 
-EXTENSION_ID = "org.extension.localwriter"
+EXTENSION_ID = "org.extension.nelson"
 
 
 # ── Simple message box ──────────────────────────────────────────────
@@ -306,7 +311,7 @@ def status_dialog(ctx, title, build_status_fn, copy_url_fn=None):
 
 
 def about_dialog(ctx):
-    """Show the LocalWriter About dialog with a clickable GitHub link."""
+    """Show the Nelson MCP About dialog with a clickable GitHub link."""
     try:
         from plugin.version import EXTENSION_VERSION
     except ImportError:
@@ -321,7 +326,7 @@ def about_dialog(ctx):
 
         dlg_model = smgr.createInstanceWithContext(
             "com.sun.star.awt.UnoControlDialogModel", ctx)
-        dlg_model.Title = "About LocalWriter"
+        dlg_model.Title = "About Nelson MCP"
         dlg_model.Width = 220
         dlg_model.Height = 90
 
@@ -335,7 +340,7 @@ def about_dialog(ctx):
         lbl.Height = 36
         lbl.MultiLine = True
         lbl.Label = (
-            "LocalWriter\n"
+            "Nelson MCP\n"
             "Version: %s\n"
             "AI-powered extension for LibreOffice" % EXTENSION_VERSION
         )
@@ -375,8 +380,8 @@ def about_dialog(ctx):
         dlg.dispose()
     except Exception:
         log.exception("About dialog error")
-        msgbox(ctx, "About LocalWriter",
-               "LocalWriter %s\nhttps://github.com/quazardous/localwriter"
+        msgbox(ctx, "About Nelson MCP",
+               "Nelson MCP %s\nhttps://github.com/quazardous/localwriter"
                % EXTENSION_VERSION)
 
 

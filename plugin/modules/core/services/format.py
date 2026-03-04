@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """FormatService — document format conversions (markdown/HTML <-> UNO)."""
 
 import logging
@@ -6,7 +11,7 @@ import tempfile
 
 from plugin.framework.service_base import ServiceBase
 
-log = logging.getLogger("localwriter.format")
+log = logging.getLogger("nelson.format")
 
 
 class FormatService(ServiceBase):

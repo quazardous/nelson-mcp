@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Writer document image management tools."""
 
 import hashlib
@@ -7,10 +12,10 @@ import tempfile
 
 from plugin.framework.tool_base import ToolBase
 
-log = logging.getLogger("localwriter.writer")
+log = logging.getLogger("nelson.writer")
 
 # Persistent cache directory for downloaded images.
-_IMAGE_CACHE_DIR = os.path.join(tempfile.gettempdir(), "localwriter_images")
+_IMAGE_CACHE_DIR = os.path.join(tempfile.gettempdir(), "nelson_images")
 
 
 # ------------------------------------------------------------------
@@ -717,7 +722,7 @@ def _download_image_to_cache(url, verify_ssl=False, force=False):
         context.verify_mode = ssl.CERT_NONE
 
     request = urllib.request.Request(url)
-    request.add_header("User-Agent", "LocalWriter/1.0")
+    request.add_header("User-Agent", "Nelson/1.0")
 
     with urllib.request.urlopen(request, context=context) as response:
         data = response.read()

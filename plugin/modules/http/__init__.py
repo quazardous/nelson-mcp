@@ -1,10 +1,15 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """HTTP server module — owns the HTTP server lifecycle."""
 
 import logging
 
 from plugin.framework.module_base import ModuleBase
 
-log = logging.getLogger("localwriter.http")
+log = logging.getLogger("nelson.http")
 
 
 class HttpModule(ModuleBase):
@@ -120,17 +125,17 @@ class HttpModule(ModuleBase):
         if self._server and self._server.is_running():
             log.info("Stopping HTTP server via toggle")
             self._stop_server()
-            msgbox(ctx, "LocalWriter", "HTTP server stopped")
+            msgbox(ctx, "Nelson", "HTTP server stopped")
         else:
             log.info("Starting HTTP server via toggle")
             self._start_server(self._services)
             if self._server and self._server.is_running():
                 status = self._server.get_status()
-                msgbox(ctx, "LocalWriter",
+                msgbox(ctx, "Nelson",
                        "HTTP server started\n%s" % status.get("url", ""))
             else:
-                msgbox(ctx, "LocalWriter",
-                       "HTTP server failed to start\nCheck ~/localwriter.log")
+                msgbox(ctx, "Nelson",
+                       "HTTP server failed to start\nCheck ~/nelson.log")
 
     def _action_server_status(self):
         from plugin.framework.dialogs import msgbox
@@ -138,13 +143,13 @@ class HttpModule(ModuleBase):
 
         ctx = get_ctx()
         if not self._server:
-            msgbox(ctx, "LocalWriter", "HTTP server is not running")
+            msgbox(ctx, "Nelson", "HTTP server is not running")
             return
 
         status = self._server.get_status()
         running = status.get("running", False)
         if not running:
-            msgbox(ctx, "LocalWriter", "HTTP server not running")
+            msgbox(ctx, "Nelson", "HTTP server not running")
             return
 
         url = status.get("url", "?")
@@ -204,7 +209,7 @@ class HttpModule(ModuleBase):
             dlg.dispose()
         except Exception:
             log.exception("Status dialog error")
-            msgbox(ctx, "LocalWriter", "%s\nURL: %s" % (msg, url))
+            msgbox(ctx, "Nelson", "%s\nURL: %s" % (msg, url))
 
     # ---- Built-in route handlers ----
 
@@ -212,7 +217,7 @@ class HttpModule(ModuleBase):
         from plugin.version import EXTENSION_VERSION
         return (200, {
             "status": "healthy",
-            "server": "LocalWriter",
+            "server": "Nelson",
             "version": EXTENSION_VERSION,
         })
 
@@ -220,9 +225,9 @@ class HttpModule(ModuleBase):
         from plugin.version import EXTENSION_VERSION
         routes = self._registry.list_routes()
         return (200, {
-            "name": "LocalWriter",
+            "name": "Nelson",
             "version": EXTENSION_VERSION,
-            "description": "LocalWriter HTTP server",
+            "description": "Nelson HTTP server",
             "routes": ["%s %s" % (m, p) for m, p in sorted(routes)],
         })
 

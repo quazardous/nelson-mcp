@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Dispatch UNO calls to the VCL main thread.
 
 The MCP HTTP server runs in daemon threads. UNO is NOT thread-safe:
@@ -16,7 +21,7 @@ import logging
 import queue
 import threading
 
-log = logging.getLogger("localwriter.framework.main_thread")
+log = logging.getLogger("nelson.framework.main_thread")
 
 
 class _WorkItem:

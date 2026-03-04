@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """IndexService — in-memory inverted index with Snowball stemming.
 
 Ported from mcp-libre services/writer/index.py.
@@ -11,7 +16,7 @@ import os
 import time
 import unicodedata
 
-log = logging.getLogger("localwriter.writer.index")
+log = logging.getLogger("nelson.writer.index")
 
 # ── Language mapping (ISO 639-1 -> snowballstemmer algorithm) ─────────
 

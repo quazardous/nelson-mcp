@@ -1,7 +1,7 @@
 [project]
-name = "localwriter"
+name = "nelson-mcp"
 dynamic = ["version"]
-description = "LibreOffice AI writing assistant with MCP server"
+description = "LibreOffice MCP server — document tools for AI clients"
 requires-python = ">=3.8"
 
 [project.optional-dependencies]

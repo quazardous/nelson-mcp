@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Writer content tools — read, apply, find, and paragraph operations."""
 
 import logging
@@ -5,7 +10,7 @@ import logging
 from plugin.framework.tool_base import ToolBase
 from plugin.modules.writer import format_support
 
-log = logging.getLogger("localwriter.writer")
+log = logging.getLogger("nelson.writer")
 
 
 # ------------------------------------------------------------------

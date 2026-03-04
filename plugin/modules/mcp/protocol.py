@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """MCP JSON-RPC protocol handler.
 
 Pure protocol logic — no HTTP server, no request handler class.
@@ -12,7 +17,7 @@ import uuid
 
 from plugin.framework.main_thread import execute_on_main_thread
 
-log = logging.getLogger("localwriter.mcp.protocol")
+log = logging.getLogger("nelson.mcp.protocol")
 
 # MCP protocol version we advertise
 MCP_PROTOCOL_VERSION = "2025-11-25"
@@ -276,11 +281,11 @@ class MCPProtocolHandler:
                 "prompts": {"listChanged": False},
             },
             "serverInfo": {
-                "name": "LocalWriter MCP",
+                "name": "Nelson MCP",
                 "version": self.version,
             },
             "instructions": (
-                "LocalWriter MCP — AI document workspace. "
+                "Nelson MCP — AI document workspace. "
                 "WORKFLOW: 1) Use tools to interact with LibreOffice documents. "
                 "2) Tools are filtered by document type (writer/calc/draw). "
                 "3) All UNO operations run on the main thread for thread safety."

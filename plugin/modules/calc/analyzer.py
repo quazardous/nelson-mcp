@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Sheet analyzer — analyses the structure and statistics of Calc sheets.
 
 Ported from core/calc_sheet_analyzer.py for the plugin framework.
@@ -12,7 +17,7 @@ except ImportError:
     EMPTY, VALUE, TEXT, FORMULA = 0, 1, 2, 3
     UNO_AVAILABLE = False
 
-logger = logging.getLogger("localwriter.calc")
+logger = logging.getLogger("nelson.calc")
 
 
 class SheetAnalyzer:

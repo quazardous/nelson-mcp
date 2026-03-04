@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Tailscale Funnel tunnel provider — pre/post reset, HTTPS support."""
 
 import logging
@@ -5,7 +10,7 @@ import subprocess
 
 from plugin.framework.module_base import ModuleBase
 
-log = logging.getLogger("localwriter.tunnel.tailscale")
+log = logging.getLogger("nelson.tunnel.tailscale")
 
 # Windows: hide subprocess console window
 _CREATION_FLAGS = getattr(subprocess, "CREATE_NO_WINDOW", 0)
