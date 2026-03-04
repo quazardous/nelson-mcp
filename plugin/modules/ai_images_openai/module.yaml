@@ -1,0 +1,34 @@
+name: ai_images.openai
+title: OpenAI-compatible image generation
+requires: [ai_images]
+
+config:
+  instances:
+    type: string
+    default: "[]"
+    widget: list_detail
+    inline: true
+    label: OpenAI-compatible Instances
+    helper: "API endpoints supporting /v1/images/generations (OpenAI, Together, OpenRouter...)"
+    name_field: name
+    item_fields:
+      name:
+        type: string
+        label: Name
+        widget: text
+        default: ""
+      endpoint:
+        type: string
+        label: API Endpoint
+        widget: text
+        default: "https://api.openai.com/v1"
+      api_key:
+        type: string
+        label: API Key
+        widget: password
+        default: ""
+      model:
+        type: string
+        label: Model
+        widget: text
+        default: "dall-e-3"

@@ -1,0 +1,49 @@
+name: ai_images.sdapi
+title: Stable Diffusion WebUI (A1111/Forge) image generation
+requires: [ai_images]
+
+config:
+  instances:
+    type: string
+    default: "[]"
+    widget: list_detail
+    inline: true
+    label: SD WebUI Instances
+    helper: "Local Stable Diffusion API (Automatic1111, Forge, or compatible)"
+    name_field: name
+    item_fields:
+      name:
+        type: string
+        label: Name
+        widget: text
+        default: ""
+      endpoint:
+        type: string
+        label: API Endpoint
+        widget: text
+        default: "http://127.0.0.1:7860"
+      model:
+        type: string
+        label: Checkpoint
+        widget: text
+        default: ""
+        helper: "Leave empty for server default"
+      sampler:
+        type: string
+        label: Sampler
+        widget: text
+        default: "Euler a"
+      steps:
+        type: int
+        label: Steps
+        widget: number
+        default: 20
+        min: 1
+        max: 150
+      cfg_scale:
+        type: float
+        label: CFG Scale
+        widget: number
+        default: 7.0
+        min: 1.0
+        max: 30.0

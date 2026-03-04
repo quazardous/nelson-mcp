@@ -1,0 +1,13 @@
+name: ai_images
+title: AI image generation providers
+provides_services: [ai_images]
+requires: [config, events]
+
+config:
+  default_instance:
+    type: string
+    default: ""
+    widget: select
+    label: Default Image Provider
+    public: true
+    options_provider: "plugin.modules.ai_images.service:get_instance_options"
