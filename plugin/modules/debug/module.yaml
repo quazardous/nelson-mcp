@@ -1,6 +1,6 @@
 name: debug
 title: Debug tools and diagnostics
-requires: [config, events, ai, document]
+requires: [config, events, document]
 config_inline: main
 
 config:
@@ -15,8 +15,6 @@ config:
 actions:
   debug_info:
     title: "System Info"
-  test_providers:
-    title: "Test AI Providers"
 
 menus:
   # Menu is always visible; on_action() checks debug.enabled at runtime
@@ -25,4 +23,3 @@ menus:
     context: [writer, calc, draw]
     submenu:
       - action: debug_info
-      - action: test_providers

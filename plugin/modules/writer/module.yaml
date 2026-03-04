@@ -1,6 +1,6 @@
 name: writer
 title: Writer document tools
-requires: [document, config, format, ai]
+requires: [document, config, format]
 config_inline: doc
 
 config:

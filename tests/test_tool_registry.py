@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Tests for plugin.framework.tool_registry."""
 
 import pytest
@@ -126,14 +131,6 @@ class TestExecute:
 
 
 class TestSchemas:
-    def test_openai_schemas(self):
-        reg = _make_registry(FakeTool())
-        schemas = reg.get_openai_schemas("writer")
-        assert len(schemas) == 1
-        s = schemas[0]
-        assert s["type"] == "function"
-        assert s["function"]["name"] == "fake_tool"
-
     def test_mcp_schemas(self):
         reg = _make_registry(FakeTool())
         schemas = reg.get_mcp_schemas("writer")

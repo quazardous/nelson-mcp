@@ -1,34 +1,11 @@
-"""Convert between OpenAI function-calling and MCP tool schemas."""
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+"""Convert tool definitions to MCP tool schemas."""
 
 import copy
-
-
-def to_openai_schema(tool):
-    """Convert a ToolBase instance to an OpenAI function-calling schema.
-
-    Returns::
-
-        {
-            "type": "function",
-            "function": {
-                "name": "get_document_outline",
-                "description": "...",
-                "parameters": { ... JSON Schema ... }
-            }
-        }
-    """
-    params = copy.deepcopy(tool.parameters) if tool.parameters else {}
-    if "type" not in params:
-        params["type"] = "object"
-
-    return {
-        "type": "function",
-        "function": {
-            "name": tool.name,
-            "description": tool.description or "",
-            "parameters": params,
-        },
-    }
 
 
 def to_mcp_schema(tool):
