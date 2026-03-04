@@ -1,4 +1,9 @@
-"""XContainerWindowEventHandler for Tools > Options > LocalWriter pages.
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+"""XContainerWindowEventHandler for Tools > Options > Nelson MCP pages.
 
 Each module with config gets its own Options page (XDL generated at build time).
 A hidden ``__module__`` control in each XDL identifies which module the page belongs to.
@@ -28,7 +33,7 @@ from com.sun.star.awt import (
     XContainerWindowEventHandler, XActionListener, XItemListener)
 from com.sun.star.lang import XServiceInfo
 
-log = logging.getLogger("localwriter.options")
+log = logging.getLogger("nelson.options")
 
 
 # ── List-detail state and UNO listeners ──────────────────────────────
@@ -193,9 +198,9 @@ class _BrowseListener(unohelper.Base, XActionListener):
 
 
 class OptionsHandler(unohelper.Base, XContainerWindowEventHandler, XServiceInfo):
-    """Handles initialize / ok / back events for all LocalWriter Options pages."""
+    """Handles initialize / ok / back events for all Nelson MCP Options pages."""
 
-    IMPLE_NAME = "org.extension.localwriter.OptionsHandler"
+    IMPLE_NAME = "org.extension.nelson.OptionsHandler"
     SERVICE_NAMES = (IMPLE_NAME,)
 
     def __init__(self, ctx):
@@ -488,6 +493,17 @@ class OptionsHandler(unohelper.Base, XContainerWindowEventHandler, XServiceInfo)
         apply_btn = self._get_control(xWindow, "apply_%s" % field_name)
         if apply_btn:
             apply_btn.addActionListener(_LDApplyListener(state, self))
+
+        # Wire browse buttons for file/folder item_fields
+        for fname, fschema in item_fields.items():
+            if fschema.get("widget") not in ("file", "folder"):
+                continue
+            ctrl_id = "%s__%s" % (field_name, fname)
+            ctrl = self._get_control(xWindow, ctrl_id)
+            btn = self._get_control(xWindow, "btn_%s" % ctrl_id)
+            if btn and ctrl:
+                btn.addActionListener(_BrowseListener(
+                    ctrl, fschema["widget"], fschema.get("file_filter", "")))
 
         log.info("List-detail initialized: %s (%d items)", full_key, len(items))
 

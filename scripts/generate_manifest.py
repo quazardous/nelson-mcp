@@ -1,3 +1,8 @@
+# Copyright (c) David Berlioz
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 #!/usr/bin/env python3
 """Generate _manifest.py and XCS/XCU from module.yaml files.
 
@@ -534,6 +539,8 @@ def _add_inline_list_detail(board, field_name, schema, y):
             _add_menulist(board, ctrl_id, item_schema, y)
         elif widget == "combo":
             _add_combobox(board, ctrl_id, item_schema, y)
+        elif widget in ("file", "folder"):
+            _add_filefield(board, ctrl_id, item_schema, y)
         else:
             _add_textfield(board, ctrl_id, item_schema, y)
 
@@ -563,7 +570,7 @@ def generate_xdl(module_name, config_fields, title=None,
             whose fields are appended after the parent's, each preceded by a
             labeled separator.
     """
-    page_id = "LocalWriter_%s" % module_name.replace(".", "_")
+    page_id = "Nelson_%s" % module_name.replace(".", "_")
 
     window = ET.Element(_dlg("window"), {
         _dlg("id"): page_id,
@@ -751,7 +758,7 @@ def generate_list_detail_xdl(module_name, field_name, schema):
     then detail fields below the listbox.
     """
     safe_mod = module_name.replace(".", "_")
-    page_id = "LocalWriter_%s__%s" % (safe_mod, field_name)
+    page_id = "Nelson_%s__%s" % (safe_mod, field_name)
 
     window = ET.Element(_dlg("window"), {
         _dlg("id"): page_id,
@@ -867,6 +874,8 @@ def generate_list_detail_xdl(module_name, field_name, schema):
             _add_menulist(board, ctrl_id, item_schema, y)
         elif widget == "combo":
             _add_combobox(board, ctrl_id, item_schema, y)
+        elif widget in ("file", "folder"):
+            _add_filefield(board, ctrl_id, item_schema, y)
         else:
             _add_textfield(board, ctrl_id, item_schema, y)
 
@@ -995,7 +1004,7 @@ _CONTEXT_MAP = {
 # Default context: all document types
 _DEFAULT_CONTEXT = ",".join(sorted(_CONTEXT_MAP.values()))
 
-_PROTOCOL = "org.extension.localwriter"
+_PROTOCOL = "org.extension.nelson"
 
 
 def _resolve_context(context_list):
@@ -1126,7 +1135,7 @@ def generate_addons_xcu(modules, framework_manifest, output_path):
     menubar = ET.SubElement(addon_ui, "node",
                             {_oor("name"): "OfficeMenuBar"})
     top_menu = ET.SubElement(menubar, "node", {
-        _oor("name"): "org.extension.localwriter.menubar",
+        _oor("name"): "org.extension.nelson.menubar",
         _oor("op"): "replace",
     })
 
@@ -1137,7 +1146,7 @@ def generate_addons_xcu(modules, framework_manifest, output_path):
     })
     val = ET.SubElement(title_prop, "value")
     val.set("xml:lang", "en-US")
-    val.text = "LocalWriter"
+    val.text = "Nelson"
 
     # Empty ImageIdentifier — reserves space for runtime XImageManager icons
     img_prop = ET.SubElement(top_menu, "prop", {
@@ -1316,13 +1325,13 @@ def generate_options_dialog_xcu(modules):
     Structure produced::
 
         Nodes
-        ├── LocalWriter (Node)
+        ├── Nelson (Node)
         │   └── Leaves: [Main], Core, Http, Mcp, Chatbot ...
-        ├── LocalWriter Tunnel (Node)    ← only if tunnel has sub-modules
+        ├── Nelson Tunnel (Node)    ← only if tunnel has sub-modules
         │   └── Leaves: Main, Ngrok, Bore, Cloudflare
         └── ...
     """
-    handler_service = "org.extension.localwriter.OptionsHandler"
+    handler_service = "org.extension.nelson.OptionsHandler"
 
     root = ET.Element(_oor("component-data"), {
         _oor("name"): "OptionsDialog",
@@ -1359,9 +1368,9 @@ def generate_options_dialog_xcu(modules):
         else:
             top_level.append(m)
 
-    # ── Main Node: "LocalWriter" ─────────────────────────────────────
-    lw_node_name = "LocalWriter"
-    lw_node = _add_node(nodes_el, lw_node_name, "LocalWriter")
+    # ── Main Node: "Nelson" ─────────────────────────────────────
+    lw_node_name = "Nelson"
+    lw_node = _add_node(nodes_el, lw_node_name, "Nelson")
     lw_leaves = ET.SubElement(lw_node, "node", {_oor("name"): "Leaves"})
 
     # GroupId matches parent Node oor:name → appears first group.
@@ -1371,13 +1380,13 @@ def generate_options_dialog_xcu(modules):
     # Framework-level "Main" leaf (first if it has config or inline children)
     for m in top_level:
         if m["name"] == "main" and (m.get("config") or "main" in inline_target_set):
-            _add_leaf(lw_leaves, "LocalWriter_main", "Main",
+            _add_leaf(lw_leaves, "Nelson_main", "Main",
                       "main", "main", handler_service,
                       group_id=lw_node_name, group_index=group_idx)
             group_idx += 1
             break
 
-    # Simple modules (no sub-modules) as leaves under LocalWriter
+    # Simple modules (no sub-modules) as leaves under Nelson
     for m in top_level:
         name = m["name"]
         if name == "main" or name in has_children or name in inline_set:
@@ -1386,7 +1395,7 @@ def generate_options_dialog_xcu(modules):
         if not config and name not in inline_target_set:
             continue
         safe = name.replace(".", "_")
-        _add_leaf(lw_leaves, "LocalWriter_%s" % safe, _pretty_name(name),
+        _add_leaf(lw_leaves, "Nelson_%s" % safe, _pretty_name(name),
                   name, safe, handler_service,
                   group_id=lw_node_name, group_index=group_idx)
         group_idx += 1
@@ -1401,12 +1410,12 @@ def generate_options_dialog_xcu(modules):
             ld_label = "%s: %s" % (
                 _pretty_name(name),
                 schema.get("page_label") or schema.get("label", field_name))
-            _add_leaf(lw_leaves, "LocalWriter_%s" % ld_safe, ld_label,
+            _add_leaf(lw_leaves, "Nelson_%s" % ld_safe, ld_label,
                       name, ld_safe, handler_service,
                       group_id=lw_node_name, group_index=group_idx)
             group_idx += 1
 
-    # ── Sub-module groups as leaves under LocalWriter ────────────────
+    # ── Sub-module groups as leaves under Nelson ────────────────
     # LO doesn't reliably show multiple top-level Nodes from one extension.
     # Instead, add parent + children as leaves with a group separator label.
     for m in top_level:
@@ -1419,7 +1428,7 @@ def generate_options_dialog_xcu(modules):
         # Parent's own config (labeled "Tunnel" not "Main" since it's flat)
         if config or name in inline_target_set:
             safe = name.replace(".", "_")
-            _add_leaf(lw_leaves, "LocalWriter_%s" % safe,
+            _add_leaf(lw_leaves, "Nelson_%s" % safe,
                       _pretty_name(name),
                       name, safe, handler_service,
                       group_id=lw_node_name, group_index=group_idx)
@@ -1438,7 +1447,7 @@ def generate_options_dialog_xcu(modules):
             # Label: "Tunnel: Ngrok"
             child_label = "%s: %s" % (_pretty_name(name),
                                       _pretty_name(child_name))
-            _add_leaf(lw_leaves, "LocalWriter_%s" % child_safe,
+            _add_leaf(lw_leaves, "Nelson_%s" % child_safe,
                       child_label,
                       child_name, child_safe, handler_service,
                       group_id=lw_node_name, group_index=group_idx)
@@ -1454,7 +1463,7 @@ def generate_options_dialog_xcu(modules):
                 ld_label = "%s: %s" % (
                     child_label,
                     schema.get("page_label") or schema.get("label", field_name))
-                _add_leaf(lw_leaves, "LocalWriter_%s" % ld_safe, ld_label,
+                _add_leaf(lw_leaves, "Nelson_%s" % ld_safe, ld_label,
                           child_name, ld_safe, handler_service,
                           group_id=lw_node_name, group_index=group_idx)
                 group_idx += 1
@@ -1485,7 +1494,7 @@ def _add_leaf(parent, node_name, label, module_name, safe_name,
     })
 
     id_prop = ET.SubElement(leaf, "prop", {_oor("name"): "Id"})
-    ET.SubElement(id_prop, "value").text = "org.extension.localwriter"
+    ET.SubElement(id_prop, "value").text = "org.extension.nelson"
 
     lbl_prop = ET.SubElement(leaf, "prop", {_oor("name"): "Label"})
     ET.SubElement(lbl_prop, "value").text = label
@@ -1515,14 +1524,12 @@ def generate_manifest_xml(modules, output_path):
         ('application/vnd.sun.star.uno-component;type=Python', 'plugin/main.py'),
         ('application/vnd.sun.star.uno-component;type=Python', 'plugin/prompt_function.py'),
         ('application/vnd.sun.star.uno-component;type=Python', 'plugin/options_handler.py'),
-        ('application/vnd.sun.star.uno-component;type=Python', 'plugin/modules/chatbot/panel_factory.py'),
         ('application/vnd.sun.star.configuration-data', 'Addons.xcu'),
         ('application/vnd.sun.star.configuration-data', 'Accelerators.xcu'),
         ('application/vnd.sun.star.configuration-data', 'Jobs.xcu'),
         ('application/vnd.sun.star.configuration-data', 'ProtocolHandler.xcu'),
         ('application/vnd.sun.star.configuration-data', 'OptionsDialog.xcu'),
         ('application/vnd.sun.star.configuration-data', 'registry/org/openoffice/Office/UI/Sidebar.xcu'),
-        ('application/vnd.sun.star.configuration-data', 'registry/org/openoffice/Office/UI/Factories.xcu'),
     ]
 
     # Dynamic XCS/XCU entries for modules with config

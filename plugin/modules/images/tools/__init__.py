@@ -3,6 +3,4 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Single source of truth for extension version."""
-
-EXTENSION_VERSION = "0.1.0"
+"""Image gallery tools — search, list, get info."""

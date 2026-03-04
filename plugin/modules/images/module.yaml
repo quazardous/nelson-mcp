@@ -1,0 +1,13 @@
+name: images
+title: Image gallery providers
+provides_services: [images]
+requires: [document, config, events]
+
+config:
+  default_instance:
+    type: string
+    default: ""
+    widget: select
+    label: Default Gallery Provider
+    public: true
+    options_provider: "plugin.modules.images.service:get_instance_options"

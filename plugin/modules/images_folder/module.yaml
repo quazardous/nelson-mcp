@@ -1,0 +1,47 @@
+name: images.folder
+title: Folder image gallery
+requires: [images]
+
+config:
+  instances:
+    type: string
+    default: "[]"
+    widget: list_detail
+    inline: true
+    label: Image Folders
+    helper: "Local folders to index as image galleries"
+    name_field: name
+    item_fields:
+      name:
+        type: string
+        label: Name
+        widget: text
+        default: ""
+      path:
+        type: string
+        label: Folder Path
+        widget: folder
+        default: ""
+        helper: "Absolute path to the image folder"
+      recursive:
+        type: boolean
+        label: Scan Subfolders
+        widget: checkbox
+        default: true
+      writable:
+        type: boolean
+        label: Allow Adding Images
+        widget: checkbox
+        default: false
+      extensions:
+        type: string
+        label: File Extensions
+        widget: text
+        default: "jpg,jpeg,png,gif,bmp,tiff,tif,webp,svg"
+        helper: "Comma-separated list of image file extensions"
+      sync_gallery:
+        type: boolean
+        label: Sync to LO Gallery
+        widget: checkbox
+        default: false
+        helper: "Copy indexed images to a LibreOffice Gallery theme"
