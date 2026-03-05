@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.2.0] — 2026-03-05
+
+### Added
+
+- **Sidebar panel factory** with Actions and Jobs panels in the Nelson deck
+- **Job manager** — framework-level background task runner with `get_job` / `list_jobs` tools
+- **AI image generation/editing tools** — `generate_image` and `edit_image` submit background jobs, with gallery auto-save and configurable filename templates
+- **Launcher modules** — Claude Code, Gemini CLI, and OpenCode launchers with install scripts and prompt templates
+- **Panel module** — UNO panel factory registration for sidebar panels
+- **Options widgets**: `button` (with optional confirm dialog), `check` (runtime status display), multiline helpers
+- **Folder gallery tools**: `rescan` tool, rescan/reset buttons in Options, `rescan_on_startup` config toggle
+- `.mcp.json-dist` template for MCP server configuration
+
+### Changed
+
+- Refactored `generate_manifest.py` — extracted `_emit_field` / `_add_widget` to deduplicate XDL generation across pages, inline children, and list_detail dialogs
+- About dialog now shows the extension logo and updated GitHub URL (`nelson-mcp`)
+- `constants.py` URLs updated to `quazardous/nelson-mcp`
+- Folder gallery provider supports `dest_name` with subdirectory creation
+- `FolderIndex.scan()` accepts `force` flag for full re-index
+- AI Horde provider passes `prompt_strength` parameter
+
 ## [0.1.0] — 2026-03-05
 
 ### Changed
