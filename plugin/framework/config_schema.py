@@ -75,7 +75,9 @@ def generate_xcs(module_name, config_fields):
     grp = ET.SubElement(component, "group", {_qn("oor", "name"): safe})
 
     for field_name, schema in config_fields.items():
-        xcs_type = _XCS_TYPE_MAP.get(schema["type"], "xs:string")
+        if schema.get("widget") == "button":
+            continue  # buttons have no config value
+        xcs_type = _XCS_TYPE_MAP.get(schema.get("type", "string"), "xs:string")
         desc_text = schema.get("description", "") or schema.get("label", "")
 
         prop = ET.SubElement(grp, "prop", {
@@ -102,10 +104,12 @@ def generate_xcu(module_name, config_fields):
     node = ET.SubElement(root, "node", {_qn("oor", "name"): safe})
 
     for field_name, schema in config_fields.items():
-        xcu_type = _XCS_TYPE_MAP.get(schema["type"], "xs:string")
+        if schema.get("widget") == "button":
+            continue  # buttons have no config value
+        xcu_type = _XCS_TYPE_MAP.get(schema.get("type", "string"), "xs:string")
         default = schema.get("default", "")
 
-        if schema["type"] == "boolean":
+        if schema.get("type", "string") == "boolean":
             val_text = "true" if default else "false"
         else:
             val_text = str(default)

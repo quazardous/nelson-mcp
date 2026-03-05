@@ -1,0 +1,22 @@
+name: launcher.claude
+title: Claude Code CLI provider
+requires: [launcher_manager]
+config_inline: true
+
+config:
+  cwd:
+    type: string
+    default: ""
+    widget: folder
+    label: Working Directory
+    helper: "Directory to launch Claude Code in. Empty = ~/.local/share/nelson/cli/claude/"
+  args:
+    type: string
+    default: ""
+    widget: text
+    label: Extra Arguments
+    helper: "Additional CLI arguments. Placeholders: {mcp_url}, {port}, {host}."
+  install:
+    widget: button
+    label: Install Claude Code
+    action: "plugin.modules.launcher_claude:on_install"

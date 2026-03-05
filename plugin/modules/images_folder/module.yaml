@@ -45,3 +45,20 @@ config:
         widget: checkbox
         default: false
         helper: "Copy indexed images to a LibreOffice Gallery theme"
+  rescan_on_startup:
+    type: boolean
+    default: true
+    widget: checkbox
+    label: Rescan on Startup
+    helper: "Automatically re-index folders when LibreOffice starts"
+  rescan:
+    widget: button
+    label: Rescan Folders
+    helper: "Re-index all configured image folders"
+    action: "plugin.modules.images_folder:on_rescan"
+  reset_db:
+    widget: button
+    label: Reset Database
+    helper: "Delete the image index and rebuild from scratch"
+    confirm: "This will delete the image index database. Are you sure?"
+    action: "plugin.modules.images_folder:on_reset_db"

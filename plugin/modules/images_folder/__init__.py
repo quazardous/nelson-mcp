@@ -13,6 +13,110 @@ from plugin.framework.module_base import ModuleBase
 log = logging.getLogger("nelson.images.folder")
 
 
+def _show_statusbar(text, duration=5.0):
+    """Show a message in the LibreOffice status bar for a few seconds."""
+    try:
+        from plugin.framework.uno_context import get_ctx
+        ctx = get_ctx()
+        if not ctx:
+            return
+        desktop = ctx.ServiceManager.createInstanceWithContext(
+            "com.sun.star.frame.Desktop", ctx)
+        frame = desktop.getCurrentFrame()
+        if frame is None:
+            return
+        sb = frame.createStatusIndicator()
+        sb.start(text, 100)
+        sb.setValue(100)
+
+        import threading
+
+        def _clear():
+            from plugin.framework.main_thread import post_to_main_thread
+            post_to_main_thread(sb.end)
+
+        threading.Timer(duration, _clear).start()
+    except Exception:
+        log.debug("Could not show statusbar message: %s", text)
+
+
+def on_rescan():
+    """Callback for the Rescan Folders button in Options."""
+    from plugin.main import get_services
+    services = get_services()
+    if not services:
+        log.warning("on_rescan: services not available")
+        return
+
+    svc = services.get("images")
+    if svc is None:
+        log.warning("on_rescan: images service not available")
+        return
+
+    inserted = 0
+    updated = 0
+    deleted = 0
+    for inst in svc.list_instances():
+        if inst.module_name != "images.folder":
+            continue
+        try:
+            result = inst.provider.rescan()
+            if result:
+                inserted += result.get("inserted", 0)
+                updated += result.get("updated", 0)
+                deleted += result.get("deleted", 0)
+            log.info("on_rescan: rescanned %s", inst.name)
+        except Exception:
+            log.exception("on_rescan: failed for %s", inst.name)
+
+    msg = "Rescan: %d new, %d updated, %d deleted" % (inserted, updated, deleted)
+    log.info("on_rescan: %s", msg)
+
+    # Show result in statusbar — deferred to main thread after Options closes
+    import threading
+
+    def _deferred():
+        from plugin.framework.main_thread import post_to_main_thread
+        post_to_main_thread(lambda: _show_statusbar(msg))
+
+    threading.Timer(1.0, _deferred).start()
+
+
+def on_reset_db():
+    """Callback for the Reset Database button in Options."""
+    from plugin.main import get_services
+    services = get_services()
+    if not services:
+        log.warning("on_reset_db: services not available")
+        return
+
+    svc = services.get("images")
+    if svc is None:
+        log.warning("on_reset_db: images service not available")
+        return
+
+    count = 0
+    for inst in svc.list_instances():
+        if inst.module_name != "images.folder":
+            continue
+        try:
+            inst.provider.reset_db()
+            count += 1
+            log.info("on_reset_db: reset %s", inst.name)
+        except Exception:
+            log.exception("on_reset_db: failed for %s", inst.name)
+
+    msg = "Database reset: %d provider(s) cleared" % count
+
+    import threading
+
+    def _deferred():
+        from plugin.framework.main_thread import post_to_main_thread
+        post_to_main_thread(lambda: _show_statusbar(msg))
+
+    threading.Timer(1.0, _deferred).start()
+
+
 class ImagesFolderModule(ModuleBase):
 
     def initialize(self, services):
@@ -41,8 +145,12 @@ class ImagesFolderModule(ModuleBase):
             ))
 
     def start_background(self, services):
-        """Trigger initial rescan for all folder instances."""
+        """Trigger initial rescan for all folder instances if enabled."""
         if not hasattr(self, "_svc"):
+            return
+        cfg = services.config.proxy_for(self.name)
+        if not cfg.get("rescan_on_startup", True):
+            log.info("Rescan on startup disabled, skipping")
             return
         for inst in self._svc.list_instances():
             if inst.module_name == "images.folder":
@@ -75,8 +183,8 @@ class _LazyProvider:
     def get_item(self, image_id):
         return self._ensure().get_item(image_id)
 
-    def add_item(self, file_path, metadata=None):
-        return self._ensure().add_item(file_path, metadata=metadata)
+    def add_item(self, file_path, metadata=None, dest_name=None):
+        return self._ensure().add_item(file_path, metadata=metadata, dest_name=dest_name)
 
     def update_metadata(self, image_id, metadata):
         return self._ensure().update_metadata(image_id, metadata)
@@ -84,5 +192,8 @@ class _LazyProvider:
     def is_writable(self):
         return self._ensure().is_writable()
 
-    def rescan(self):
-        return self._ensure().rescan()
+    def reset_db(self, **kwargs):
+        return self._ensure().reset_db(**kwargs)
+
+    def rescan(self, **kwargs):
+        return self._ensure().rescan(**kwargs)

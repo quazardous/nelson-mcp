@@ -310,8 +310,22 @@ def status_dialog(ctx, title, build_status_fn, copy_url_fn=None):
 # ── About dialog ─────────────────────────────────────────────────────
 
 
+def _find_logo_url():
+    """Resolve the logo.png URL inside the installed extension."""
+    try:
+        import uno
+        pip = uno.getComponentContext().getByName(
+            "/singletons/com.sun.star.deployment.PackageInformationProvider")
+        ext_url = pip.getPackageLocation("org.extension.nelson")
+        if ext_url:
+            return ext_url + "/assets/logo.png"
+    except Exception:
+        pass
+    return ""
+
+
 def about_dialog(ctx):
-    """Show the Nelson MCP About dialog with a clickable GitHub link."""
+    """Show the Nelson MCP About dialog with logo and clickable GitHub link."""
     try:
         from plugin.version import EXTENSION_VERSION
     except ImportError:
@@ -321,22 +335,41 @@ def about_dialog(ctx):
         log.info("ABOUT (no ctx)")
         return
 
+    _GITHUB_URL = "https://github.com/quazardous/nelson-mcp"
+
     try:
         smgr = ctx.ServiceManager
 
         dlg_model = smgr.createInstanceWithContext(
             "com.sun.star.awt.UnoControlDialogModel", ctx)
         dlg_model.Title = "About Nelson MCP"
-        dlg_model.Width = 220
-        dlg_model.Height = 90
+        dlg_model.Width = 240
+        dlg_model.Height = 110
+
+        # Logo image
+        logo_url = _find_logo_url()
+        if logo_url:
+            img = dlg_model.createInstance(
+                "com.sun.star.awt.UnoControlImageControlModel")
+            img.Name = "Logo"
+            img.PositionX = 10
+            img.PositionY = 8
+            img.Width = 40
+            img.Height = 40
+            img.ImageURL = logo_url
+            img.ScaleImage = True
+            img.Border = 0
+            dlg_model.insertByName("Logo", img)
+
+        text_x = 56 if logo_url else 10
 
         # Info text
         lbl = dlg_model.createInstance(
             "com.sun.star.awt.UnoControlFixedTextModel")
         lbl.Name = "Info"
-        lbl.PositionX = 10
+        lbl.PositionX = text_x
         lbl.PositionY = 8
-        lbl.Width = 200
+        lbl.Width = 230 - text_x
         lbl.Height = 36
         lbl.MultiLine = True
         lbl.Label = (
@@ -350,20 +383,20 @@ def about_dialog(ctx):
         link = dlg_model.createInstance(
             "com.sun.star.awt.UnoControlFixedHyperlinkModel")
         link.Name = "GitHubLink"
-        link.PositionX = 10
-        link.PositionY = 48
-        link.Width = 200
+        link.PositionX = text_x
+        link.PositionY = 52
+        link.Width = 230 - text_x
         link.Height = 12
-        link.Label = "GitHub: quazardous/localwriter"
-        link.URL = "https://github.com/quazardous/localwriter"
+        link.Label = "GitHub: quazardous/nelson-mcp"
+        link.URL = _GITHUB_URL
         link.TextColor = 0x0563C1  # standard link blue
         dlg_model.insertByName("GitHubLink", link)
 
         ok_btn = dlg_model.createInstance(
             "com.sun.star.awt.UnoControlButtonModel")
         ok_btn.Name = "OKBtn"
-        ok_btn.PositionX = 160
-        ok_btn.PositionY = 68
+        ok_btn.PositionX = 180
+        ok_btn.PositionY = 88
         ok_btn.Width = 50
         ok_btn.Height = 14
         ok_btn.Label = "OK"
@@ -381,8 +414,7 @@ def about_dialog(ctx):
     except Exception:
         log.exception("About dialog error")
         msgbox(ctx, "About Nelson MCP",
-               "Nelson MCP %s\nhttps://github.com/quazardous/localwriter"
-               % EXTENSION_VERSION)
+               "Nelson MCP %s\n%s" % (EXTENSION_VERSION, _GITHUB_URL))
 
 
 # ── XDL dialog loading ──────────────────────────────────────────────

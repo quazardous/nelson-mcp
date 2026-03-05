@@ -76,7 +76,7 @@ class FolderIndex:
 
     def _connect(self):
         if self._conn is None:
-            self._conn = sqlite3.connect(self._db_path)
+            self._conn = sqlite3.connect(self._db_path, check_same_thread=False)
             self._conn.row_factory = sqlite3.Row
             self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.executescript(_SCHEMA)
@@ -89,15 +89,23 @@ class FolderIndex:
             self._conn.close()
             self._conn = None
 
+    def reset(self):
+        """Delete the SQLite database file so it is rebuilt on next access."""
+        self.close()
+        if os.path.isfile(self._db_path):
+            os.remove(self._db_path)
+            log.info("Deleted index database: %s", self._db_path)
+
     # -- Scanning --------------------------------------------------------------
 
-    def scan(self, extensions, recursive, xmp_reader):
+    def scan(self, extensions, recursive, xmp_reader, force=False):
         """Incremental scan — index new/changed files, remove deleted ones.
 
         Args:
             extensions: set of lowercase extensions (e.g. {"jpg", "png"}).
             recursive: whether to walk subdirectories.
             xmp_reader: callable(image_path) -> dict of metadata.
+            force: if True, re-index all files regardless of mtime.
         """
         conn = self._connect()
 
@@ -148,7 +156,7 @@ class FolderIndex:
                 pass
 
             # Check if re-index is needed
-            if rel_path in existing:
+            if not force and rel_path in existing:
                 old_file_mtime, old_xmp_mtime = existing[rel_path]
                 if file_mtime <= old_file_mtime and xmp_mtime <= old_xmp_mtime:
                     continue  # unchanged

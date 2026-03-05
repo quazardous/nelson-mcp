@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "nelson": {
+      "type": "http",
+      "url": "http://localhost:8766/mcp"
+    }
+  }
+}

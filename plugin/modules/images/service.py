@@ -110,6 +110,11 @@ class GalleryService(ServiceBase):
         provider = self.get_provider(instance_id=instance_id)
         return provider.update_metadata(image_id, metadata)
 
+    def add_item(self, file_path, metadata=None, instance_id=None, dest_name=None):
+        """Add an image file to a gallery provider."""
+        provider = self.get_provider(instance_id=instance_id)
+        return provider.add_item(file_path, metadata=metadata, dest_name=dest_name)
+
     # -- Active selection ------------------------------------------------------
 
     def set_active(self, instance_id):

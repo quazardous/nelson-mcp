@@ -55,7 +55,7 @@ wheels = [
 ]
 
 [[package]]
-name = "localwriter"
+name = "nelson-mcp"
 source = { editable = "." }
 
 [package.optional-dependencies]

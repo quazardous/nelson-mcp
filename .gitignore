@@ -27,6 +27,7 @@ soffice-debug.log
 
 # Local dev config
 Makefile.local
+.mcp.json
 
 # IDE / editor
 .vscode/
@@ -49,3 +50,4 @@ loshd*/
 
 # Claude Code
 .claude/settings.local.json
+toto.txt

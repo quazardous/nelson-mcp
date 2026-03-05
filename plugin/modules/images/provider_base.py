@@ -58,8 +58,14 @@ class GalleryProvider(ABC):
             dict or None.
         """
 
-    def add_item(self, file_path, metadata=None):
+    def add_item(self, file_path, metadata=None, dest_name=None):
         """Add an image to the gallery.
+
+        Args:
+            file_path: Source file path.
+            metadata: Optional metadata dict.
+            dest_name: Optional destination name (may include subdirectories).
+                       Extension is preserved from file_path if not in dest_name.
 
         Raises NotImplementedError if the provider is read-only.
 
@@ -86,5 +92,3 @@ class GalleryProvider(ABC):
         """Whether this provider supports add_item / update_metadata."""
         return False
 
-    def rescan(self):
-        """Trigger a re-index / refresh of the gallery contents."""

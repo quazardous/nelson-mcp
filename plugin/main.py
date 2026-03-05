@@ -228,6 +228,10 @@ def bootstrap(ctx=None):
         # Register the tool registry itself as a service
         _services.register_instance("tools", _tools)
 
+        # Register the framework-level job manager
+        from plugin.framework.job_manager import JobManager
+        _services.register_instance("jobs", JobManager())
+
         # Load and sort modules
         manifests = _load_manifest()
 

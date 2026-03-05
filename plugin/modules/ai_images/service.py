@@ -106,9 +106,22 @@ class ImageService(ServiceBase):
         return self._active_id
 
 
-def get_instance_options(services):
-    """Options provider for the images.default_instance config select."""
+def get_writable_gallery_options(services):
+    """Options provider for the ai_images.save_to_gallery config select."""
     svc = services.get("images")
+    if not svc:
+        return [{"value": "", "label": "(disabled)"}]
+    options = [{"value": "", "label": "(disabled)"}]
+    for iid, inst in svc._instances.items():
+        if inst.provider.is_writable():
+            label = "[%s] %s" % (inst.module_name.split(".")[-1], inst.name)
+            options.append({"value": iid, "label": label})
+    return options
+
+
+def get_instance_options(services):
+    """Options provider for the ai_images.default_instance config select."""
+    svc = services.get("ai_images")
     if not svc:
         return []
     options = [{"value": "", "label": "(auto)"}]

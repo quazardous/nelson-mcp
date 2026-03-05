@@ -42,14 +42,14 @@ config:
     type: string             # string, int, float, boolean
     default: "hello"
     widget: text             # text, textarea, password, number, slider,
-                             # checkbox, select, file, folder, list_detail
+                             # checkbox, select, file, folder, list_detail, button
     label: My Field
     helper: "Help text"      # Optional, shown in Options UI
     public: false            # true = other modules can read
     internal: false          # true = hidden from Options UI
 ```
 
-`select` requires `options` (static) or `options_provider` (dynamic function). `list_detail` requires `item_fields` for structured JSON data.
+`select` requires `options` (static) or `options_provider` (dynamic function). `list_detail` requires `item_fields` for structured JSON data. `button` requires `action` (`"module.path:function_name"`) — no `type`/`default` needed, it doesn't store a config value. `button` also supports an optional `confirm` string — when set, a Yes/No dialog is shown before executing the action.
 
 ## Lifecycle
 

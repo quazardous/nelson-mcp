@@ -135,6 +135,59 @@ class _LDApplyListener(unohelper.Base, XActionListener):
         pass
 
 
+# ── Button action listener ───────────────────────────────────────────
+
+
+class _ButtonActionListener(unohelper.Base, XActionListener):
+    """Calls a user-defined callback when a button widget is clicked."""
+
+    def __init__(self, action_path, confirm_msg=None):
+        self._action_path = action_path
+        self._confirm_msg = confirm_msg
+
+    def actionPerformed(self, evt):
+        try:
+            log.debug("Button clicked: %s", self._action_path)
+            if self._confirm_msg:
+                if not self._confirm(evt):
+                    return
+            module_path, func_name = self._action_path.rsplit(":", 1)
+            import importlib
+            mod = importlib.import_module(module_path)
+            func = getattr(mod, func_name)
+            func()
+        except Exception:
+            log.exception("Button action failed: %s", self._action_path)
+
+    def _confirm(self, evt):
+        """Show a Yes/No confirmation dialog. Returns True if user clicks Yes."""
+        try:
+            from plugin.framework.uno_context import get_ctx
+            ctx = get_ctx()
+            if not ctx:
+                return True
+            smgr = ctx.ServiceManager
+            desktop = smgr.createInstanceWithContext(
+                "com.sun.star.frame.Desktop", ctx)
+            frame = desktop.getCurrentFrame()
+            if frame is None:
+                return True
+            window = frame.getContainerWindow()
+            toolkit = smgr.createInstanceWithContext(
+                "com.sun.star.awt.Toolkit", ctx)
+            # MessageBoxType QUERYBOX=4, MessageBoxButtons YES_NO=3
+            box = toolkit.createMessageBox(
+                window, 4, 3, "Confirm", self._confirm_msg)
+            result = box.execute()
+            return result == 2  # YES
+        except Exception:
+            log.exception("Confirmation dialog failed")
+            return False
+
+    def disposing(self, evt):
+        pass
+
+
 # ── Browse button listener ───────────────────────────────────────────
 
 
@@ -288,6 +341,25 @@ class OptionsHandler(unohelper.Base, XContainerWindowEventHandler, XServiceInfo)
                     self._ld_on_initialize(xWindow, module_name, field_name)
                 continue  # non-inline handled on separate page
 
+            if widget == "button":
+                ctrl_id = prefix + field_name
+                ctrl = self._get_control(xWindow, ctrl_id)
+                action_path = schema.get("action")
+                log.debug("Button widget: ctrl_id=%s, ctrl=%s, action=%s",
+                          ctrl_id, ctrl, action_path)
+                if action_path and ctrl:
+                    ctrl.addActionListener(
+                        _ButtonActionListener(action_path,
+                                              confirm_msg=schema.get("confirm")))
+                continue  # buttons don't store config values
+
+            if widget == "check":
+                ctrl_id = prefix + field_name
+                ctrl = self._get_control(xWindow, ctrl_id)
+                if ctrl:
+                    self._run_check(ctrl, schema)
+                continue  # checks don't store config values
+
             full_key = "%s.%s" % (module_name, field_name)
 
             # Read via ConfigService (uses global ctx via get_ctx())
@@ -382,6 +454,8 @@ class OptionsHandler(unohelper.Base, XContainerWindowEventHandler, XServiceInfo)
                 if not prefix and schema.get("inline"):
                     self._ld_on_ok(xWindow, module_name, field_name)
                 continue
+            if widget in ("button", "check"):
+                continue  # buttons/checks don't store config values
 
             full_key = "%s.%s" % (module_name, field_name)
             field_type = schema.get("type", "string")
@@ -800,6 +874,36 @@ class OptionsHandler(unohelper.Base, XContainerWindowEventHandler, XServiceInfo)
         except Exception:
             log.exception("Failed to resolve options_provider: %s", provider_path)
             return schema
+
+    # ── Check widget ───────────────────────────────────────────────
+
+    _CHECK_ICONS = {"ok": "[OK]", "ko": "[FAIL]", "unknown": "[?]"}
+
+    def _run_check(self, ctrl, schema):
+        """Call the check_provider and display the result."""
+        provider_path = schema.get("check_provider")
+        if not provider_path:
+            ctrl.getModel().Label = "\u2753 No check_provider defined"
+            return
+        try:
+            module_path, func_name = provider_path.rsplit(":", 1)
+            import importlib
+            mod = importlib.import_module(module_path)
+            func = getattr(mod, func_name)
+            from plugin.main import get_services
+            result = func(get_services())
+            # result: {"status": "ok"|"ko"|"unknown", "message": "..."}
+            if isinstance(result, dict):
+                status = result.get("status", "unknown")
+                message = result.get("message", "")
+            else:
+                status = "ok" if result else "ko"
+                message = str(result) if result else ""
+            icon = self._CHECK_ICONS.get(status, self._CHECK_ICONS["unknown"])
+            ctrl.getModel().Label = "%s %s" % (icon, message)
+        except Exception:
+            log.exception("Check provider failed: %s", provider_path)
+            ctrl.getModel().Label = "%s Error running check" % self._CHECK_ICONS["ko"]
 
     def _call_options_provider(self, provider_path):
         """Import a module and call a function to get options.

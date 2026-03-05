@@ -321,6 +321,66 @@ def _add_label(board, field_name, label_text, y):
     ET.SubElement(board, _dlg("text"), attrs)
 
 
+def _add_button(board, field_name, schema, y):
+    """Add a standalone button widget (no associated config value)."""
+    attrs = _common_attrs(field_name, y)
+    attrs[_dlg("value")] = schema.get("label", field_name)
+    ET.SubElement(board, _dlg("button"), attrs)
+
+
+def _add_check(board, field_name, schema, y):
+    """Add a read-only status check widget (icon + message text)."""
+    attrs = _common_attrs(field_name, y)
+    attrs[_dlg("value")] = ""  # filled at runtime by check_provider
+    ET.SubElement(board, _dlg("text"), attrs)
+
+
+def _add_widget(board, ctrl_id, widget, schema, y):
+    """Dispatch to the correct widget builder. Returns extra y offset."""
+    if widget == "button":
+        _add_button(board, ctrl_id, schema, y)
+    elif widget == "check":
+        _add_check(board, ctrl_id, schema, y)
+    elif widget == "checkbox":
+        _add_checkbox(board, ctrl_id, schema, y)
+    elif widget == "password":
+        _add_textfield(board, ctrl_id, schema, y, echo_char=42)
+    elif widget == "textarea":
+        _add_textfield(board, ctrl_id, schema, y, multiline=True)
+        return _ROW_HEIGHT * 2
+    elif widget in ("number", "slider"):
+        _add_numericfield(board, ctrl_id, schema, y)
+    elif widget == "select":
+        _add_menulist(board, ctrl_id, schema, y)
+    elif widget == "combo":
+        _add_combobox(board, ctrl_id, schema, y)
+    elif widget in ("file", "folder"):
+        _add_filefield(board, ctrl_id, schema, y)
+    else:
+        _add_textfield(board, ctrl_id, schema, y)
+    return 0
+
+
+def _emit_field(board, ctrl_id, widget, schema, y):
+    """Emit a single field (label + widget + helper). Returns new y."""
+    label_text = schema.get("label", ctrl_id)
+
+    if widget != "button":
+        _add_label(board, ctrl_id, label_text, y)
+
+    y += _add_widget(board, ctrl_id, widget, schema, y)
+    y += _ROW_HEIGHT
+
+    helper_text = schema.get("helper")
+    if helper_text:
+        y += _HELPER_GAP
+        _add_helper(board, ctrl_id, helper_text, y)
+        y += _helper_height(helper_text)
+
+    y += _ROW_GAP
+    return y
+
+
 def _add_filefield(board, field_name, schema, y):
     """Add a textfield + browse button for file/folder widgets."""
     field_w = _FIELD_WIDTH - _BROWSE_BTN_WIDTH - _BROWSE_BTN_GAP
@@ -340,17 +400,29 @@ def _add_filefield(board, field_name, schema, y):
     ET.SubElement(board, _dlg("button"), btn_attrs)
 
 
+def _helper_height(text, width=None):
+    """Estimate helper height based on text length (multiline support)."""
+    if width is None:
+        width = _PAGE_WIDTH - _MARGIN * 2
+    # ~4 chars per dialog unit is a reasonable estimate
+    chars_per_line = max(width * 4 // 10, 40)
+    lines = max(1, -(-len(text) // chars_per_line))  # ceil division
+    return max(_HELPER_HEIGHT, lines * _HELPER_HEIGHT)
+
+
 def _add_helper(board, field_name, helper_text, y):
     """Add a small helper text below a field, spanning full page width."""
     helper_width = _PAGE_WIDTH - _MARGIN * 2
+    h = _helper_height(helper_text, helper_width)
     attrs = {
         _dlg("id"): "hlp_%s" % field_name,
         _dlg("tab-index"): "0",
         _dlg("left"): str(_MARGIN),
         _dlg("top"): str(y),
         _dlg("width"): str(helper_width),
-        _dlg("height"): str(_HELPER_HEIGHT),
+        _dlg("height"): str(h),
         _dlg("value"): helper_text,
+        _dlg("multiline"): "true",
     }
     ET.SubElement(board, _dlg("text"), attrs)
 
@@ -393,16 +465,18 @@ def _add_title(board, title_id, text, y):
 
 def _add_page_helper(board, helper_id, text, y):
     """Add a helper text below a title or separator. Returns new y."""
+    h = _helper_height(text)
     ET.SubElement(board, _dlg("text"), {
         _dlg("id"): helper_id,
         _dlg("tab-index"): "0",
         _dlg("left"): str(_MARGIN),
         _dlg("top"): str(y),
         _dlg("width"): str(_PAGE_WIDTH - _MARGIN * 2),
-        _dlg("height"): str(_HELPER_HEIGHT),
+        _dlg("height"): str(h),
         _dlg("value"): text,
+        _dlg("multiline"): "true",
     })
-    return y + _HELPER_HEIGHT + _ROW_GAP
+    return y + h + _ROW_GAP
 
 
 def _xdl_to_string(root):
@@ -518,41 +592,14 @@ def _add_inline_list_detail(board, field_name, schema, y):
     helper_text = schema.get("helper")
     if helper_text:
         _add_helper(board, field_name, helper_text, y)
-        y += _HELPER_HEIGHT + _ROW_GAP
+        y += _helper_height(helper_text) + _ROW_GAP
 
     # Detail fields
     item_fields = schema.get("item_fields", {})
     for item_fname, item_schema in item_fields.items():
         ctrl_id = "%s__%s" % (field_name, item_fname)
-        label_text = item_schema.get("label", item_fname)
         widget = item_schema.get("widget", "text")
-
-        _add_label(board, ctrl_id, label_text, y)
-
-        if widget == "checkbox":
-            _add_checkbox(board, ctrl_id, item_schema, y)
-        elif widget == "password":
-            _add_textfield(board, ctrl_id, item_schema, y, echo_char=42)
-        elif widget in ("number", "slider"):
-            _add_numericfield(board, ctrl_id, item_schema, y)
-        elif widget == "select":
-            _add_menulist(board, ctrl_id, item_schema, y)
-        elif widget == "combo":
-            _add_combobox(board, ctrl_id, item_schema, y)
-        elif widget in ("file", "folder"):
-            _add_filefield(board, ctrl_id, item_schema, y)
-        else:
-            _add_textfield(board, ctrl_id, item_schema, y)
-
-        y += _ROW_HEIGHT
-
-        helper_text = item_schema.get("helper")
-        if helper_text:
-            y += _HELPER_GAP
-            _add_helper(board, ctrl_id, helper_text, y)
-            y += _HELPER_HEIGHT
-
-        y += _ROW_GAP
+        y = _emit_field(board, ctrl_id, widget, item_schema, y)
 
     return y
 
@@ -649,37 +696,7 @@ def generate_xdl(module_name, config_fields, title=None,
                     y = _add_separator(board, "sep_%d" % sep_counter[0], y)
             continue
 
-        label_text = schema.get("label", field_name)
-
-        _add_label(board, field_name, label_text, y)
-
-        if widget == "checkbox":
-            _add_checkbox(board, field_name, schema, y)
-        elif widget == "password":
-            _add_textfield(board, field_name, schema, y, echo_char=42)
-        elif widget == "textarea":
-            _add_textfield(board, field_name, schema, y, multiline=True)
-            y += _ROW_HEIGHT * 2
-        elif widget in ("number", "slider"):
-            _add_numericfield(board, field_name, schema, y)
-        elif widget == "select":
-            _add_menulist(board, field_name, schema, y)
-        elif widget == "combo":
-            _add_combobox(board, field_name, schema, y)
-        elif widget in ("file", "folder"):
-            _add_filefield(board, field_name, schema, y)
-        else:
-            _add_textfield(board, field_name, schema, y)
-
-        y += _ROW_HEIGHT
-
-        helper_text = schema.get("helper")
-        if helper_text:
-            y += _HELPER_GAP
-            _add_helper(board, field_name, helper_text, y)
-            y += _HELPER_HEIGHT
-
-        y += _ROW_GAP
+        y = _emit_field(board, field_name, widget, schema, y)
 
     # ── Inline children sections ─────────────────────────────────────
     if inline_children:
@@ -716,37 +733,7 @@ def generate_xdl(module_name, config_fields, title=None,
                     continue  # not supported inline-in-inline
 
                 prefixed = "%s__%s" % (child_safe, field_name)
-                label_text = schema.get("label", field_name)
-
-                _add_label(board, prefixed, label_text, y)
-
-                if widget == "checkbox":
-                    _add_checkbox(board, prefixed, schema, y)
-                elif widget == "password":
-                    _add_textfield(board, prefixed, schema, y, echo_char=42)
-                elif widget == "textarea":
-                    _add_textfield(board, prefixed, schema, y, multiline=True)
-                    y += _ROW_HEIGHT * 2
-                elif widget in ("number", "slider"):
-                    _add_numericfield(board, prefixed, schema, y)
-                elif widget == "select":
-                    _add_menulist(board, prefixed, schema, y)
-                elif widget == "combo":
-                    _add_combobox(board, prefixed, schema, y)
-                elif widget in ("file", "folder"):
-                    _add_filefield(board, prefixed, schema, y)
-                else:
-                    _add_textfield(board, prefixed, schema, y)
-
-                y += _ROW_HEIGHT
-
-                helper_text = schema.get("helper")
-                if helper_text:
-                    y += _HELPER_GAP
-                    _add_helper(board, prefixed, helper_text, y)
-                    y += _HELPER_HEIGHT
-
-                y += _ROW_GAP
+                y = _emit_field(board, prefixed, widget, schema, y)
 
     return _xdl_to_string(window)
 
@@ -859,35 +846,8 @@ def generate_list_detail_xdl(module_name, field_name, schema):
     item_fields = schema.get("item_fields", {})
     for item_fname, item_schema in item_fields.items():
         ctrl_id = "%s__%s" % (field_name, item_fname)
-        label_text = item_schema.get("label", item_fname)
         widget = item_schema.get("widget", "text")
-
-        _add_label(board, ctrl_id, label_text, y)
-
-        if widget == "checkbox":
-            _add_checkbox(board, ctrl_id, item_schema, y)
-        elif widget == "password":
-            _add_textfield(board, ctrl_id, item_schema, y, echo_char=42)
-        elif widget in ("number", "slider"):
-            _add_numericfield(board, ctrl_id, item_schema, y)
-        elif widget == "select":
-            _add_menulist(board, ctrl_id, item_schema, y)
-        elif widget == "combo":
-            _add_combobox(board, ctrl_id, item_schema, y)
-        elif widget in ("file", "folder"):
-            _add_filefield(board, ctrl_id, item_schema, y)
-        else:
-            _add_textfield(board, ctrl_id, item_schema, y)
-
-        y += _ROW_HEIGHT
-
-        helper_text = item_schema.get("helper")
-        if helper_text:
-            y += _HELPER_GAP
-            _add_helper(board, ctrl_id, helper_text, y)
-            y += _HELPER_HEIGHT
-
-        y += _ROW_GAP
+        y = _emit_field(board, ctrl_id, widget, item_schema, y)
 
     return _xdl_to_string(window)
 
@@ -1530,6 +1490,8 @@ def generate_manifest_xml(modules, output_path):
         ('application/vnd.sun.star.configuration-data', 'ProtocolHandler.xcu'),
         ('application/vnd.sun.star.configuration-data', 'OptionsDialog.xcu'),
         ('application/vnd.sun.star.configuration-data', 'registry/org/openoffice/Office/UI/Sidebar.xcu'),
+        ('application/vnd.sun.star.uno-component;type=Python', 'plugin/modules/panel/panel_factory.py'),
+        ('application/vnd.sun.star.configuration-data', 'registry/org/openoffice/Office/UI/Factories.xcu'),
     ]
 
     # Dynamic XCS/XCU entries for modules with config

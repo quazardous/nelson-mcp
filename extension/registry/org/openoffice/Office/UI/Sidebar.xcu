@@ -23,5 +23,53 @@
                 </prop>
             </node>
         </node>
+        <node oor:name="PanelList">
+            <node oor:name="ActionsPanel" oor:op="replace">
+                <prop oor:name="Title" oor:type="xs:string">
+                    <value xml:lang="en-US">MCP Actions</value>
+                </prop>
+                <prop oor:name="Id" oor:type="xs:string">
+                    <value>ActionsPanel</value>
+                </prop>
+                <prop oor:name="DeckId" oor:type="xs:string">
+                    <value>NelsonDeck</value>
+                </prop>
+                <prop oor:name="ContextList">
+                    <value oor:separator=";">com.sun.star.text.TextDocument, any, visible; com.sun.star.sheet.SpreadsheetDocument, any, visible; com.sun.star.drawing.DrawingDocument, any, visible; com.sun.star.presentation.PresentationDocument, any, visible;</value>
+                </prop>
+                <prop oor:name="ImplementationURL" oor:type="xs:string">
+                    <value>private:resource/toolpanel/NelsonPanelFactory/ActionsPanel</value>
+                </prop>
+                <prop oor:name="OrderIndex" oor:type="xs:int">
+                    <value>100</value>
+                </prop>
+                <prop oor:name="WantsAWT" oor:type="xs:boolean">
+                    <value>true</value>
+                </prop>
+            </node>
+            <node oor:name="JobsPanel" oor:op="replace">
+                <prop oor:name="Title" oor:type="xs:string">
+                    <value xml:lang="en-US">Jobs</value>
+                </prop>
+                <prop oor:name="Id" oor:type="xs:string">
+                    <value>JobsPanel</value>
+                </prop>
+                <prop oor:name="DeckId" oor:type="xs:string">
+                    <value>NelsonDeck</value>
+                </prop>
+                <prop oor:name="ContextList">
+                    <value oor:separator=";">com.sun.star.text.TextDocument, any, visible; com.sun.star.sheet.SpreadsheetDocument, any, visible; com.sun.star.drawing.DrawingDocument, any, visible; com.sun.star.presentation.PresentationDocument, any, visible;</value>
+                </prop>
+                <prop oor:name="ImplementationURL" oor:type="xs:string">
+                    <value>private:resource/toolpanel/NelsonPanelFactory/JobsPanel</value>
+                </prop>
+                <prop oor:name="OrderIndex" oor:type="xs:int">
+                    <value>200</value>
+                </prop>
+                <prop oor:name="WantsAWT" oor:type="xs:boolean">
+                    <value>true</value>
+                </prop>
+            </node>
+        </node>
     </node>
 </oor:component-data>

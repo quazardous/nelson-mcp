@@ -1,0 +1,3 @@
+name: panel
+title: Sidebar panels (MCP actions log, running jobs)
+requires: [config, events]

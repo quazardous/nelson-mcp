@@ -1,7 +1,7 @@
 name: ai_images
 title: AI image generation providers
 provides_services: [ai_images]
-requires: [config, events]
+requires: [config, events, images]
 
 config:
   default_instance:
@@ -11,3 +11,16 @@ config:
     label: Default Image Provider
     public: true
     options_provider: "plugin.modules.ai_images.service:get_instance_options"
+  save_to_gallery:
+    type: string
+    default: ""
+    widget: select
+    label: Auto-save to Gallery
+    public: true
+    options_provider: "plugin.modules.ai_images.service:get_writable_gallery_options"
+  gallery_filename:
+    type: string
+    default: "ai/{date}/{prompt}_{time}"
+    label: Gallery Filename Template
+    public: true
+    helper: "Placeholders: {prompt}, {provider}, {instance}, {date}, {time}, {timestamp}, {uuid}. Use / for subdirectories. Extension is added automatically."

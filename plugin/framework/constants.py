@@ -6,5 +6,5 @@
 """Shared application constants (identity, user-agent, etc.)."""
 
 APP_TITLE = "Nelson MCP"
-APP_REFERER = "https://github.com/quazardous/localwriter"
-USER_AGENT = "Nelson MCP (https://github.com/quazardous/localwriter)"
+APP_REFERER = "https://github.com/quazardous/nelson-mcp"
+USER_AGENT = "Nelson MCP (https://github.com/quazardous/nelson-mcp)"

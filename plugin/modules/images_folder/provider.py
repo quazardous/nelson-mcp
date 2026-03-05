@@ -39,14 +39,28 @@ class FolderGalleryProvider(GalleryProvider):
     def get_item(self, image_id):
         return self._index.get_item(image_id)
 
-    def add_item(self, file_path, metadata=None):
+    def add_item(self, file_path, metadata=None, dest_name=None):
         if not self._writable:
             raise NotImplementedError("This gallery provider is read-only.")
 
         if not os.path.isfile(file_path):
             raise FileNotFoundError("Source file not found: %s" % file_path)
 
-        dest = os.path.join(self._root, os.path.basename(file_path))
+        if dest_name:
+            # Preserve original extension if dest_name has none
+            _, src_ext = os.path.splitext(file_path)
+            _, dest_ext = os.path.splitext(dest_name)
+            if not dest_ext and src_ext:
+                dest_name = dest_name + src_ext
+            dest = os.path.join(self._root, dest_name)
+        else:
+            dest = os.path.join(self._root, os.path.basename(file_path))
+
+        # Create subdirectories if needed
+        dest_dir = os.path.dirname(dest)
+        if dest_dir and not os.path.isdir(dest_dir):
+            os.makedirs(dest_dir, exist_ok=True)
+
         if os.path.abspath(file_path) != os.path.abspath(dest):
             shutil.copy2(file_path, dest)
 
@@ -55,7 +69,8 @@ class FolderGalleryProvider(GalleryProvider):
 
         # Re-index this single file
         self.rescan()
-        return self._index.get_item(os.path.basename(dest))
+        rel_path = os.path.relpath(dest, self._root)
+        return self._index.get_item(rel_path)
 
     def update_metadata(self, image_id, metadata):
         if not self._writable:
@@ -77,7 +92,11 @@ class FolderGalleryProvider(GalleryProvider):
     def is_writable(self):
         return self._writable
 
-    def rescan(self):
+    def reset_db(self):
+        """Delete the index database so it is rebuilt on next rescan."""
+        self._index.reset()
+
+    def rescan(self, force=False):
         if not os.path.isdir(self._root):
             log.warning("Gallery folder does not exist: %s", self._root)
             return
@@ -86,6 +105,7 @@ class FolderGalleryProvider(GalleryProvider):
             extensions=self._extensions,
             recursive=self._recursive,
             xmp_reader=read_xmp,
+            force=force,
         )
 
         if self._sync_gallery:

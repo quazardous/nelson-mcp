@@ -85,6 +85,7 @@ class HordeImageProvider(ImageProvider):
             "max_wait_minutes": max_wait,
             "steps": kwargs.get("steps", 30),
             "seed": kwargs.get("seed", ""),
+            "prompt_strength": kwargs.get("prompt_strength", 7.5),
             "nsfw": nsfw,
             "censor_nsfw": not nsfw,
         }
