@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.1.0] — 2026-03-05
+
+### Changed
+
+- Project renamed from **LocalWriter** to **Nelson**. Version numbering reset to 0.1.0 to reflect the new project identity. Previous versions (1.x) refer to the LocalWriter era.
+
 ## [1.7.3] — 2026-02-28
 
 ### Changed
