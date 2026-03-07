@@ -150,72 +150,6 @@ class MCPProtocolHandler:
         log.info("[SSE] POST >>> %s (id=%s) -> %d", method, req_id, status)
         handler.wfile.write(out.encode("utf-8"))
 
-    # ── Simple handlers (body, headers, query) -> (status, dict) ─────
-
-    def handle_debug_info(self, body, headers, query):
-        """GET /debug — show available debug actions."""
-        tools = list(self.tool_registry.tool_names) if self.tool_registry else []
-        return (200, {
-            "debug": True,
-            "usage": "POST /debug with JSON body",
-            "actions": {
-                "eval": {
-                    "description": "Evaluate a Python expression",
-                    "body": {"action": "eval", "code": "1 + 1"},
-                },
-                "exec": {
-                    "description": "Execute Python code (result in _result var)",
-                    "body": {"action": "exec", "code": "_result = 'hello'"},
-                },
-                "call_tool": {
-                    "description": "Call a registered tool",
-                    "body": {"action": "call_tool", "tool": "get_document_info", "args": {}},
-                },
-                "trigger": {
-                    "description": "Simulate a menu trigger command",
-                    "body": {"action": "trigger", "command": "settings"},
-                },
-                "services": {
-                    "description": "List registered services",
-                    "body": {"action": "services"},
-                },
-                "config": {
-                    "description": "Get/set config values",
-                    "body": {"action": "config", "key": "mcp.port", "value": None},
-                },
-            },
-            "tools": tools,
-        })
-
-    def handle_debug_post(self, handler):
-        """POST /debug — execute debug actions."""
-        body = self._read_body(handler)
-        if body is None:
-            return
-        action = body.get("action", "")
-        try:
-            if action == "eval":
-                result = self._debug_eval(body.get("code", ""))
-            elif action == "exec":
-                result = self._debug_exec(body.get("code", ""))
-            elif action == "call_tool":
-                result = self._debug_call_tool(
-                    body.get("tool", ""), body.get("args", {}))
-            elif action == "trigger":
-                result = self._debug_trigger(body.get("command", ""))
-            elif action == "services":
-                result = self._debug_services()
-            elif action == "config":
-                result = self._debug_config(
-                    body.get("key"), body.get("value", "__NOSET__"))
-            else:
-                result = {"error": "Unknown action: %s" % action}
-            self._send_json(handler, 200, {"ok": True, "result": result})
-        except Exception as e:
-            log.exception("Debug %s error", action)
-            self._send_json(handler, 500, {"ok": False, "error": str(e),
-                                           "type": type(e).__name__})
-
     # ── MCP protocol handler ─────────────────────────────────────────
 
     def _handle_mcp(self, msg, handler):
@@ -447,75 +381,6 @@ class MCPProtocolHandler:
 
         return result
 
-    # ── Debug helpers ────────────────────────────────────────────────
-
-    def _debug_eval(self, code):
-        ns = self._debug_namespace()
-        return repr(eval(code, ns))
-
-    def _debug_exec(self, code):
-        ns = self._debug_namespace()
-        ns["_result"] = None
-        exec(code, ns)
-        r = ns.get("_result")
-        return repr(r) if r is not None else "OK (no _result set)"
-
-    def _debug_call_tool(self, tool_name, arguments):
-        if not tool_name:
-            return {"error": "Missing 'tool' parameter"}
-        result = execute_on_main_thread(
-            self._execute_tool_on_main, tool_name, arguments,
-            timeout=_PROCESS_TIMEOUT)
-        return result
-
-    def _debug_trigger(self, command):
-        from plugin.main import _modules, get_services
-        if command == "settings":
-            from plugin.modules.core.settings_dialog import show_settings
-            from plugin._manifest import MODULES
-            config_svc = get_services().config
-            execute_on_main_thread(
-                show_settings, None, config_svc, MODULES,
-                timeout=120.0)
-            return "Settings dialog shown"
-        return {"triggered": command, "note": "Use menu for UI commands"}
-
-    def _debug_services(self):
-        if not self.services:
-            return []
-        return list(self.services._services.keys())
-
-    def _debug_config(self, key, value):
-        if not self.services:
-            return {"error": "No service registry"}
-        config_svc = self.services.config
-        if not config_svc:
-            return {"error": "No config service"}
-        if key is None:
-            return config_svc.get_dict()
-        if value == "__NOSET__":
-            return {key: config_svc.get(key)}
-        config_svc.set(key, value)
-        return {key: value, "persisted": True}
-
-    def _debug_namespace(self):
-        """Build a namespace for eval/exec with useful references."""
-        import plugin.main as main_mod
-        ns = {
-            "services": self.services,
-            "tools": self.tool_registry,
-            "events": self.event_bus,
-            "modules": getattr(main_mod, "_modules", []),
-            "log": log,
-        }
-        try:
-            import uno
-            ns["uno"] = uno
-            ns["ctx"] = uno.getComponentContext()
-        except ImportError:
-            pass
-        return ns
-
     # ── Helpers ───────────────────────────────────────────────────────
 
     def _detect_active_doc_type(self):
@@ -529,32 +394,13 @@ class MCPProtocolHandler:
         return None
 
     def _read_body(self, handler):
-        """Read and parse JSON body from an HTTP handler."""
-        content_length = int(handler.headers.get("Content-Length", 0))
-        if content_length == 0:
-            return {}
-        raw = handler.rfile.read(content_length).decode("utf-8")
-        try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
-            log.warning("Invalid JSON body: %s", raw[:200])
-            self._send_json(handler, 400, {"error": "Invalid JSON"})
-            return None
+        from plugin.framework.http_server import read_json_body
+        return read_json_body(handler)
 
     def _send_json(self, handler, status, data):
-        """Send a JSON response via an HTTP handler."""
-        handler.send_response(status)
-        self._send_cors_headers(handler)
-        handler.send_header("Content-Type", "application/json")
-        handler.end_headers()
-        handler.wfile.write(json.dumps(
-            data, ensure_ascii=False, default=str).encode("utf-8"))
+        from plugin.framework.http_server import send_json
+        send_json(handler, status, data)
 
     def _send_cors_headers(self, handler):
-        handler.send_header("Access-Control-Allow-Origin", "*")
-        handler.send_header("Access-Control-Allow-Methods",
-                            "GET, POST, DELETE, OPTIONS")
-        handler.send_header("Access-Control-Allow-Headers",
-                            "Content-Type, Authorization, Mcp-Session-Id")
-        handler.send_header("Access-Control-Expose-Headers",
-                            "Mcp-Session-Id")
+        from plugin.framework.http_server import send_cors_headers
+        send_cors_headers(handler)

@@ -30,6 +30,9 @@
 
 EXTENSION_NAME = nelson
 
+# Python minor version matching LibreOffice's bundled Python (for pysqlite3 wheel)
+LO_PYTHON_VERSION ?= 3.12
+
 # ── Local overrides (gitignored) ────────────────────────────────────────────
 # Create Makefile.local with e.g. USE_DOCKER = 1
 -include Makefile.local
@@ -77,7 +80,7 @@ endif
         lo-start lo-start-full lo-kill lo-restart \
         clean-cache nuke-cache nuke-cache-force unbundle \
         log log-tail lo-log test check-ext check-setup deploy \
-        set-config vendor docker-build rdb icons
+        set-config vendor docker-build rdb icons sqlite3
 
 # ── Help ─────────────────────────────────────────────────────────────────────
 
@@ -166,11 +169,18 @@ $(ICON_DIR)/logo.png: $(ICON_SVG) | $(ICON_DIR)
 $(ICON_DIR):
 	$(MKDIR) $(ICON_DIR)
 
+sqlite3:
+ifeq ($(OS),Windows_NT)
+	@$(PYTHON) $(SCRIPTS)/fetch_sqlite3.py --python-version $(LO_PYTHON_VERSION)
+else
+	@echo "sqlite3 bundling is Windows-only, skipping"
+endif
+
 ifeq ($(USE_DOCKER),1)
 build:
 	@$(MAKE) docker-build
 else
-build: vendor manifest rdb icons
+build: vendor manifest rdb icons sqlite3
 	@echo "Building $(EXTENSION_NAME).oxt..."
 	$(PYTHON) $(SCRIPTS)/build_oxt.py --output build/$(EXTENSION_NAME).oxt
 	@echo "Done: build/$(EXTENSION_NAME).oxt  (bundle in build/bundle/)"

@@ -28,11 +28,15 @@ class HttpModule(ModuleBase):
         self._server = None
         self._services = services
 
-        # Built-in endpoints
+        # Built-in endpoints (always available)
         self._registry.add("GET", "/health", self._handle_health)
         self._registry.add("GET", "/", self._handle_info)
-        self._registry.add("GET", "/api/config", self._handle_config_get)
-        self._registry.add("POST", "/api/config", self._handle_config_set)
+
+        # Config API (disabled by default)
+        cfg = services.config.proxy_for(self.name)
+        self._config_api_registered = False
+        if cfg.get("enable_config_api"):
+            self._register_config_routes()
 
         if hasattr(services, "events"):
             services.events.subscribe("config:changed", self._on_config_changed)
@@ -41,16 +45,37 @@ class HttpModule(ModuleBase):
         if services.config.proxy_for(self.name).get("enabled"):
             self._start_server(services)
 
+    def _register_config_routes(self):
+        self._registry.add("GET", "/api/config", self._handle_config_get)
+        self._registry.add("POST", "/api/config", self._handle_config_set)
+        self._config_api_registered = True
+        log.info("Config API routes enabled")
+
+    def _unregister_config_routes(self):
+        self._registry.remove("GET", "/api/config")
+        self._registry.remove("POST", "/api/config")
+        self._config_api_registered = False
+        log.info("Config API routes disabled")
+
     def _on_config_changed(self, **data):
         key = data.get("key", "")
         if not key.startswith("http."):
             return
         cfg = self._services.config.proxy_for(self.name)
+
+        # Toggle server on/off
         enabled = cfg.get("enabled")
         if enabled and not self._server:
             self._start_server(self._services)
         elif not enabled and self._server:
             self._stop_server()
+
+        # Toggle config API routes
+        if key == "http.enable_config_api":
+            if cfg.get("enable_config_api") and not self._config_api_registered:
+                self._register_config_routes()
+            elif not cfg.get("enable_config_api") and self._config_api_registered:
+                self._unregister_config_routes()
 
     def _start_server(self, services):
         from plugin.framework.http_server import HttpServer
@@ -286,3 +311,4 @@ class HttpModule(ModuleBase):
             result["errors"] = errors
             return (207, result)
         return (200, result)
+

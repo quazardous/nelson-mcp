@@ -158,6 +158,17 @@ def assemble_bundle(base_dir, modules):
         shutil.copy2(src, dst)
         count += 1
 
+    # Copy pysqlite3 (Windows) into plugin/lib/ inside the bundle
+    pysqlite3_dir = os.path.join(base_dir, "build", "sqlite3_win", "pysqlite3")
+    if os.path.isdir(pysqlite3_dir):
+        dst_dir = os.path.join(bundle_path, "plugin", "lib", "pysqlite3")
+        if os.path.exists(dst_dir):
+            shutil.rmtree(dst_dir)
+        shutil.copytree(pysqlite3_dir, dst_dir)
+        pysqlite3_count = sum(1 for _, _, fs in os.walk(dst_dir) for _ in fs)
+        count += pysqlite3_count
+        print("Bundled pysqlite3 (%d files) into plugin/lib/" % pysqlite3_count)
+
     # Copy vendored pip packages into plugin/lib/ inside the bundle
     vendor_dir = os.path.join(base_dir, "vendor")
     if os.path.isdir(vendor_dir):

@@ -1,8 +1,54 @@
 name: ai_images.sdapi
-title: Stable Diffusion WebUI (A1111/Forge) image generation
+title: Stable Diffusion WebUI Forge image generation
 requires: [ai_images]
 
+actions:
+  sdapi_launch:
+    title: "Launch Forge"
+  sdapi_stop:
+    title: "Stop Forge"
+  sdapi_browser:
+    title: "Open Forge in Browser"
+
+menus:
+  - title: "Forge"
+    context: [writer, calc, draw]
+    submenu:
+      - action: sdapi_launch
+      - action: sdapi_stop
+      - action: sdapi_browser
+
 config:
+  starter_model:
+    type: string
+    default: "juggernaut_xl"
+    widget: select
+    label: Starter Model
+    helper: "Model to download during install. Pick based on your GPU VRAM."
+    options:
+      - value: juggernaut_xl
+        label: "Juggernaut XL v9 Lightning (SDXL — 10 GB VRAM — 6.5 GB) [recommended]"
+      - value: dreamshaper8
+        label: "DreamShaper 8 (SD 1.5 — 4 GB VRAM — 2 GB)"
+      - value: dreamshaperxl
+        label: "DreamShaper XL (SDXL — 8 GB VRAM — 6 GB)"
+      - value: none
+        label: "None (I'll add my own model)"
+  install:
+    widget: button
+    label: Detect / Install Forge
+    helper: "Checks if SD WebUI API is running, looks for existing installations, or clones Forge with the selected model. Reopen Options to see the auto-configured instance."
+    action: "plugin.modules.ai_images_sdapi:on_install"
+  create_preset:
+    widget: button
+    label: Create Optimized Instance
+    helper: "Creates an instance with optimal settings for the selected starter model. Reopen Options to see it."
+    action: "plugin.modules.ai_images_sdapi:on_create_preset"
+  launch:
+    widget: button
+    label: Launch Forge
+    helper: "Starts SD WebUI Forge with --api flag. Auto-detects installation path. Does nothing if the API is already running."
+    action: "plugin.modules.ai_images_sdapi:on_launch"
   instances:
     type: string
     default: "[]"
@@ -28,16 +74,87 @@ config:
         widget: text
         default: ""
         helper: "Leave empty for server default"
+      resolution:
+        type: string
+        label: Resolution
+        widget: select
+        default: "1024x1024"
+        options:
+          - value: "512x512"
+            label: "512 x 512 (SD 1.5)"
+          - value: "512x768"
+            label: "512 x 768 (SD 1.5 portrait)"
+          - value: "768x512"
+            label: "768 x 512 (SD 1.5 landscape)"
+          - value: "768x768"
+            label: "768 x 768"
+          - value: "1024x1024"
+            label: "1024 x 1024 (SDXL / Flux)"
+          - value: "1024x1536"
+            label: "1024 x 1536 (SDXL portrait)"
+          - value: "1536x1024"
+            label: "1536 x 1024 (SDXL landscape)"
+          - value: "1536x1536"
+            label: "1536 x 1536 (24 GB VRAM)"
+          - value: "1536x2048"
+            label: "1536 x 2048 (24 GB VRAM portrait)"
+          - value: "2048x1536"
+            label: "2048 x 1536 (24 GB VRAM landscape)"
+          - value: "2048x2048"
+            label: "2048 x 2048 (24 GB VRAM)"
+      hires_fix:
+        type: boolean
+        label: Hires Fix
+        widget: checkbox
+        default: false
+        helper: "Upscale via highres fix (recommended for resolutions above 768)"
+      hires_scale:
+        type: float
+        label: Hires Scale
+        widget: number
+        default: 2.0
+        min: 1.0
+        max: 4.0
+        helper: "Upscale factor for hires fix"
+      hires_steps:
+        type: int
+        label: Hires Steps
+        widget: number
+        default: 10
+        min: 0
+        max: 100
+        helper: "Extra steps for hires pass (0 = same as base steps)"
+      hires_denoising:
+        type: float
+        label: Hires Denoising
+        widget: number
+        default: 0.4
+        min: 0.0
+        max: 1.0
+        helper: "Denoising strength for hires pass"
       sampler:
         type: string
         label: Sampler
-        widget: text
-        default: "Euler a"
+        widget: select
+        default: "DPM++ 2M Karras"
+        options:
+          - value: "DPM++ 2M Karras"
+            label: "DPM++ 2M Karras (photorealistic)"
+          - value: "DPM++ SDE Karras"
+            label: "DPM++ SDE Karras (detailed)"
+          - value: "Euler a"
+            label: "Euler a (fast, general)"
+          - value: "Euler"
+            label: "Euler"
+          - value: "DDIM"
+            label: "DDIM"
+          - value: "UniPC"
+            label: "UniPC (fast)"
       steps:
         type: int
         label: Steps
         widget: number
-        default: 20
+        default: 25
         min: 1
         max: 150
       cfg_scale:
@@ -47,3 +164,9 @@ config:
         default: 7.0
         min: 1.0
         max: 30.0
+      negative_prompt:
+        type: string
+        label: Negative Prompt
+        widget: text
+        default: "ugly, deformed, noisy, blurry, low quality, cartoon, anime, illustration, painting, sketch, watermark, text"
+        helper: "Default negative prompt applied to all generations"

@@ -89,6 +89,12 @@ class FolderGalleryProvider(GalleryProvider):
         self.rescan()
         return self._index.get_item(image_id)
 
+    def list_untagged(self, limit=50):
+        return self._index.list_untagged(limit=limit)
+
+    def wants_ai_index(self):
+        return bool(self._config.get("ai_index")) and self._writable
+
     def is_writable(self):
         return self._writable
 

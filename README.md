@@ -21,6 +21,9 @@ Nelson MCP runs an HTTP server inside LibreOffice and speaks the [Model Context 
 - **40+ document tools** — read content, edit text, manage styles, insert images, handle tables, track changes, navigate headings, search, and more
 - **Writer, Calc, Draw** — tools adapt to the active document type
 - **Calc `=PROMPT()`** — call an LLM directly from a spreadsheet cell
+- **Built-in launchers** — launch Claude Code, Gemini CLI, or OpenCode directly from LibreOffice with one click. Nelson handles MCP config, prompt injection, and working directory setup automatically
+- **AI image generation** — generate and edit images from text prompts using Stable Diffusion (A1111/Forge), OpenAI, or AI Horde. One-click detect/install/launch for Automatic1111
+- **Beginner-friendly setup** — all tools come with install buttons, auto-detection of existing installations, and guided configuration. No manual config files to edit
 - **Tunnels** — expose the MCP server externally via ngrok, Cloudflare, bore, or Tailscale
 - **SSL** — optional HTTPS with auto-generated certificates
 - **Modular** — each feature is a self-contained module with its own config, services, and tools

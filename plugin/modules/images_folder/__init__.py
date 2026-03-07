@@ -197,3 +197,9 @@ class _LazyProvider:
 
     def rescan(self, **kwargs):
         return self._ensure().rescan(**kwargs)
+
+    def wants_ai_index(self):
+        return self._ensure().wants_ai_index()
+
+    def list_untagged(self, limit=50):
+        return self._ensure().list_untagged(limit=limit)

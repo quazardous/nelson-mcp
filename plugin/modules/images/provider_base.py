@@ -6,6 +6,7 @@
 """Gallery provider ABC — contract for image gallery backends."""
 
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional
 
 
 class ImageMeta:
@@ -16,11 +17,11 @@ class ImageMeta:
         "rating", "file_path", "width", "height", "mime_type", "modified",
     )
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         for slot in self.__slots__:
             setattr(self, slot, kwargs.get(slot))
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
         """Serialize to dict, omitting None values."""
         return {k: getattr(self, k) for k in self.__slots__
                 if getattr(self, k) is not None}
@@ -29,26 +30,28 @@ class ImageMeta:
 class GalleryProvider(ABC):
     """Interface that gallery backend modules implement."""
 
-    name: str = None
+    name: Optional[str] = None
 
     @abstractmethod
-    def list_items(self, path="", offset=0, limit=50):
+    def list_items(self, path: str = "", offset: int = 0,
+                   limit: int = 50) -> List[Dict[str, Any]]:
         """List images, optionally filtered by path prefix.
 
         Returns:
-            list[dict]: Image metadata dicts.
+            Image metadata dicts.
         """
 
     @abstractmethod
-    def search(self, query, limit=20):
+    def search(self, query: str,
+               limit: int = 20) -> List[Dict[str, Any]]:
         """Full-text search across indexed metadata.
 
         Returns:
-            list[dict]: Image metadata dicts with optional ``rank`` key.
+            Image metadata dicts with optional ``rank`` key.
         """
 
     @abstractmethod
-    def get_item(self, image_id):
+    def get_item(self, image_id: str) -> Optional[Dict[str, Any]]:
         """Get metadata for a single image.
 
         Args:
@@ -58,7 +61,8 @@ class GalleryProvider(ABC):
             dict or None.
         """
 
-    def add_item(self, file_path, metadata=None, dest_name=None):
+    def add_item(self, file_path: str, metadata: Optional[Dict[str, Any]] = None,
+                 dest_name: Optional[str] = None) -> Dict[str, Any]:
         """Add an image to the gallery.
 
         Args:
@@ -70,11 +74,12 @@ class GalleryProvider(ABC):
         Raises NotImplementedError if the provider is read-only.
 
         Returns:
-            dict: Metadata of the added image.
+            Metadata of the added image.
         """
         raise NotImplementedError("This gallery provider is read-only.")
 
-    def update_metadata(self, image_id, metadata):
+    def update_metadata(self, image_id: str,
+                        metadata: Dict[str, Any]) -> Dict[str, Any]:
         """Update XMP sidecar metadata for an image and re-index.
 
         Args:
@@ -82,13 +87,20 @@ class GalleryProvider(ABC):
             metadata: dict with optional keys: title, description, keywords, creator, rating.
 
         Returns:
-            dict: Updated image metadata.
+            Updated image metadata.
 
         Raises NotImplementedError if the provider is read-only.
         """
         raise NotImplementedError("This gallery provider is read-only.")
 
-    def is_writable(self):
-        """Whether this provider supports add_item / update_metadata."""
+    def list_untagged(self, limit: int = 50) -> List[Dict[str, Any]]:
+        """Return images that have no description and no keywords."""
+        return []
+
+    def wants_ai_index(self) -> bool:
+        """Whether this provider opted in to AI auto-indexing."""
         return False
 
+    def is_writable(self) -> bool:
+        """Whether this provider supports add_item / update_metadata."""
+        return False

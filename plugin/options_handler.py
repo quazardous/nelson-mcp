@@ -140,11 +140,17 @@ class _LDApplyListener(unohelper.Base, XActionListener):
 
 
 class _ButtonActionListener(unohelper.Base, XActionListener):
-    """Calls a user-defined callback when a button widget is clicked."""
+    """Calls a user-defined callback when a button widget is clicked.
 
-    def __init__(self, action_path, confirm_msg=None):
+    An optional *flush* closure saves current dialog values to the
+    registry before calling the action — so callbacks can read
+    up-to-date config values (e.g. a select picked by the user).
+    """
+
+    def __init__(self, action_path, confirm_msg=None, flush=None):
         self._action_path = action_path
         self._confirm_msg = confirm_msg
+        self._flush = flush
 
     def actionPerformed(self, evt):
         try:
@@ -152,6 +158,12 @@ class _ButtonActionListener(unohelper.Base, XActionListener):
             if self._confirm_msg:
                 if not self._confirm(evt):
                     return
+            if self._flush:
+                try:
+                    self._flush()
+                except Exception:
+                    log.debug("Button: config flush failed (non-critical)",
+                              exc_info=True)
             module_path, func_name = self._action_path.rsplit(":", 1)
             import importlib
             mod = importlib.import_module(module_path)
@@ -375,9 +387,11 @@ class OptionsHandler(unohelper.Base, XContainerWindowEventHandler, XServiceInfo)
                 log.debug("Button widget: ctrl_id=%s, ctrl=%s, action=%s",
                           ctrl_id, ctrl, action_path)
                 if action_path and ctrl:
+                    flush = lambda _w=xWindow: self._on_ok(_w)
                     ctrl.addActionListener(
                         _ButtonActionListener(action_path,
-                                              confirm_msg=schema.get("confirm")))
+                                              confirm_msg=schema.get("confirm"),
+                                              flush=flush))
                 continue  # buttons don't store config values
 
             if widget == "check":

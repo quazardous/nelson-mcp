@@ -39,6 +39,12 @@ config:
         widget: text
         default: "jpg,jpeg,png,gif,bmp,tiff,tif,webp,svg"
         helper: "Comma-separated list of image file extensions"
+      ai_index:
+        type: boolean
+        label: AI Auto-Index
+        widget: checkbox
+        default: false
+        helper: "Auto-describe images using AI (CLIP interrogation). Requires an AI provider with interrogate support and writable enabled."
       sync_gallery:
         type: boolean
         label: Sync to LO Gallery

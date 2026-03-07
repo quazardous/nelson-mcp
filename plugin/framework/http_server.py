@@ -20,6 +20,45 @@ from urllib.parse import urlparse, parse_qs
 log = logging.getLogger("nelson.framework.http_server")
 
 
+def read_json_body(handler):
+    """Read and parse a JSON body from an HTTP request handler.
+
+    Returns the parsed dict, or None if the body is invalid JSON
+    (in which case a 400 response is already sent).
+    """
+    content_length = int(handler.headers.get("Content-Length", 0))
+    if content_length == 0:
+        return {}
+    raw = handler.rfile.read(content_length).decode("utf-8")
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        log.warning("Invalid JSON body: %s", raw[:200])
+        send_json(handler, 400, {"error": "Invalid JSON"})
+        return None
+
+
+def send_json(handler, status, data):
+    """Send a JSON response with CORS headers."""
+    handler.send_response(status)
+    send_cors_headers(handler)
+    handler.send_header("Content-Type", "application/json")
+    handler.end_headers()
+    handler.wfile.write(json.dumps(
+        data, ensure_ascii=False, default=str).encode("utf-8"))
+
+
+def send_cors_headers(handler):
+    """Send standard CORS headers on an HTTP response."""
+    handler.send_header("Access-Control-Allow-Origin", "*")
+    handler.send_header("Access-Control-Allow-Methods",
+                        "GET, POST, DELETE, OPTIONS")
+    handler.send_header("Access-Control-Allow-Headers",
+                        "Content-Type, Authorization, Mcp-Session-Id")
+    handler.send_header("Access-Control-Expose-Headers",
+                        "Mcp-Session-Id")
+
+
 class _ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
     """HTTP server that handles each request in its own thread."""
     daemon_threads = True
@@ -76,33 +115,13 @@ class GenericRequestHandler(BaseHTTPRequestHandler):
             self._send_json(500, {"error": str(e)})
 
     def _read_body(self):
-        content_length = int(self.headers.get("Content-Length", 0))
-        if content_length == 0:
-            return {}
-        raw = self.rfile.read(content_length).decode("utf-8")
-        try:
-            return json.loads(raw)
-        except json.JSONDecodeError:
-            log.warning("Invalid JSON body: %s", raw[:200])
-            self._send_json(400, {"error": "Invalid JSON"})
-            return None
+        return read_json_body(self)
 
     def _send_json(self, status, data):
-        self.send_response(status)
-        self._send_cors_headers()
-        self.send_header("Content-Type", "application/json")
-        self.end_headers()
-        self.wfile.write(json.dumps(
-            data, ensure_ascii=False, default=str).encode("utf-8"))
+        send_json(self, status, data)
 
     def _send_cors_headers(self):
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods",
-                         "GET, POST, DELETE, OPTIONS")
-        self.send_header("Access-Control-Allow-Headers",
-                         "Content-Type, Authorization, Mcp-Session-Id")
-        self.send_header("Access-Control-Expose-Headers",
-                         "Mcp-Session-Id")
+        send_cors_headers(self)
 
     def log_message(self, fmt, *args):
         log.info("%s - %s", self.client_address[0], fmt % args)

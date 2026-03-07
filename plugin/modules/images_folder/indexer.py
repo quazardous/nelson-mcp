@@ -260,6 +260,18 @@ class FolderIndex:
             return None
         return _row_to_dict(row, self._root)
 
+    def list_untagged(self, limit=50):
+        """Return images with no description and no keywords."""
+        conn = self._connect()
+        rows = conn.execute(
+            "SELECT * FROM images "
+            "WHERE (description IS NULL OR description = '') "
+            "AND (keywords IS NULL OR keywords = '') "
+            "ORDER BY rel_path LIMIT ?",
+            (limit,),
+        ).fetchall()
+        return [_row_to_dict(row, self._root) for row in rows]
+
     def count(self):
         """Total indexed images."""
         conn = self._connect()

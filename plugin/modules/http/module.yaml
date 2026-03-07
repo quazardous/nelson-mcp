@@ -39,6 +39,14 @@ config:
     label: Bind Address
     public: true
 
+  enable_config_api:
+    type: boolean
+    default: false
+    widget: checkbox
+    label: Enable Config API (/api/config)
+    helper: "Expose HTTP endpoints to read and write configuration remotely."
+    public: true
+
   use_ssl:
     type: boolean
     default: false

@@ -5,6 +5,8 @@
 
 """Per-invocation context passed to every tool execution."""
 
+from typing import Any, Optional
+
 
 class ToolContext:
     """Immutable-ish context for a single tool invocation.
@@ -19,7 +21,8 @@ class ToolContext:
 
     __slots__ = ("doc", "ctx", "doc_type", "services", "caller")
 
-    def __init__(self, doc, ctx, doc_type, services, caller=""):
+    def __init__(self, doc: Any, ctx: Any, doc_type: Optional[str],
+                 services: Any, caller: str = "") -> None:
         self.doc = doc
         self.ctx = ctx
         self.doc_type = doc_type

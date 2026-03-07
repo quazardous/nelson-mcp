@@ -1,6 +1,6 @@
 name: debug
 title: Debug tools and diagnostics
-requires: [config, events, document]
+requires: [config, events, document, http_routes]
 config_inline: main
 
 config:
@@ -10,6 +10,14 @@ config:
     widget: checkbox
     label: Enable Debug Actions
     helper: "Debug actions appear in menus but only execute when enabled"
+    public: true
+
+  enable_api:
+    type: boolean
+    default: false
+    widget: checkbox
+    label: Enable Debug HTTP API (/debug)
+    helper: "Expose the /debug endpoint for remote diagnostics (eval, exec, call_tool, etc.). Keep disabled in production."
     public: true
 
 actions:

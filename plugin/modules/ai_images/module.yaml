@@ -3,6 +3,16 @@ title: AI image generation providers
 provides_services: [ai_images]
 requires: [config, events, images]
 
+actions:
+  ai_index_toggle:
+    title: "Start AI Indexing"
+
+menus:
+  - title: "AI Gallery Indexer"
+    context: [writer, calc, draw]
+    submenu:
+      - action: ai_index_toggle
+
 config:
   default_instance:
     type: string
@@ -11,6 +21,14 @@ config:
     label: Default Image Provider
     public: true
     options_provider: "plugin.modules.ai_images.service:get_instance_options"
+  interrogate_instance:
+    type: string
+    default: ""
+    widget: select
+    label: Interrogate Provider (img2txt)
+    public: true
+    helper: "AI provider used for auto-indexing gallery images (must support CLIP interrogation)"
+    options_provider: "plugin.modules.ai_images.service:get_interrogate_options"
   save_to_gallery:
     type: string
     default: ""

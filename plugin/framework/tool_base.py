@@ -6,6 +6,7 @@
 """Base class for all tools."""
 
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple
 
 
 _READ_PREFIXES = ("get_", "read_", "list_", "find_", "search_", "count_")
@@ -32,16 +33,16 @@ class ToolBase(ABC):
         long_running: Hint that the tool may take a while (e.g. image gen).
     """
 
-    name: str = None
+    name: Optional[str] = None
     description: str = ""
-    parameters: dict = None
-    doc_types: list = None
+    parameters: Optional[Dict[str, Any]] = None
+    doc_types: Optional[List[str]] = None
     tier: str = "extended"
-    intent: str = None
-    is_mutation: bool = None
+    intent: Optional[str] = None
+    is_mutation: Optional[bool] = None
     long_running: bool = False
 
-    def detects_mutation(self):
+    def detects_mutation(self) -> bool:
         """Return True if the tool mutates the document."""
         if self.is_mutation is not None:
             return self.is_mutation
@@ -49,11 +50,11 @@ class ToolBase(ABC):
             return not self.name.startswith(_READ_PREFIXES)
         return True
 
-    def validate(self, **kwargs):
+    def validate(self, **kwargs: Any) -> Tuple[bool, Optional[str]]:
         """Validate arguments against ``parameters`` schema.
 
         Returns:
-            (ok: bool, error_message: str | None)
+            (ok, error_message) — ok is True when validation passes.
         """
         schema = self.parameters or {}
         required = schema.get("required", [])
@@ -67,7 +68,7 @@ class ToolBase(ABC):
         return True, None
 
     @abstractmethod
-    def execute(self, ctx, **kwargs):
+    def execute(self, ctx: Any, **kwargs: Any) -> Dict[str, Any]:
         """Execute the tool.
 
         Args:

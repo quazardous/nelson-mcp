@@ -61,8 +61,53 @@ _init_lock = threading.Lock()
 _initialized = False
 
 
+def _setup_bundled_sqlite3(base_path):
+    """Make sqlite3 importable on Windows via bundled pysqlite3.
+
+    LO's Python on Windows doesn't include sqlite3, and LO's custom
+    python312.dll is missing symbols that the official _sqlite3.pyd
+    needs.  Instead we bundle pysqlite3 (statically linked) and shim
+    it into sys.modules so `import sqlite3` works transparently.
+    """
+    if sys.platform != "win32":
+        return
+    # Check if sqlite3 already works
+    try:
+        import sqlite3  # noqa: F401
+        return
+    except ImportError:
+        pass
+
+    lib_dir = os.path.join(base_path, "plugin", "lib")
+    pysqlite3_dir = os.path.join(lib_dir, "pysqlite3")
+    if not os.path.isdir(pysqlite3_dir):
+        log.debug("No bundled pysqlite3 at %s", pysqlite3_dir)
+        return
+
+    # pysqlite3 is vendored into plugin/lib/ — lib/ should already
+    # be on sys.path from _ensure_extension_on_path, but make sure
+    if lib_dir not in sys.path:
+        sys.path.insert(0, lib_dir)
+
+    try:
+        import pysqlite3
+        import pysqlite3.dbapi2
+
+        # Shim: make `import sqlite3` use pysqlite3
+        sys.modules["_sqlite3"] = pysqlite3._sqlite3
+        sys.modules["sqlite3"] = pysqlite3
+        sys.modules["sqlite3.dbapi2"] = pysqlite3.dbapi2
+
+        log.info("Bundled pysqlite3 (sqlite %s) loaded from %s",
+                 pysqlite3.sqlite_version, lib_dir)
+    except ImportError as e:
+        log.warning("Failed to import bundled pysqlite3 from %s: %s",
+                    lib_dir, e)
+
+
 def _ensure_extension_on_path(ctx):
     """Add the extension's install directory to sys.path."""
+    ext_path = None
     try:
         import uno
         pip = ctx.getValueByName(
@@ -82,6 +127,9 @@ def _ensure_extension_on_path(ctx):
     parent = os.path.dirname(plugin_dir)
     if parent not in sys.path:
         sys.path.insert(0, parent)
+
+    # Load bundled sqlite3 binaries (Windows: _sqlite3.pyd + sqlite3.dll)
+    _setup_bundled_sqlite3(ext_path or parent)
 
 
 def _load_manifest():
@@ -399,11 +447,18 @@ def _dispatch_command(command):
             log.warning("Unhandled framework action: %s", action)
         return
 
-    # Module actions
+    # Module actions — try longest module name match first
+    # e.g. "ai_images.sdapi.sdapi_launch" should match module "ai_images.sdapi"
+    best_mod = None
+    best_action = None
     for mod in _modules:
-        if mod.name == mod_name:
-            mod.on_action(action)
-            return
+        prefix = mod.name + "."
+        if command.startswith(prefix) and (best_mod is None or len(mod.name) > len(best_mod.name)):
+            best_mod = mod
+            best_action = command[len(prefix):]
+    if best_mod:
+        best_mod.on_action(best_action)
+        return
 
     log.warning("Module not found for command: %s", command)
 
@@ -413,11 +468,16 @@ def get_menu_text(command):
     dot = command.find(".")
     if dot <= 0:
         return None
-    mod_name = command[:dot]
-    action = command[dot + 1:]
+    # Longest module name match
+    best_mod = None
+    best_action = None
     for mod in _modules:
-        if mod.name == mod_name:
-            return mod.get_menu_text(action)
+        prefix = mod.name + "."
+        if command.startswith(prefix) and (best_mod is None or len(mod.name) > len(best_mod.name)):
+            best_mod = mod
+            best_action = command[len(prefix):]
+    if best_mod:
+        return best_mod.get_menu_text(best_action)
     return None
 
 
@@ -469,11 +529,15 @@ def _get_menu_icon(command):
     dot = command.find(".")
     if dot <= 0:
         return None
-    mod_name = command[:dot]
-    action = command[dot + 1:]
+    best_mod = None
+    best_action = None
     for mod in _modules:
-        if mod.name == mod_name:
-            return mod.get_menu_icon(action)
+        prefix = mod.name + "."
+        if command.startswith(prefix) and (best_mod is None or len(mod.name) > len(best_mod.name)):
+            best_mod = mod
+            best_action = command[len(prefix):]
+    if best_mod:
+        return best_mod.get_menu_icon(best_action)
     return None
 
 

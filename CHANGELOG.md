@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.0] — 2026-03-07
+
+### Added
+
+- **HTTP client utilities** — `plugin/framework/http_client.py` with shared `parse_endpoint()`, `http_request()`, `http_json()` used by all image providers
+- **HTTP helper functions** — centralized `read_json_body()`, `send_json()`, `send_cors_headers()` in `http_server.py`, eliminating 3× duplication across modules
+- **Config API gate** — `http.enable_config_api` option (disabled by default) controls `/api/config` endpoint exposure
+- **Debug API gate** — `debug.enable_api` option (disabled by default) controls `/api/debug` endpoint exposure
+- **Debug module HTTP API** — `/api/debug` endpoint moved from MCP protocol to dedicated debug module with eval, exec, call_tool, trigger, services, config actions
+- **AI images indexer** — `plugin/modules/ai_images/indexer.py` for CLIP-based gallery auto-tagging
+- **SD WebUI scripts** — install, launch, and stop scripts for Forge/A1111
+
+### Changed
+
+- **Type hints** — added to all framework base classes (`ToolBase`, `ServiceBase`, `ModuleBase`, `ToolContext`, `EventBus`, `ServiceRegistry`) and provider ABCs (`ImageProvider`, `GalleryProvider`)
+- **SD WebUI provider** — refactored to use shared `http_json()`, proper connection cleanup via `try/finally`
+- **OpenAI provider** — refactored to use shared `http_json()`, removed raw `http.client` usage
+- **Silent error handling** — replaced bare `except: pass` with `log.debug(..., exc_info=True)` across indexer, sdapi module, and service registry
+- **Debug endpoint path** — renamed from `/debug` to `/api/debug` for consistency with `/api/config`
+- **MCP protocol cleanup** — removed debug handlers from `mcp/protocol.py` (now in debug module)
+
+### Security
+
+- `/api/config` and `/api/debug` endpoints are now **disabled by default** — must be explicitly enabled in Options
+
 ## [0.2.1] — 2026-03-05
 
 ### Added

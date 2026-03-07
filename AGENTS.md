@@ -88,6 +88,18 @@ SAL_USE_VCLPLUGIN=gen make deploy      # X11 pure
 
 Check: sidebar controls visible and non-overlapping, resize works, settings dropdowns functional. If the backend is missing, LO silently falls back to default — verify visually.
 
+## HTTP API
+
+See [`API.md`](API.md) for the full HTTP API reference.
+
+Key endpoints on `http://localhost:8766`:
+- `GET /health` — health check (always on)
+- `GET /api/config?module=X` — read config (requires `http.enable_config_api = true`)
+- `POST /api/config` — write config (requires `http.enable_config_api = true`)
+- `POST /api/debug` — debug actions: eval, call_tool, trigger, services (requires `debug.enable_api = true`)
+
+> Both `/api/config` and `/api/debug` are **disabled by default**. Enable them in Options.
+
 ## Debugging
 
 - `~/nelson.log` — plugin log (overwritten each session)

@@ -6,6 +6,7 @@
 """Base class for all services."""
 
 from abc import ABC
+from typing import Any, Optional
 
 
 class ServiceBase(ABC):
@@ -18,9 +19,9 @@ class ServiceBase(ABC):
         name: Unique service identifier (e.g. "document", "config").
     """
 
-    name: str = None
+    name: Optional[str] = None
 
-    def initialize(self, ctx):
+    def initialize(self, ctx: Any) -> None:
         """Called once during bootstrap with the UNO component context.
 
         Override to perform setup that requires UNO (desktop access,
@@ -30,5 +31,5 @@ class ServiceBase(ABC):
             ctx: UNO component context (com.sun.star.uno.XComponentContext).
         """
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Called on extension unload. Override to clean up."""

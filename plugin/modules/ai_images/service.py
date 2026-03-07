@@ -129,3 +129,19 @@ def get_instance_options(services):
         label = "[%s] %s" % (inst.module_name.split(".")[-1], inst.name)
         options.append({"value": iid, "label": label})
     return options
+
+
+def get_interrogate_options(services):
+    """Options provider for ai_images.interrogate_instance config select."""
+    svc = services.get("ai_images")
+    if not svc:
+        return []
+    options = [{"value": "", "label": "(auto - first available)"}]
+    for iid, inst in svc._instances.items():
+        p = inst.provider
+        supports = hasattr(p, "supports_interrogate") and p.supports_interrogate()
+        label = "[%s] %s" % (inst.module_name.split(".")[-1], inst.name)
+        if supports:
+            label += " (CLIP)"
+        options.append({"value": iid, "label": label})
+    return options

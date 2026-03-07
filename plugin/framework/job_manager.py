@@ -7,8 +7,12 @@
 
 Any module can submit a callable to run in a background thread.
 MCP clients poll for results with get_job / list_jobs tools.
+
+Includes endpoint locking to prevent concurrent access to the same
+local server (e.g. Forge) from generation and interrogation jobs.
 """
 
+import collections
 import logging
 import threading
 import time
@@ -116,6 +120,69 @@ class JobManager:
             job.status = "error"
             job.error = str(e)
         job.finished_at = time.time()
+
+    # -- Endpoint locking --------------------------------------------------------
+
+    def acquire_endpoint(self, endpoint):
+        """Acquire exclusive access to an endpoint. Blocks until available."""
+        lock = self._get_endpoint_lock(endpoint)
+        lock.acquire()
+
+    def release_endpoint(self, endpoint):
+        """Release exclusive access to an endpoint."""
+        lock = self._get_endpoint_lock(endpoint)
+        try:
+            lock.release()
+        except RuntimeError:
+            pass  # already released
+
+    def _get_endpoint_lock(self, endpoint):
+        """Get or create a lock for an endpoint. Thread-safe."""
+        with self._lock:
+            if not hasattr(self, "_endpoint_locks"):
+                self._endpoint_locks = {}
+            if endpoint not in self._endpoint_locks:
+                self._endpoint_locks[endpoint] = threading.Lock()
+            return self._endpoint_locks[endpoint]
+
+    # -- Sequential queue ------------------------------------------------------
+
+    def enqueue(self, fn, kind="", params=None, **kwargs):
+        """Submit a job to the sequential queue.
+
+        Jobs submitted via enqueue() run one at a time, in FIFO order.
+        Regular submit() jobs are unaffected and run immediately.
+
+        Returns:
+            Job instance.
+        """
+        job = Job(kind=kind, params=params)
+        with self._lock:
+            self._evict_finished()
+            self._jobs[job.job_id] = job
+            if not hasattr(self, "_queue"):
+                self._queue = collections.deque()
+                self._queue_thread = None
+            self._queue.append((job, fn, kwargs))
+            if self._queue_thread is None or not self._queue_thread.is_alive():
+                self._queue_thread = threading.Thread(
+                    target=self._drain_queue,
+                    daemon=True, name="nelson-job-queue",
+                )
+                self._queue_thread.start()
+        log.info("Job %s enqueued: kind=%s", job.job_id, kind)
+        return job
+
+    def _drain_queue(self):
+        """Process queued jobs one at a time."""
+        while True:
+            with self._lock:
+                if not hasattr(self, "_queue") or not self._queue:
+                    return
+                job, fn, kwargs = self._queue.popleft()
+            self._run(job, fn, kwargs)
+
+    # -- Internal --------------------------------------------------------------
 
     def _evict_finished(self):
         """Remove oldest finished jobs if over capacity. Caller holds _lock."""

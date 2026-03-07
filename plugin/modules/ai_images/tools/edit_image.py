@@ -75,7 +75,14 @@ class EditImage(ToolBase):
 
 
 def _edit_and_save(provider, prompt, source_image, services, provider_name="", instance_name=""):
-    file_paths, error = provider.generate(prompt=prompt, source_image=source_image)
+    endpoint = getattr(provider, "_config", {}).get("endpoint", "")
+    if endpoint:
+        services.jobs.acquire_endpoint(endpoint)
+    try:
+        file_paths, error = provider.generate(prompt=prompt, source_image=source_image)
+    finally:
+        if endpoint:
+            services.jobs.release_endpoint(endpoint)
     gallery_items = []
     if file_paths and not error:
         gallery_items = _auto_save(file_paths, prompt, services, provider_name, instance_name)

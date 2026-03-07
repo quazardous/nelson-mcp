@@ -7,6 +7,7 @@
 
 import logging
 import weakref
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 log = logging.getLogger("nelson.events")
 
@@ -29,10 +30,11 @@ class EventBus:
         bus.subscribe("document:closed", obj.on_close, weak=True)
     """
 
-    def __init__(self):
-        self._subscribers = {}  # event -> list of (callback, is_weakref)
+    def __init__(self) -> None:
+        self._subscribers: Dict[str, List[Tuple[Any, bool]]] = {}
 
-    def subscribe(self, event, callback, weak=False):
+    def subscribe(self, event: str, callback: Callable[..., Any],
+                  weak: bool = False) -> None:
         """Register *callback* for *event*.
 
         Args:
@@ -51,7 +53,7 @@ class EventBus:
         else:
             self._subscribers[event].append((callback, False))
 
-    def unsubscribe(self, event, callback):
+    def unsubscribe(self, event: str, callback: Callable[..., Any]) -> None:
         """Remove *callback* from *event*."""
         subs = self._subscribers.get(event)
         if not subs:
@@ -62,7 +64,7 @@ class EventBus:
             if self._resolve(cb, is_weak) is not callback
         ]
 
-    def emit(self, event, **data):
+    def emit(self, event: str, **data: Any) -> None:
         """Emit *event*, calling all subscribers with **data as kwargs.
 
         Exceptions in subscribers are logged and swallowed.
@@ -71,7 +73,7 @@ class EventBus:
         if not subs:
             return
 
-        dead = []
+        dead: List[int] = []
         for i, (cb, is_weak) in enumerate(subs):
             resolved = self._resolve(cb, is_weak)
             if resolved is None:
@@ -87,12 +89,12 @@ class EventBus:
             for i in reversed(dead):
                 subs.pop(i)
 
-    def _resolve(self, cb, is_weak):
+    def _resolve(self, cb: Any, is_weak: bool) -> Optional[Callable[..., Any]]:
         if is_weak:
             return cb()  # weakref -> call to dereference
         return cb
 
-    def _cleanup(self, event, ref):
+    def _cleanup(self, event: str, ref: Any) -> None:
         """Called when a weakref target is garbage-collected."""
         subs = self._subscribers.get(event)
         if subs:
