@@ -305,12 +305,13 @@ Created `framework/graphic_query.py` with cross-doc image query helpers. `insert
 
 Also fixed: validation now runs before `_flatten_doc_type_params()` so nested doc-type params validate against the schema correctly.
 
+#### 7.11 Impress transitions/layouts — DONE (v0.3.1)
+
+`get_slide_transition`, `set_slide_transition` via `FadeEffect`/`AnimationSpeed`/`Change`/`Duration` properties. `get_slide_layout`, `set_slide_layout` via `Layout` property with 30 named layouts.
+
 ### Remaining work
 
-#### Impress transitions/layouts
-
-- `set_slide_transition` — presentation DrawPage properties
-- `get_slide_layout` / `set_slide_layout` — `Layout` property
+*(None — all planned items complete.)*
 
 ---
 
@@ -328,7 +329,7 @@ Also fixed: validation now runs before `_flatten_doc_type_params()` so nested do
 | Navigation/outline | deep | basic | no | no | Calc added v0.3.1 |
 | Tracked changes | yes | no | no | no | Writer-specific |
 | Speaker notes | — | — | — | yes | Added v0.3.1 |
-| Transitions | — | — | — | **no** | **TODO** |
+| Transitions/layouts | — | — | — | yes | Added v0.3.1 |
 | Named ranges | — | yes | — | — | Added v0.3.1 |
 | Undo/redo | yes | yes | yes | yes | Added v0.3.1 |
 | Print | yes | yes | yes | yes | Added v0.3.1 |
@@ -355,9 +356,4 @@ Also fixed: validation now runs before `_flatten_doc_type_params()` so nested do
 | 12 | Add undo/redo tool (all types) | **DONE** v0.3.1 |
 | 13 | Unify image tools (insert/list/info/delete) | **DONE** v0.3.1 |
 | 14 | Fix validation order (validate before flatten) | **DONE** v0.3.1 |
-
-### Remaining
-
-| # | Action | Effort | Impact |
-|---|--------|--------|--------|
-| 15 | Add Impress transitions/layouts | M | Impress-specific |
+| 15 | Add Impress transitions/layouts | **DONE** v0.3.1 |

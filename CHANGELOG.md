@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - **Calc comment tools** — `list_cell_comments`, `add_cell_comment`, `delete_cell_comment` via `XSheetAnnotation` API
 - **Calc navigation tools** — `list_named_ranges` and `get_sheet_overview` (used area, charts, annotations, shapes)
 - **Impress speaker notes** — `get_speaker_notes` and `set_speaker_notes` (first Impress-only tools)
+- **Impress transitions** — `get_slide_transition` and `set_slide_transition` with 25 FadeEffect types, speed, auto-advance duration
+- **Impress layouts** — `get_slide_layout` and `set_slide_layout` with 30 named layout types
 - **Print tool** — `print_document` for all document types via `XPrintable`
 - **Undo/Redo tools** — `undo` and `redo` for all document types via `XUndoManager`
 - **`graphic_query.py` framework helper** — cross-document image listing/lookup via `getGraphicObjects()` (Writer) and DrawPage shape iteration (Calc/Draw/Impress)
