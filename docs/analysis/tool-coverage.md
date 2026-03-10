@@ -263,85 +263,98 @@ For complex Writer-specific image manipulation (anchor types, orientation, frame
 
 ### Quick wins (low effort, high impact)
 
-#### 7.1 Styles tools → all doc types
+#### 7.1 Styles tools → all doc types — DONE (v0.3.1)
 
-Current Writer-only tools (`list_styles`, `get_style_info`) use `XStyleFamiliesSupplier` — identical on all doc types. Only family names differ.
+`list_styles` and `get_style_info` now use `doc_types = None` with auto-discovery of available style families.
 
-**Change:** Set `doc_types = None`, add family-name auto-discovery. ~30 lines.
+#### 7.2 Shape tools → add Writer + Calc — DONE (v0.3.1)
 
-#### 7.2 Shape tools → add Writer + Calc
+`create_shape`, `edit_shape`, `delete_shape`, `get_draw_summary` now use `doc_types = None` with `get_draw_page(ctx)` bridge helper and doc-type namespacing.
 
-Writer has `XDrawPageSupplier`, Calc has `XDrawPagesSupplier` (one per sheet). Shape CRUD uses `XDrawPage.add()` — same API.
+#### 7.3 download_image → all types — DONE (v0.3.1)
 
-**Change:** `doc_types = None`. Add `_get_draw_page(ctx)` helper. Uses doc-type namespacing for `calc: {sheet_name}` and `draw: {page_index}`. ~50 lines.
+Trivial change: `doc_types = None` (no UNO dependency).
 
-### Medium effort
+#### 7.4 Search → Calc — DONE (v0.3.1)
 
-#### 7.3 Image tools — unify insert/list/info/delete/download
+Separate Calc tools (`search_in_spreadsheet`, `replace_in_spreadsheet`) using `XReplaceable` on sheets. Supports per-sheet and all-sheets modes.
+
+#### 7.5 Annotations → Calc — DONE (v0.3.1)
+
+`list_cell_comments`, `add_cell_comment`, `delete_cell_comment` via `XSheetAnnotation` API.
+
+#### 7.6 Calc navigation tools — DONE (v0.3.1)
+
+`list_named_ranges` and `get_sheet_overview` (used area, charts, annotations, shapes).
+
+#### 7.7 Impress speaker notes — DONE (v0.3.1)
+
+`get_speaker_notes` and `set_speaker_notes` — first Impress-only tools.
+
+#### 7.8 Print tool — DONE (v0.3.1)
+
+`print_document` for all doc types via `XPrintable`.
+
+#### 7.9 Undo/Redo — DONE (v0.3.1)
+
+`undo` and `redo` for all doc types via `XUndoManager`.
+
+### Remaining work
+
+#### Image tools — unify insert/list/info/delete
 
 See section 6 above. Create `framework/graphic_query.py`. Refactor `InsertImage` to delegate to `image_utils`. ~150 lines total.
 
-#### 7.4 Search → Calc
+#### Impress transitions/layouts
 
-Writer: document-level `XSearchable`. Calc: `XReplaceable` on cell ranges. Same tool name, branching by doc_type. Calc-specific params in `calc: {sheet_name, range}`.
-
-#### 7.5 Annotations → Calc
-
-Writer: `XAnnotation`. Calc: `XSheetAnnotation`. Separate implementations, but same tool names for agent consistency (`list_comments`, `add_comment`). Calc-specific params in `calc: {cell, sheet_name}`.
-
-### Requires new code
-
-#### 7.6 Calc navigation tools
-
-- `get_sheet_outline` — named ranges, data regions, charts, merged areas
-- `list_named_ranges` — `doc.NamedRanges`
-- `get_data_regions` — detect used areas per sheet
-
-#### 7.7 Impress-specific tools (after P0 fix)
-
-- `set_speaker_notes` — `page.getNotesPage()` → write text
 - `set_slide_transition` — presentation DrawPage properties
 - `get_slide_layout` / `set_slide_layout` — `Layout` property
 
 ---
 
-## 8. Summary matrix — current vs target
+## 8. Summary matrix — current state (v0.3.1)
 
-| Capability | Writer | Calc | Draw | Impress | Target |
-|------------|:------:|:----:|:----:|:-------:|:------:|
+| Capability | Writer | Calc | Draw | Impress | Notes |
+|------------|:------:|:----:|:----:|:-------:|:------|
 | Content read/write | deep | basic | basic | basic | — |
-| Search/replace | yes | **no** | no | no | +Calc |
-| Comments/annotations | yes | **no** | no | no | +Calc |
-| Styles | yes | **no** | **no** | **no** | **all** |
-| Images (insert) | yes | framework | framework | framework | **all** (unified tool) |
-| Images (list/manage) | yes | **no** | **no** | **no** | **all** |
-| Shapes | **no** | **no** | yes | yes(=draw) | **all** |
-| Navigation/outline | deep | **no** | **no** | **no** | +Calc, +Draw |
-| Tracked changes | yes | no | no | no | — |
-| Speaker notes | — | — | — | read-only | +edit |
-| Transitions | — | — | — | **no** | +Impress |
-| Named ranges | — | **no** | — | — | +Calc |
-| Undo/redo | **no** | **no** | **no** | **no** | **all** |
-| Print | **no** | **no** | **no** | **no** | **all** |
+| Search/replace | yes | yes | no | no | Calc added v0.3.1 |
+| Comments/annotations | yes | yes | no | no | Calc added v0.3.1 |
+| Styles | yes | yes | yes | yes | Unified v0.3.1 |
+| Images (insert) | yes | framework | framework | framework | **TODO: unify tool** |
+| Images (list/manage) | yes | **no** | **no** | **no** | **TODO: unify** |
+| Shapes | yes | yes | yes | yes | Unified v0.3.1 |
+| Navigation/outline | deep | basic | no | no | Calc added v0.3.1 |
+| Tracked changes | yes | no | no | no | Writer-specific |
+| Speaker notes | — | — | — | yes | Added v0.3.1 |
+| Transitions | — | — | — | **no** | **TODO** |
+| Named ranges | — | yes | — | — | Added v0.3.1 |
+| Undo/redo | yes | yes | yes | yes | Added v0.3.1 |
+| Print | yes | yes | yes | yes | Added v0.3.1 |
 
-**Bold** = gap to fill.
+**Bold** = remaining gaps.
 
 ---
 
-## 9. Recommended execution order
+## 9. Implementation log
+
+| # | Action | Status |
+|---|--------|--------|
+| 1 | Fix Impress/Draw detection | **DONE** v0.3.1 |
+| 2 | Delete broker.py | **DONE** v0.3.1 |
+| 3 | Add `_flatten_doc_type_params` to `ToolRegistry` | **DONE** v0.3.1 |
+| 4 | Unify styles → all doc types | **DONE** v0.3.1 |
+| 5 | Unify shapes → all doc types (with namespacing) | **DONE** v0.3.1 |
+| 6 | Unlock `download_image` → all types | **DONE** v0.3.1 |
+| 7 | Add Calc search/replace | **DONE** v0.3.1 |
+| 8 | Add Calc comments | **DONE** v0.3.1 |
+| 9 | Add Calc navigation (named ranges, overview) | **DONE** v0.3.1 |
+| 10 | Add Impress speaker notes editing | **DONE** v0.3.1 |
+| 11 | Add print tool (XPrintable, all types) | **DONE** v0.3.1 |
+| 12 | Add undo/redo tool (all types) | **DONE** v0.3.1 |
+
+### Remaining
 
 | # | Action | Effort | Impact |
 |---|--------|--------|--------|
-| 1 | Fix Impress/Draw detection (P0) | S | Unblocks Impress tools |
-| 2 | Delete broker.py | XS | Cleanup |
-| 3 | Add `_flatten_doc_type_params` to `ToolRegistry` | XS | Enables all unified tools |
-| 4 | Unify styles → all doc types | S | 4x coverage |
-| 5 | Unify shapes → all doc types (with namespacing) | M | 4x coverage |
-| 6 | Unify image tools (insert/list/info/delete/download) | M | 4x coverage |
-| 7 | Add Calc search/replace | M | Major gap fill |
-| 8 | Add Calc comments | M | Major gap fill |
-| 9 | Add Calc navigation (named ranges, regions) | M | Major gap fill |
-| 10 | Add Impress speaker notes editing | S | First Impress-only tool |
-| 11 | Add print tool (XPrintable, all types) | S | Cross-type |
-| 12 | Add undo/redo tool (all types) | S | Cross-type |
-| 13 | Add Impress transitions/layouts | M | Impress-specific |
+| 13 | Unify image tools (insert/list/info/delete) | M | 4x coverage |
+| 14 | Add Impress transitions/layouts | M | Impress-specific |
