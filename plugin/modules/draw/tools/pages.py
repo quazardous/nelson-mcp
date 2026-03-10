@@ -22,7 +22,7 @@ class AddSlide(ToolBase):
         },
         "required": [],
     }
-    doc_types = ["draw"]
+    doc_types = ["draw", "impress"]
     is_mutation = True
 
     def execute(self, ctx, **kwargs):
@@ -46,7 +46,7 @@ class DeleteSlide(ToolBase):
         },
         "required": ["index"],
     }
-    doc_types = ["draw"]
+    doc_types = ["draw", "impress"]
     is_mutation = True
 
     def execute(self, ctx, **kwargs):
@@ -74,7 +74,7 @@ class ReadSlideText(ToolBase):
         },
         "required": [],
     }
-    doc_types = ["draw"]
+    doc_types = ["draw", "impress"]
     tier = "core"
 
     def execute(self, ctx, **kwargs):
@@ -135,7 +135,7 @@ class GetPresentationInfo(ToolBase):
         "master slide names, and whether it is an Impress document."
     )
     parameters = {"type": "object", "properties": {}, "required": []}
-    doc_types = ["draw"]
+    doc_types = ["draw", "impress"]
     tier = "core"
 
     def execute(self, ctx, **kwargs):

@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Shape tools for Draw/Impress documents."""
+"""Shape tools for all document types with drawing layer."""
 
 from plugin.framework.tool_base import ToolBase
 
@@ -33,11 +33,25 @@ def _parse_color(color_str):
     return None
 
 
+def _resolve_page(ctx, **kwargs):
+    """Resolve draw page from context + kwargs (after flatten)."""
+    from plugin.modules.draw.bridge import get_draw_page
+    return get_draw_page(
+        ctx,
+        page_index=kwargs.get("page_index"),
+        sheet_name=kwargs.get("sheet_name"),
+    )
+
+
 class ListPages(ToolBase):
     name = "list_pages"
-    description = "Lists all pages (slides) in the document."
+    description = (
+        "List all pages/slides in a Draw/Impress document. "
+        "For Calc, lists sheets (use list_sheets instead). "
+        "For Writer, returns the single drawing layer."
+    )
     parameters = {"type": "object", "properties": {}, "required": []}
-    doc_types = ["draw"]
+    doc_types = ["draw", "impress"]
     tier = "core"
 
     def execute(self, ctx, **kwargs):
@@ -46,7 +60,7 @@ class ListPages(ToolBase):
         pages = bridge.get_pages()
         return {
             "status": "ok",
-            "pages": [f"Page {i}" for i in range(pages.getCount())],
+            "pages": ["Page %d" % i for i in range(pages.getCount())],
             "count": pages.getCount(),
         }
 
@@ -54,28 +68,40 @@ class ListPages(ToolBase):
 class GetDrawSummary(ToolBase):
     name = "get_draw_summary"
     intent = "edit"
-    description = "Returns a summary of shapes on the active or specified page."
+    description = (
+        "Return a summary of shapes on a page. "
+        "Works on all document types with a drawing layer."
+    )
     parameters = {
         "type": "object",
         "properties": {
-            "page_index": {
-                "type": "integer",
-                "description": "0-based page index (active page if omitted)",
-            }
+            "draw": {
+                "type": "object",
+                "description": "Draw/Impress options",
+                "properties": {
+                    "page_index": {
+                        "type": "integer",
+                        "description": "0-based page index (active page if omitted)",
+                    },
+                },
+            },
+            "calc": {
+                "type": "object",
+                "description": "Calc options",
+                "properties": {
+                    "sheet_name": {
+                        "type": "string",
+                        "description": "Sheet name (active sheet if omitted)",
+                    },
+                },
+            },
         },
         "required": [],
     }
-    doc_types = ["draw"]
+    doc_types = None  # all document types
 
     def execute(self, ctx, **kwargs):
-        from plugin.modules.draw.bridge import DrawBridge
-        bridge = DrawBridge(ctx.doc)
-        idx = kwargs.get("page_index")
-        page = (
-            bridge.get_pages().getByIndex(idx)
-            if idx is not None
-            else bridge.get_active_page()
-        )
+        page, _ = _resolve_page(ctx, **kwargs)
         shapes = []
         for i in range(page.getCount()):
             s = page.getByIndex(i)
@@ -90,12 +116,15 @@ class GetDrawSummary(ToolBase):
             if hasattr(s, "getString"):
                 info["text"] = s.getString()
             shapes.append(info)
-        return {"status": "ok", "page_index": idx, "shapes": shapes}
+        return {"status": "ok", "shapes": shapes}
 
 
 class CreateShape(ToolBase):
     name = "create_shape"
-    description = "Creates a new shape on the active page."
+    description = (
+        "Create a new shape on the drawing layer. "
+        "Works on all document types."
+    )
     parameters = {
         "type": "object",
         "properties": {
@@ -104,25 +133,44 @@ class CreateShape(ToolBase):
                 "enum": ["rectangle", "ellipse", "text", "line"],
                 "description": "Type of shape",
             },
-            "x": {"type": "integer", "description": "X position (100ths of mm)"},
-            "y": {"type": "integer", "description": "Y position (100ths of mm)"},
-            "width": {"type": "integer", "description": "Width (100ths of mm)"},
-            "height": {"type": "integer", "description": "Height (100ths of mm)"},
+            "x": {"type": "integer", "description": "X position (1/100 mm)"},
+            "y": {"type": "integer", "description": "Y position (1/100 mm)"},
+            "width": {"type": "integer", "description": "Width (1/100 mm)"},
+            "height": {"type": "integer", "description": "Height (1/100 mm)"},
             "text": {"type": "string", "description": "Initial text"},
             "bg_color": {
                 "type": "string",
                 "description": "Hex (#FF0000) or name (red)",
             },
+            "draw": {
+                "type": "object",
+                "description": "Draw/Impress options",
+                "properties": {
+                    "page_index": {
+                        "type": "integer",
+                        "description": "Page index (active page if omitted)",
+                    },
+                },
+            },
+            "calc": {
+                "type": "object",
+                "description": "Calc options",
+                "properties": {
+                    "sheet_name": {
+                        "type": "string",
+                        "description": "Sheet name (active sheet if omitted)",
+                    },
+                },
+            },
         },
         "required": ["shape_type", "x", "y", "width", "height"],
     }
-    doc_types = ["draw"]
+    doc_types = None  # all document types
     tier = "core"
     is_mutation = True
 
     def execute(self, ctx, **kwargs):
-        from plugin.modules.draw.bridge import DrawBridge
-        bridge = DrawBridge(ctx.doc)
+        page, _ = _resolve_page(ctx, **kwargs)
         type_map = {
             "rectangle": "com.sun.star.drawing.RectangleShape",
             "ellipse": "com.sun.star.drawing.EllipseShape",
@@ -133,11 +181,13 @@ class CreateShape(ToolBase):
         if not uno_type:
             return {
                 "status": "error",
-                "message": f"Unsupported shape type: {kwargs['shape_type']}",
+                "message": "Unsupported shape type: %s" % kwargs["shape_type"],
             }
-        shape = bridge.create_shape(
-            uno_type, kwargs["x"], kwargs["y"], kwargs["width"], kwargs["height"]
-        )
+        from com.sun.star.awt import Size, Point
+        shape = ctx.doc.createInstance(uno_type)
+        page.add(shape)
+        shape.setSize(Size(kwargs["width"], kwargs["height"]))
+        shape.setPosition(Point(kwargs["x"], kwargs["y"]))
         if kwargs.get("text") and hasattr(shape, "setString"):
             shape.setString(kwargs["text"])
         if kwargs.get("bg_color"):
@@ -152,10 +202,9 @@ class CreateShape(ToolBase):
                     shape.setPropertyValue(prop, color)
                 except Exception:
                     pass
-        page = bridge.get_active_page()
         return {
             "status": "ok",
-            "message": f"Created {kwargs['shape_type']}",
+            "message": "Created %s" % kwargs["shape_type"],
             "shape_index": page.getCount() - 1,
         }
 
@@ -163,7 +212,10 @@ class CreateShape(ToolBase):
 class EditShape(ToolBase):
     name = "edit_shape"
     intent = "edit"
-    description = "Modifies properties of an existing shape."
+    description = (
+        "Modify properties of an existing shape. "
+        "Works on all document types."
+    )
     parameters = {
         "type": "object",
         "properties": {
@@ -171,28 +223,34 @@ class EditShape(ToolBase):
                 "type": "integer",
                 "description": "Index of the shape",
             },
-            "page_index": {"type": "integer", "description": "Page index"},
             "x": {"type": "integer"},
             "y": {"type": "integer"},
             "width": {"type": "integer"},
             "height": {"type": "integer"},
             "text": {"type": "string"},
             "bg_color": {"type": "string"},
+            "draw": {
+                "type": "object",
+                "description": "Draw/Impress options",
+                "properties": {
+                    "page_index": {"type": "integer"},
+                },
+            },
+            "calc": {
+                "type": "object",
+                "description": "Calc options",
+                "properties": {
+                    "sheet_name": {"type": "string"},
+                },
+            },
         },
         "required": ["shape_index"],
     }
-    doc_types = ["draw"]
+    doc_types = None  # all document types
     is_mutation = True
 
     def execute(self, ctx, **kwargs):
-        from plugin.modules.draw.bridge import DrawBridge
-        bridge = DrawBridge(ctx.doc)
-        idx = kwargs.get("page_index")
-        page = (
-            bridge.get_pages().getByIndex(idx)
-            if idx is not None
-            else bridge.get_active_page()
-        )
+        page, _ = _resolve_page(ctx, **kwargs)
         shape = page.getByIndex(kwargs["shape_index"])
         if "x" in kwargs or "y" in kwargs:
             from com.sun.star.awt import Point
@@ -224,27 +282,36 @@ class EditShape(ToolBase):
 class DeleteShape(ToolBase):
     name = "delete_shape"
     intent = "edit"
-    description = "Deletes a shape by index."
+    description = (
+        "Delete a shape by index. "
+        "Works on all document types."
+    )
     parameters = {
         "type": "object",
         "properties": {
             "shape_index": {"type": "integer"},
-            "page_index": {"type": "integer"},
+            "draw": {
+                "type": "object",
+                "description": "Draw/Impress options",
+                "properties": {
+                    "page_index": {"type": "integer"},
+                },
+            },
+            "calc": {
+                "type": "object",
+                "description": "Calc options",
+                "properties": {
+                    "sheet_name": {"type": "string"},
+                },
+            },
         },
         "required": ["shape_index"],
     }
-    doc_types = ["draw"]
+    doc_types = None  # all document types
     is_mutation = True
 
     def execute(self, ctx, **kwargs):
-        from plugin.modules.draw.bridge import DrawBridge
-        bridge = DrawBridge(ctx.doc)
-        idx = kwargs.get("page_index")
-        page = (
-            bridge.get_pages().getByIndex(idx)
-            if idx is not None
-            else bridge.get_active_page()
-        )
+        page, _ = _resolve_page(ctx, **kwargs)
         shape = page.getByIndex(kwargs["shape_index"])
         page.remove(shape)
         return {"status": "ok", "message": "Shape deleted"}

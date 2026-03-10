@@ -16,6 +16,30 @@ from plugin.framework.schema_convert import to_mcp_schema
 
 log = logging.getLogger("nelson.tools")
 
+_DOC_TYPE_KEYS = frozenset(("writer", "calc", "draw", "impress"))
+
+
+def _flatten_doc_type_params(kwargs, doc_type):
+    """Merge doc-type-specific nested params into top-level kwargs.
+
+    Tools can declare doc-type-specific parameters as nested objects
+    (e.g. ``"writer": {"locator": "..."}``).  This function extracts
+    the block matching *doc_type*, merges it into the top-level dict,
+    and discards blocks for other doc types.
+
+    This lets tool code remain flat — ``kwargs["locator"]`` — while
+    the MCP schema clearly groups parameters by document type.
+    """
+    merged = {}
+    for k, v in kwargs.items():
+        if k in _DOC_TYPE_KEYS:
+            if k == doc_type and isinstance(v, dict):
+                merged.update(v)
+            # discard other doc-type blocks silently
+        else:
+            merged[k] = v
+    return merged
+
 
 class ToolRegistry:
     """Discovers, registers, and dispatches tools.
@@ -129,6 +153,9 @@ class ToolRegistry:
             raise ValueError(
                 f"Tool {tool_name} does not support doc_type={ctx.doc_type}"
             )
+
+        # Flatten doc-type-specific nested params
+        kwargs = _flatten_doc_type_params(kwargs, ctx.doc_type)
 
         # Validate parameters
         ok, err = tool.validate(**kwargs)

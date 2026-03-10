@@ -74,6 +74,9 @@ Auto-discovered at build time by `generate_manifest.py`.
 - **Document scoping**: `self.xFrame.getController().getModel()` — never `desktop.getCurrentComponent()`.
 - **Sidebar**: Panels use programmatic layout (`plugin/framework/panel_layout.py`), not XDL. Use `create_panel_window()` + `add_control()` for new panels.
 - **Writer drawing layer**: `hasattr(model, "getDrawPages")` is True for Writer. Use `supportsService()`.
+- **Doc types**: `detect_doc_type()` returns `"writer"`, `"calc"`, `"impress"`, or `"draw"` (Impress and Draw are distinct). Use `doc_types = ["draw", "impress"]` for tools that work on both.
+- **Doc-type param namespacing**: Unified tools use nested objects (`"writer": {...}`, `"calc": {...}`) for doc-type-specific params. `_flatten_doc_type_params()` in `ToolRegistry` merges the matching block before `execute()`. Tool code stays flat.
+- **Draw page resolution**: Use `get_draw_page(ctx, page_index=, sheet_name=)` from `draw/bridge.py` — handles Writer (single page), Calc (per-sheet), Draw/Impress (multi-page).
 
 ## Cross-renderer testing
 

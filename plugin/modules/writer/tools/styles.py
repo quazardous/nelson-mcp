@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Writer style inspection tools."""
+"""Style inspection tools for all document types."""
 
 import logging
 
@@ -11,15 +11,7 @@ from plugin.framework.tool_base import ToolBase
 
 log = logging.getLogger("nelson.writer")
 
-_STYLE_FAMILIES = [
-    "ParagraphStyles",
-    "CharacterStyles",
-    "PageStyles",
-    "FrameStyles",
-    "NumberingStyles",
-]
-
-# Properties to read per style family.
+# Properties to attempt reading per style family.
 _FAMILY_PROPS = {
     "ParagraphStyles": [
         "ParentStyle", "FollowStyle",
@@ -29,6 +21,9 @@ _FAMILY_PROPS = {
     "CharacterStyles": [
         "ParentStyle", "CharFontName", "CharHeight",
         "CharWeight", "CharPosture", "CharColor",
+    ],
+    "CellStyles": [
+        "ParentStyle", "CellBackColor",
     ],
 }
 
@@ -40,25 +35,37 @@ class ListStyles(ToolBase):
     intent = "edit"
     description = (
         "List available styles in the document. "
-        "Call this before applying styles to discover exact style names."
+        "Omit family to list all available style families. "
+        "Works on all document types (Writer, Calc, Draw, Impress)."
     )
     parameters = {
         "type": "object",
         "properties": {
             "family": {
                 "type": "string",
-                "enum": _STYLE_FAMILIES,
-                "description": "Style family to list. Default: ParagraphStyles.",
+                "description": (
+                    "Style family to list (e.g. ParagraphStyles, "
+                    "CellStyles, PageStyles). Omit to list families."
+                ),
             },
         },
         "required": [],
     }
-    doc_types = ["writer"]
+    doc_types = None  # all document types
 
     def execute(self, ctx, **kwargs):
-        family = kwargs.get("family", "ParagraphStyles")
+        family = kwargs.get("family")
         doc = ctx.doc
         families = doc.getStyleFamilies()
+
+        # No family specified → list available families
+        if not family:
+            available = list(families.getElementNames())
+            return {
+                "status": "ok",
+                "families": available,
+                "count": len(available),
+            }
 
         if not families.hasByName(family):
             available = list(families.getElementNames())
@@ -98,7 +105,8 @@ class GetStyleInfo(ToolBase):
     intent = "edit"
     description = (
         "Get detailed properties of a specific style "
-        "(font, size, margins, etc.)."
+        "(font, size, margins, etc.). "
+        "Works on all document types."
     )
     parameters = {
         "type": "object",
@@ -109,27 +117,35 @@ class GetStyleInfo(ToolBase):
             },
             "family": {
                 "type": "string",
-                "enum": _STYLE_FAMILIES,
-                "description": "Style family. Default: ParagraphStyles.",
+                "description": (
+                    "Style family (e.g. ParagraphStyles, CellStyles). "
+                    "Default: first available family."
+                ),
             },
         },
         "required": ["style_name"],
     }
-    doc_types = ["writer"]
+    doc_types = None  # all document types
 
     def execute(self, ctx, **kwargs):
         style_name = kwargs.get("style_name", "")
-        family = kwargs.get("family", "ParagraphStyles")
+        family = kwargs.get("family")
 
         if not style_name:
             return {"status": "error", "message": "style_name is required."}
 
         doc = ctx.doc
         families = doc.getStyleFamilies()
+
+        # Default to first family if not specified
+        if not family:
+            family = families.getElementNames()[0]
+
         if not families.hasByName(family):
             return {
                 "status": "error",
                 "message": "Unknown style family: %s" % family,
+                "available_families": list(families.getElementNames()),
             }
 
         style_family = families.getByName(family)

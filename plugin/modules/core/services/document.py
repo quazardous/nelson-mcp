@@ -97,6 +97,12 @@ class DocumentService(ServiceBase):
         except Exception:
             return False
 
+    def is_impress(self, model):
+        try:
+            return model.supportsService("com.sun.star.presentation.PresentationDocument")
+        except Exception:
+            return False
+
     def is_draw(self, model):
         try:
             return (
@@ -107,13 +113,15 @@ class DocumentService(ServiceBase):
             return False
 
     def detect_doc_type(self, model):
-        """Return "writer", "calc", "draw", or None."""
+        """Return "writer", "calc", "impress", "draw", or None."""
         if model is None:
             return None
         if self.is_writer(model):
             return "writer"
         if self.is_calc(model):
             return "calc"
+        if self.is_impress(model):
+            return "impress"
         if self.is_draw(model):
             return "draw"
         return None

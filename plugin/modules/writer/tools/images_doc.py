@@ -384,7 +384,7 @@ class DownloadImage(ToolBase):
         },
         "required": ["url"],
     }
-    doc_types = ["writer"]
+    doc_types = None  # no UNO dependency, works for all types
 
     def execute(self, ctx, **kwargs):
         url = kwargs.get("url", "")

@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.3.1] — 2026-03-10
+
+### Added
+
+- **Impress detection** — `detect_doc_type()` now returns `"impress"` for Impress documents (previously conflated with `"draw"`), enabling future Impress-specific tools
+- **`is_impress()` helper** — new method on `DocumentService` for explicit Impress type checks
+- **Doc-type parameter namespacing** — `_flatten_doc_type_params()` in `ToolRegistry` allows tools to declare doc-type-specific params as nested objects (`"writer": {...}`, `"calc": {...}`) that are auto-flattened before execution
+- **`get_draw_page()` bridge function** — resolves the correct `DrawPage` for any document type (Writer single page, Calc per-sheet, Draw/Impress multi-page)
+- **Tool coverage analysis** — `docs/analysis/tool-coverage.md` with UNO API overlap research, unification roadmap, and doc-type namespacing design
+
+### Changed
+
+- **Styles tools unified** — `list_styles` and `get_style_info` now work on all document types (Writer, Calc, Draw, Impress) via `XStyleFamiliesSupplier`; auto-discovers available families when called without `family` param
+- **Shape tools unified** — `create_shape`, `edit_shape`, `delete_shape`, `get_draw_summary` now work on all document types with drawing layer support; use doc-type namespacing for page/sheet selection
+- **Draw tools support Impress** — all `doc_types = ["draw"]` updated to `["draw", "impress"]` for pages and slide tools
+- **`download_image` unlocked** — now available on all document types (no UNO dependency)
+
+### Removed
+
+- **Broker tools** — deleted `list_available_tools` and `request_tools` (legacy chatbot feature, was broken — missing `get_tool_summaries`/`get_tool_names_by_intent` methods)
+
 ## [0.3.0] — 2026-03-07
 
 ### Added

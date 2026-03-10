@@ -14,7 +14,7 @@ class ToolContext:
     Attributes:
         doc:       UNO document model.
         ctx:       UNO component context.
-        doc_type:  Detected document type ("writer", "calc", "draw").
+        doc_type:  Detected document type ("writer", "calc", "draw", "impress").
         services:  ServiceRegistry — access to all services.
         caller:    Who triggered the call ("chatbot", "mcp", "menu").
     """
