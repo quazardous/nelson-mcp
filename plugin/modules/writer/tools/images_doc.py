@@ -3,7 +3,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Writer document image management tools."""
+"""Image management tools — unified across all document types.
+
+Writer uses getGraphicObjects() (named TextGraphicObject collection).
+Calc/Draw/Impress use DrawPage shapes (GraphicObjectShape).
+Writer-specific tools (set_image_properties, replace_image) remain Writer-only.
+"""
 
 import hashlib
 import logging
@@ -12,14 +17,14 @@ import tempfile
 
 from plugin.framework.tool_base import ToolBase
 
-log = logging.getLogger("nelson.writer")
+log = logging.getLogger("nelson.images")
 
 # Persistent cache directory for downloaded images.
 _IMAGE_CACHE_DIR = os.path.join(tempfile.gettempdir(), "nelson_images")
 
 
 # ------------------------------------------------------------------
-# ListImages
+# ListImages — all doc types
 # ------------------------------------------------------------------
 
 class ListImages(ToolBase):
@@ -29,82 +34,62 @@ class ListImages(ToolBase):
     intent = "media"
     description = (
         "List all images/graphic objects in the document with name, "
-        "dimensions, title, and description."
+        "dimensions, title, and description. "
+        "For Calc, lists images on a sheet's drawing layer. "
+        "For Draw/Impress, lists images on a page."
     )
     parameters = {
         "type": "object",
-        "properties": {},
+        "properties": {
+            "draw": {
+                "type": "object",
+                "description": "Draw/Impress options",
+                "properties": {
+                    "page_index": {
+                        "type": "integer",
+                        "description": "0-based page index (active page if omitted)",
+                    },
+                },
+            },
+            "calc": {
+                "type": "object",
+                "description": "Calc options",
+                "properties": {
+                    "sheet_name": {
+                        "type": "string",
+                        "description": "Sheet name (active sheet if omitted)",
+                    },
+                },
+            },
+        },
         "required": [],
     }
-    doc_types = ["writer"]
+    doc_types = None  # all document types
 
     def execute(self, ctx, **kwargs):
+        from plugin.framework.graphic_query import (
+            list_images_writer, list_images_drawpage,
+        )
         doc = ctx.doc
-        if not hasattr(doc, "getGraphicObjects"):
-            return {"status": "error", "message": "Document does not support graphic objects."}
 
-        doc_svc = ctx.services.document
-        para_ranges = doc_svc.get_paragraph_ranges(doc)
-        text_obj = doc.getText()
-
-        graphics = doc.getGraphicObjects()
-        images = []
-        for name in graphics.getElementNames():
-            try:
-                graphic = graphics.getByName(name)
-                size = graphic.getPropertyValue("Size")
-                title = ""
-                description = ""
-                try:
-                    title = graphic.getPropertyValue("Title")
-                except Exception:
-                    pass
-                try:
-                    description = graphic.getPropertyValue("Description")
-                except Exception:
-                    pass
-
-                # Paragraph index via anchor
-                paragraph_index = -1
-                try:
-                    anchor = graphic.getAnchor()
-                    paragraph_index = doc_svc.find_paragraph_for_range(
-                        anchor, para_ranges, text_obj
-                    )
-                except Exception:
-                    pass
-
-                # Page number via view cursor
-                page = None
-                try:
-                    anchor = graphic.getAnchor()
-                    vc = doc.getCurrentController().getViewCursor()
-                    vc.gotoRange(anchor.getStart(), False)
-                    page = vc.getPage()
-                except Exception:
-                    pass
-
-                entry = {
-                    "name": name,
-                    "width_mm": size.Width / 100.0,
-                    "height_mm": size.Height / 100.0,
-                    "width_100mm": size.Width,
-                    "height_100mm": size.Height,
-                    "title": title,
-                    "description": description,
-                    "paragraph_index": paragraph_index,
-                }
-                if page is not None:
-                    entry["page"] = page
-                images.append(entry)
-            except Exception as e:
-                log.debug("list_images: skip '%s': %s", name, e)
+        if ctx.doc_type == "writer":
+            doc_svc = ctx.services.document
+            images = list_images_writer(doc, doc_svc=doc_svc)
+        else:
+            from plugin.modules.draw.bridge import get_draw_page
+            page, _ = get_draw_page(
+                ctx,
+                page_index=kwargs.get("page_index"),
+                sheet_name=kwargs.get("sheet_name"),
+            )
+            page_label = kwargs.get("sheet_name") or kwargs.get("page_index")
+            images = list_images_drawpage(page, page_label=page_label)
 
         return {"status": "ok", "images": images, "count": len(images)}
 
 
 # ------------------------------------------------------------------
-# GetImageInfo
+# GetImageInfo — all doc types
 # ------------------------------------------------------------------
 
 class GetImageInfo(ToolBase):
@@ -114,25 +99,79 @@ class GetImageInfo(ToolBase):
     intent = "media"
     description = (
         "Get detailed info about a specific image: URL, dimensions, "
-        "anchor type, orientation, and paragraph index."
+        "title, description. "
+        "In Writer, looks up by image_name and returns anchor type, orientation, paragraph index. "
+        "In Calc/Draw/Impress, looks up by image_name or shape_index and returns position (x, y)."
     )
     parameters = {
         "type": "object",
         "properties": {
             "image_name": {
                 "type": "string",
-                "description": "Name of the image (from list_images).",
+                "description": "Name of the image (from list_images). Required for Writer.",
+            },
+            "shape_index": {
+                "type": "integer",
+                "description": "Shape index on the page (from list_images). For Calc/Draw/Impress only.",
+            },
+            "draw": {
+                "type": "object",
+                "description": "Draw/Impress options",
+                "properties": {
+                    "page_index": {
+                        "type": "integer",
+                        "description": "0-based page index (active page if omitted)",
+                    },
+                },
+            },
+            "calc": {
+                "type": "object",
+                "description": "Calc options",
+                "properties": {
+                    "sheet_name": {
+                        "type": "string",
+                        "description": "Sheet name (active sheet if omitted)",
+                    },
+                },
             },
         },
-        "required": ["image_name"],
+        "required": [],
     }
-    doc_types = ["writer"]
+    doc_types = None  # all document types
 
     def execute(self, ctx, **kwargs):
         image_name = kwargs.get("image_name", "")
-        if not image_name:
-            return {"status": "error", "message": "image_name is required."}
+        shape_index = kwargs.get("shape_index")
 
+        doc = ctx.doc
+
+        if ctx.doc_type == "writer":
+            if not image_name:
+                return {"status": "error", "message": "image_name is required for Writer."}
+            return self._writer_info(ctx, image_name)
+
+        if not image_name and shape_index is None:
+            return {"status": "error", "message": "image_name or shape_index is required."}
+
+        # Calc / Draw / Impress — find shape on draw page
+        from plugin.modules.draw.bridge import get_draw_page
+        from plugin.framework.graphic_query import find_image_on_page, _shape_info
+        page, _ = get_draw_page(
+            ctx,
+            page_index=kwargs.get("page_index"),
+            sheet_name=kwargs.get("sheet_name"),
+        )
+        shape, idx = find_image_on_page(
+            page, image_name=image_name or None, shape_index=shape_index,
+        )
+        if shape is None:
+            return {"status": "error", "message": "Image not found."}
+        info = _shape_info(shape, index=idx)
+        info["status"] = "ok"
+        return info
+
+    def _writer_info(self, ctx, image_name):
+        """Writer-specific detailed image info."""
         doc = ctx.doc
         graphics = doc.getGraphicObjects()
         if not graphics.hasByName(image_name):
@@ -146,19 +185,12 @@ class GetImageInfo(ToolBase):
         graphic = graphics.getByName(image_name)
         size = graphic.getPropertyValue("Size")
 
-        # Graphic URL — try the modern property first, then legacy.
         graphic_url = ""
         try:
             graphic_url = graphic.getPropertyValue("GraphicURL")
         except Exception:
             pass
-        if not graphic_url:
-            try:
-                graphic_url = str(graphic.getPropertyValue("GraphicObjectFillBitmap"))
-            except Exception:
-                pass
 
-        # Anchor type
         anchor_type = None
         try:
             anchor_type = int(graphic.getPropertyValue("AnchorType").value)
@@ -168,7 +200,6 @@ class GetImageInfo(ToolBase):
             except Exception:
                 pass
 
-        # Orientation
         hori_orient = None
         vert_orient = None
         try:
@@ -180,7 +211,6 @@ class GetImageInfo(ToolBase):
         except Exception:
             pass
 
-        # Title / description
         title = ""
         description = ""
         try:
@@ -192,7 +222,6 @@ class GetImageInfo(ToolBase):
         except Exception:
             pass
 
-        # Paragraph index via anchor
         paragraph_index = -1
         try:
             anchor = graphic.getAnchor()
@@ -223,7 +252,7 @@ class GetImageInfo(ToolBase):
 
 
 # ------------------------------------------------------------------
-# SetImageProperties
+# SetImageProperties — Writer-only
 # ------------------------------------------------------------------
 
 class SetImageProperties(ToolBase):
@@ -232,7 +261,8 @@ class SetImageProperties(ToolBase):
     name = "set_image_properties"
     intent = "media"
     description = (
-        "Resize, reposition, crop, or update caption/alt-text for an image."
+        "Resize, reposition, crop, or update caption/alt-text for a Writer image. "
+        "Writer-only: uses anchor types, orientation, and frame properties."
     )
     parameters = {
         "type": "object",
@@ -294,7 +324,6 @@ class SetImageProperties(ToolBase):
         graphic = graphics.getByName(image_name)
         updated = []
 
-        # Size
         width_mm = kwargs.get("width_mm")
         height_mm = kwargs.get("height_mm")
         if width_mm is not None or height_mm is not None:
@@ -306,19 +335,16 @@ class SetImageProperties(ToolBase):
             graphic.setPropertyValue("Size", new_size)
             updated.append("size")
 
-        # Title
         title = kwargs.get("title")
         if title is not None:
             graphic.setPropertyValue("Title", title)
             updated.append("title")
 
-        # Description (alt-text)
         description = kwargs.get("description")
         if description is not None:
             graphic.setPropertyValue("Description", description)
             updated.append("description")
 
-        # Anchor type
         anchor_type = kwargs.get("anchor_type")
         if anchor_type is not None:
             from com.sun.star.text.TextContentAnchorType import (
@@ -335,7 +361,6 @@ class SetImageProperties(ToolBase):
                 graphic.setPropertyValue("AnchorType", anchor_map[anchor_type])
                 updated.append("anchor_type")
 
-        # Orientation
         hori_orient = kwargs.get("hori_orient")
         if hori_orient is not None:
             graphic.setPropertyValue("HoriOrient", hori_orient)
@@ -354,7 +379,7 @@ class SetImageProperties(ToolBase):
 
 
 # ------------------------------------------------------------------
-# DownloadImage
+# DownloadImage — all doc types
 # ------------------------------------------------------------------
 
 class DownloadImage(ToolBase):
@@ -406,37 +431,27 @@ class DownloadImage(ToolBase):
 
 
 # ------------------------------------------------------------------
-# InsertImage
+# InsertImage — all doc types
 # ------------------------------------------------------------------
 
 class InsertImage(ToolBase):
-    """Insert an image from local path or URL into the document."""
+    """Insert an image from local path or URL into any document type."""
 
     name = "insert_image"
     intent = "media"
     description = (
         "Insert an image from local path or URL into the document. "
-        "URLs are auto-downloaded first."
+        "URLs are auto-downloaded first. "
+        "In Writer, inserts as a text graphic object at a locator or paragraph. "
+        "In Calc, inserts on the active sheet's drawing layer. "
+        "In Draw/Impress, inserts centered on the current or specified page."
     )
     parameters = {
         "type": "object",
         "properties": {
             "image_path": {
                 "type": "string",
-                "description": (
-                    "Local file path or URL of the image to insert."
-                ),
-            },
-            "locator": {
-                "type": "string",
-                "description": (
-                    "Unified locator for insertion point "
-                    "(e.g. 'bookmark:NAME', 'heading_text:Title')."
-                ),
-            },
-            "paragraph_index": {
-                "type": "integer",
-                "description": "Paragraph index for insertion point.",
+                "description": "Local file path or URL of the image to insert.",
             },
             "width_mm": {
                 "type": "integer",
@@ -446,10 +461,63 @@ class InsertImage(ToolBase):
                 "type": "integer",
                 "description": "Height in millimetres (default: 80).",
             },
+            "title": {
+                "type": "string",
+                "description": "Image title (tooltip text).",
+            },
+            "description": {
+                "type": "string",
+                "description": "Image alt-text / description.",
+            },
+            "writer": {
+                "type": "object",
+                "description": "Writer-specific insertion options",
+                "properties": {
+                    "locator": {
+                        "type": "string",
+                        "description": (
+                            "Unified locator for insertion point "
+                            "(e.g. 'bookmark:NAME', 'heading_text:Title')."
+                        ),
+                    },
+                    "paragraph_index": {
+                        "type": "integer",
+                        "description": "Paragraph index for insertion point.",
+                    },
+                },
+            },
+            "draw": {
+                "type": "object",
+                "description": "Draw/Impress-specific options",
+                "properties": {
+                    "page_index": {
+                        "type": "integer",
+                        "description": "0-based page index (active page if omitted).",
+                    },
+                    "x": {
+                        "type": "integer",
+                        "description": "X position in 1/100 mm (centered if omitted).",
+                    },
+                    "y": {
+                        "type": "integer",
+                        "description": "Y position in 1/100 mm (centered if omitted).",
+                    },
+                },
+            },
+            "calc": {
+                "type": "object",
+                "description": "Calc-specific options",
+                "properties": {
+                    "sheet_name": {
+                        "type": "string",
+                        "description": "Sheet name (active sheet if omitted).",
+                    },
+                },
+            },
         },
         "required": ["image_path"],
     }
-    doc_types = ["writer"]
+    doc_types = None  # all document types
     is_mutation = True
 
     def execute(self, ctx, **kwargs):
@@ -461,10 +529,8 @@ class InsertImage(ToolBase):
 
         width_mm = kwargs.get("width_mm", 80)
         height_mm = kwargs.get("height_mm", 80)
-        locator = kwargs.get("locator")
-        paragraph_index = kwargs.get("paragraph_index")
-
-        doc = ctx.doc
+        title = kwargs.get("title", "")
+        description = kwargs.get("description", "")
 
         # Auto-download URLs
         if image_path.startswith("http://") or image_path.startswith("https://"):
@@ -473,63 +539,122 @@ class InsertImage(ToolBase):
             except Exception as e:
                 return {"status": "error", "message": "Download failed: %s" % e}
 
-        # Verify local file exists
         if not os.path.isfile(image_path):
-            return {
-                "status": "error",
-                "message": "File not found: %s" % image_path,
-            }
+            return {"status": "error", "message": "File not found: %s" % image_path}
 
-        # Convert to file:// URL
         file_url = uno.systemPathToFileUrl(os.path.abspath(image_path))
+        width_units = int(width_mm) * 100
+        height_units = int(height_mm) * 100
 
+        doc = ctx.doc
+        # Remove shared params already extracted — avoid double-passing
+        extra = {k: v for k, v in kwargs.items()
+                 if k not in ("image_path", "width_mm", "height_mm", "title", "description")}
+
+        if ctx.doc_type == "writer":
+            return self._insert_writer(ctx, file_url, width_units, height_units,
+                                       title, description, **extra)
+
+        # Calc / Draw / Impress — shape on DrawPage
         try:
-            # Create graphic object
-            graphic = doc.createInstance("com.sun.star.text.TextGraphicObject")
-            graphic.setPropertyValue("GraphicURL", file_url)
-
-            # Set size
-            from com.sun.star.awt import Size
-            size = Size()
-            size.Width = int(width_mm) * 100
-            size.Height = int(height_mm) * 100
-            graphic.setPropertyValue("Size", size)
-
-            # Resolve insertion point
-            doc_text = doc.getText()
-            doc_svc = ctx.services.document
-
-            if locator is not None and paragraph_index is None:
-                resolved = doc_svc.resolve_locator(doc, locator)
-                paragraph_index = resolved.get("para_index")
-
-            if paragraph_index is not None:
-                target, _ = doc_svc.find_paragraph_element(doc, paragraph_index)
-                if target is None:
-                    return {
-                        "status": "error",
-                        "message": "Paragraph %d not found." % paragraph_index,
-                    }
-                cursor = doc_text.createTextCursorByRange(target.getEnd())
-            else:
-                # Insert at current cursor position (end of document)
-                cursor = doc_text.createTextCursor()
-                cursor.gotoEnd(False)
-
-            doc_text.insertTextContent(cursor, graphic, False)
-
-            return {
-                "status": "ok",
-                "image_name": graphic.getName(),
-                "width_mm": width_mm,
-                "height_mm": height_mm,
-            }
+            return self._insert_drawpage(ctx, file_url, width_units, height_units,
+                                         title, description, **extra)
         except Exception as e:
             return {"status": "error", "message": str(e)}
 
+    def _insert_writer(self, ctx, file_url, width, height, title, desc, **kwargs):
+        """Insert image in Writer document."""
+        from com.sun.star.awt import Size
+        doc = ctx.doc
+
+        graphic = doc.createInstance("com.sun.star.text.TextGraphicObject")
+        graphic.setPropertyValue("GraphicURL", file_url)
+        size = Size()
+        size.Width = width
+        size.Height = height
+        graphic.setPropertyValue("Size", size)
+        if title:
+            graphic.setPropertyValue("Title", title)
+        if desc:
+            graphic.setPropertyValue("Description", desc)
+
+        doc_text = doc.getText()
+        doc_svc = ctx.services.document
+        locator = kwargs.get("locator")
+        paragraph_index = kwargs.get("paragraph_index")
+
+        if locator is not None and paragraph_index is None:
+            resolved = doc_svc.resolve_locator(doc, locator)
+            paragraph_index = resolved.get("para_index")
+
+        if paragraph_index is not None:
+            target, _ = doc_svc.find_paragraph_element(doc, paragraph_index)
+            if target is None:
+                return {
+                    "status": "error",
+                    "message": "Paragraph %d not found." % paragraph_index,
+                }
+            cursor = doc_text.createTextCursorByRange(target.getEnd())
+        else:
+            cursor = doc_text.createTextCursor()
+            cursor.gotoEnd(False)
+
+        doc_text.insertTextContent(cursor, graphic, False)
+
+        return {
+            "status": "ok",
+            "image_name": graphic.getName(),
+            "width_mm": width // 100,
+            "height_mm": height // 100,
+        }
+
+    def _insert_drawpage(self, ctx, file_url, width, height, title, desc, **kwargs):
+        """Insert image as shape on DrawPage (Calc/Draw/Impress)."""
+        from com.sun.star.awt import Size, Point
+        from plugin.modules.draw.bridge import get_draw_page
+
+        page, _ = get_draw_page(
+            ctx,
+            page_index=kwargs.get("page_index"),
+            sheet_name=kwargs.get("sheet_name"),
+        )
+        doc = ctx.doc
+
+        image = doc.createInstance("com.sun.star.drawing.GraphicObjectShape")
+        image.GraphicURL = file_url
+        page.add(image)
+        image.setSize(Size(width, height))
+
+        # Position: explicit or centered
+        x = kwargs.get("x")
+        y = kwargs.get("y")
+        if x is not None and y is not None:
+            image.setPosition(Point(x, y))
+        elif ctx.doc_type != "calc":
+            # Center on page for Draw/Impress
+            try:
+                image.setPosition(Point(
+                    (page.Width - width) // 2,
+                    (page.Height - height) // 2,
+                ))
+            except Exception:
+                pass
+
+        if title:
+            image.Title = title
+        if desc:
+            image.Description = desc
+
+        return {
+            "status": "ok",
+            "image_name": image.Name,
+            "width_mm": width // 100,
+            "height_mm": height // 100,
+        }
+
 
 # ------------------------------------------------------------------
-# DeleteImage
+# DeleteImage — all doc types
 # ------------------------------------------------------------------
 
 class DeleteImage(ToolBase):
@@ -537,29 +662,74 @@ class DeleteImage(ToolBase):
 
     name = "delete_image"
     intent = "media"
-    description = "Delete an image from the document."
+    description = (
+        "Delete an image from the document. "
+        "In Writer, removes by image_name. "
+        "In Calc/Draw/Impress, removes by image_name or shape_index."
+    )
     parameters = {
         "type": "object",
         "properties": {
             "image_name": {
                 "type": "string",
-                "description": "Name of the image to delete (from list_images).",
+                "description": "Name of the image to delete. Required for Writer.",
             },
-            "remove_frame": {
-                "type": "boolean",
-                "description": "Also remove the containing frame (default: true).",
+            "shape_index": {
+                "type": "integer",
+                "description": "Shape index on the page (from list_images). For Calc/Draw/Impress only.",
+            },
+            "draw": {
+                "type": "object",
+                "description": "Draw/Impress options",
+                "properties": {
+                    "page_index": {
+                        "type": "integer",
+                        "description": "0-based page index (active page if omitted).",
+                    },
+                },
+            },
+            "calc": {
+                "type": "object",
+                "description": "Calc options",
+                "properties": {
+                    "sheet_name": {
+                        "type": "string",
+                        "description": "Sheet name (active sheet if omitted).",
+                    },
+                },
             },
         },
-        "required": ["image_name"],
+        "required": [],
     }
-    doc_types = ["writer"]
+    doc_types = None  # all document types
     is_mutation = True
 
     def execute(self, ctx, **kwargs):
         image_name = kwargs.get("image_name", "")
-        if not image_name:
-            return {"status": "error", "message": "image_name is required."}
+        shape_index = kwargs.get("shape_index")
 
+        if ctx.doc_type == "writer":
+            if not image_name:
+                return {"status": "error", "message": "image_name is required for Writer."}
+            return self._delete_writer(ctx, image_name)
+
+        if not image_name and shape_index is None:
+            return {"status": "error", "message": "image_name or shape_index is required."}
+
+        # Calc / Draw / Impress
+        from plugin.modules.draw.bridge import get_draw_page
+        from plugin.framework.graphic_query import delete_image_drawpage
+        page, _ = get_draw_page(
+            ctx,
+            page_index=kwargs.get("page_index"),
+            sheet_name=kwargs.get("sheet_name"),
+        )
+        if delete_image_drawpage(page, image_name=image_name or None, shape_index=shape_index):
+            return {"status": "ok", "deleted": image_name or ("shape_index:%d" % shape_index)}
+        return {"status": "error", "message": "Image not found."}
+
+    def _delete_writer(self, ctx, image_name):
+        """Delete image in Writer via removeTextContent()."""
         doc = ctx.doc
         graphics = doc.getGraphicObjects()
         if not graphics.hasByName(image_name):
@@ -569,21 +739,18 @@ class DeleteImage(ToolBase):
                 "message": "Image '%s' not found." % image_name,
                 "available": available,
             }
-
         graphic = graphics.getByName(image_name)
-
         try:
             anchor = graphic.getAnchor()
             text = anchor.getText()
             text.removeTextContent(graphic)
         except Exception as e:
-            return {"status": "error", "message": "Failed to delete image: %s" % e}
-
+            return {"status": "error", "message": "Failed to delete: %s" % e}
         return {"status": "ok", "deleted": image_name}
 
 
 # ------------------------------------------------------------------
-# ReplaceImage
+# ReplaceImage — Writer-only
 # ------------------------------------------------------------------
 
 class ReplaceImage(ToolBase):
@@ -592,7 +759,8 @@ class ReplaceImage(ToolBase):
     name = "replace_image"
     intent = "media"
     description = (
-        "Replace an image's source file keeping position and frame."
+        "Replace a Writer image's source file keeping position and frame. "
+        "Writer-only: preserves TextFrame anchor position."
     )
     parameters = {
         "type": "object",
@@ -659,7 +827,6 @@ class ReplaceImage(ToolBase):
         try:
             graphic.setPropertyValue("GraphicURL", file_url)
 
-            # Optionally update size
             width_mm = kwargs.get("width_mm")
             height_mm = kwargs.get("height_mm")
             if width_mm is not None or height_mm is not None:
@@ -699,7 +866,6 @@ def _download_image_to_cache(url, verify_ssl=False, force=False):
     url_path = url.split("?")[0]
     if "." in url_path.split("/")[-1]:
         ext = "." + url_path.split("/")[-1].rsplit(".", 1)[-1]
-        # Sanitize extension
         ext = ext[:6].lower()
         if not ext.replace(".", "").isalnum():
             ext = ""

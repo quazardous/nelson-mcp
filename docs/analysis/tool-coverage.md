@@ -299,11 +299,13 @@ Separate Calc tools (`search_in_spreadsheet`, `replace_in_spreadsheet`) using `X
 
 `undo` and `redo` for all doc types via `XUndoManager`.
 
+#### 7.10 Image tools — unify insert/list/info/delete — DONE (v0.3.1)
+
+Created `framework/graphic_query.py` with cross-doc image query helpers. `insert_image`, `list_images`, `get_image_info`, `delete_image` now work on all doc types. Writer uses `getGraphicObjects()`, Calc/Draw/Impress use DrawPage shape iteration. Non-Writer tools support `shape_index` for lookup (Draw shapes often have empty names). Doc-type namespacing for `insert_image` (`writer: {locator, paragraph_index}`, `draw: {page_index, x, y}`, `calc: {sheet_name}`).
+
+Also fixed: validation now runs before `_flatten_doc_type_params()` so nested doc-type params validate against the schema correctly.
+
 ### Remaining work
-
-#### Image tools — unify insert/list/info/delete
-
-See section 6 above. Create `framework/graphic_query.py`. Refactor `InsertImage` to delegate to `image_utils`. ~150 lines total.
 
 #### Impress transitions/layouts
 
@@ -320,8 +322,8 @@ See section 6 above. Create `framework/graphic_query.py`. Refactor `InsertImage`
 | Search/replace | yes | yes | no | no | Calc added v0.3.1 |
 | Comments/annotations | yes | yes | no | no | Calc added v0.3.1 |
 | Styles | yes | yes | yes | yes | Unified v0.3.1 |
-| Images (insert) | yes | framework | framework | framework | **TODO: unify tool** |
-| Images (list/manage) | yes | **no** | **no** | **no** | **TODO: unify** |
+| Images (insert) | yes | yes | yes | yes | Unified v0.3.1 |
+| Images (list/manage) | yes | yes | yes | yes | Unified v0.3.1 |
 | Shapes | yes | yes | yes | yes | Unified v0.3.1 |
 | Navigation/outline | deep | basic | no | no | Calc added v0.3.1 |
 | Tracked changes | yes | no | no | no | Writer-specific |
@@ -351,10 +353,11 @@ See section 6 above. Create `framework/graphic_query.py`. Refactor `InsertImage`
 | 10 | Add Impress speaker notes editing | **DONE** v0.3.1 |
 | 11 | Add print tool (XPrintable, all types) | **DONE** v0.3.1 |
 | 12 | Add undo/redo tool (all types) | **DONE** v0.3.1 |
+| 13 | Unify image tools (insert/list/info/delete) | **DONE** v0.3.1 |
+| 14 | Fix validation order (validate before flatten) | **DONE** v0.3.1 |
 
 ### Remaining
 
 | # | Action | Effort | Impact |
 |---|--------|--------|--------|
-| 13 | Unify image tools (insert/list/info/delete) | M | 4x coverage |
-| 14 | Add Impress transitions/layouts | M | Impress-specific |
+| 15 | Add Impress transitions/layouts | M | Impress-specific |

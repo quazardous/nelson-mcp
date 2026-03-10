@@ -154,13 +154,13 @@ class ToolRegistry:
                 f"Tool {tool_name} does not support doc_type={ctx.doc_type}"
             )
 
-        # Flatten doc-type-specific nested params
-        kwargs = _flatten_doc_type_params(kwargs, ctx.doc_type)
-
-        # Validate parameters
+        # Validate parameters (before flattening — schema has nested doc-type objects)
         ok, err = tool.validate(**kwargs)
         if not ok:
             return {"status": "error", "error": err}
+
+        # Flatten doc-type-specific nested params
+        kwargs = _flatten_doc_type_params(kwargs, ctx.doc_type)
 
         # Emit executing event
         bus = self._services.get("events")

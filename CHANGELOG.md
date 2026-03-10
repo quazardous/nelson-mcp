@@ -19,8 +19,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - **Impress speaker notes** — `get_speaker_notes` and `set_speaker_notes` (first Impress-only tools)
 - **Print tool** — `print_document` for all document types via `XPrintable`
 - **Undo/Redo tools** — `undo` and `redo` for all document types via `XUndoManager`
+- **`graphic_query.py` framework helper** — cross-document image listing/lookup via `getGraphicObjects()` (Writer) and DrawPage shape iteration (Calc/Draw/Impress)
 
 ### Changed
+
+- **Image tools unified** — `insert_image`, `list_images`, `get_image_info`, `delete_image` now work on all document types; non-Writer docs support `shape_index` lookup; `insert_image` uses doc-type namespacing for placement params
+- **Validation order fix** — `ToolRegistry.execute()` now validates parameters before `_flatten_doc_type_params()`, so nested doc-type objects validate correctly against the schema
 
 - **Styles tools unified** — `list_styles` and `get_style_info` now work on all document types (Writer, Calc, Draw, Impress) via `XStyleFamiliesSupplier`; auto-discovers available families when called without `family` param
 - **Shape tools unified** — `create_shape`, `edit_shape`, `delete_shape`, `get_draw_summary` now work on all document types with drawing layer support; use doc-type namespacing for page/sheet selection
