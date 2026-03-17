@@ -1,0 +1,82 @@
+name: ai.ollama
+title: Ollama LLM provider
+requires: [ai]
+menu_group: ai
+
+actions:
+  ollama_launch:
+    title: "Start Ollama"
+  ollama_stop:
+    title: "Stop Ollama"
+
+menus:
+  - title: "Ollama"
+    context: [writer, calc, draw]
+    submenu:
+      - action: ollama_launch
+      - action: ollama_stop
+
+config:
+  install:
+    widget: button
+    label: Detect / Install Ollama
+    helper: "Checks if Ollama is installed, installs it if needed, and pulls the starter model."
+    action: "plugin.modules.ai_ollama:on_install"
+  create_preset:
+    widget: button
+    label: Create Default Instance
+    helper: "Creates an instance with default settings. Reopen Options to see it."
+    action: "plugin.modules.ai_ollama:on_create_preset"
+  launch:
+    widget: button
+    label: Launch Ollama
+    helper: "Starts Ollama server. Does nothing if already running."
+    action: "plugin.modules.ai_ollama:on_launch_button"
+  instances:
+    type: string
+    default: "[]"
+    widget: list_detail
+    inline: true
+    label: Ollama Instances
+    helper: "Local or remote Ollama servers"
+    name_field: name
+    item_fields:
+      name:
+        type: string
+        label: Name
+        widget: text
+        default: "Local"
+      endpoint:
+        type: string
+        label: API Endpoint
+        widget: text
+        default: "http://127.0.0.1:11434"
+      model:
+        type: string
+        default: "llama3.2:latest"
+        widget: combo_text
+        label: Model
+        helper: "Pick a model or type a custom name"
+        options:
+          - value: "llama3.2:latest"
+            label: "Llama 3.2 3B"
+          - value: "llama3.1:8b"
+            label: "Llama 3.1 8B"
+          - value: "gemma3:4b"
+            label: "Gemma 3 4B"
+          - value: "gemma3:12b"
+            label: "Gemma 3 12B"
+          - value: "mistral:7b"
+            label: "Mistral 7B"
+          - value: "qwen3:8b"
+            label: "Qwen 3 8B"
+          - value: "qwen3:14b"
+            label: "Qwen 3 14B"
+      temperature:
+        type: float
+        label: Temperature
+        widget: number
+        default: 0.3
+        min: 0.0
+        max: 2.0
+        helper: "Lower = more deterministic (good for tagging)"

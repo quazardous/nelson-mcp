@@ -1,0 +1,13 @@
+name: ai
+title: AI text providers
+provides_services: [ai]
+requires: [config, events]
+
+config:
+  default_instance:
+    type: string
+    default: ""
+    widget: select
+    label: Default Text AI Provider
+    public: true
+    options_provider: "plugin.modules.ai:get_instance_options"
