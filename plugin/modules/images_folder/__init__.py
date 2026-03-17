@@ -108,6 +108,11 @@ def on_reset_db():
 
     msg = "Database reset: %d provider(s) cleared" % count
 
+    # Emit event so ai_images can re-index
+    bus = services.get("events")
+    if bus:
+        bus.emit("gallery:reset", kind="images")
+
     import threading
 
     def _deferred():

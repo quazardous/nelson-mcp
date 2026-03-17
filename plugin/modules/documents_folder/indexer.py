@@ -104,11 +104,12 @@ class DocumentIndex:
             self._conn = None
 
     def reset(self):
-        """Delete the SQLite database file so it is rebuilt on next access."""
-        self.close()
-        if os.path.isfile(self._db_path):
-            os.remove(self._db_path)
-            log.info("Deleted document index: %s", self._db_path)
+        """Clear all indexed data (soft reset — truncates tables)."""
+        conn = self._connect()
+        conn.execute("DELETE FROM documents")
+        conn.execute("DELETE FROM documents_fts")
+        conn.commit()
+        log.info("Document index cleared (soft reset): %s", self._db_path)
 
     # -- Scanning --------------------------------------------------------------
 

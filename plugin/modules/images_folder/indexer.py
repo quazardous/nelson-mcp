@@ -90,11 +90,12 @@ class FolderIndex:
             self._conn = None
 
     def reset(self):
-        """Delete the SQLite database file so it is rebuilt on next access."""
-        self.close()
-        if os.path.isfile(self._db_path):
-            os.remove(self._db_path)
-            log.info("Deleted index database: %s", self._db_path)
+        """Clear all indexed data (soft reset — truncates tables)."""
+        conn = self._connect()
+        conn.execute("DELETE FROM images")
+        conn.execute("DELETE FROM images_fts")
+        conn.commit()
+        log.info("Index cleared (soft reset): %s", self._db_path)
 
     # -- Scanning --------------------------------------------------------------
 

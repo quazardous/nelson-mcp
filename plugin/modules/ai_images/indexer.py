@@ -13,10 +13,14 @@ the caption as metadata.
 
 import base64
 import logging
+import subprocess
 import struct
 import threading
 
 log = logging.getLogger("nelson.ai_images.indexer")
+
+# Windows: hide subprocess console window
+_CREATION_FLAGS = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 # Max dimension for the thumbnail sent to CLIP (keeps payload small)
 _THUMB_MAX = 512
@@ -24,6 +28,8 @@ _THUMB_MAX = 512
 # Singleton state
 _stop_event = threading.Event()
 _running = False
+_current_job = None  # set during indexing for progress updates
+_status_indicator = None  # LO status bar indicator
 
 
 def is_running():
@@ -33,19 +39,91 @@ def is_running():
 
 def start_indexing(services):
     """Submit an indexing job to the sequential queue."""
+    global _current_job
     _stop_event.clear()
     job = services.jobs.enqueue(
         _run_indexer,
         kind="ai_gallery_index",
-        params={"status": "queued"},
+        params={"status": "queued", "progress": 0, "total": 0, "indexed": 0},
         services=services,
     )
+    _current_job = job
     return job
 
 
 def stop_indexing():
     """Signal the running indexer to stop after current image."""
     _stop_event.set()
+
+
+def _update_progress(status, total=0, indexed=0, current=""):
+    """Update the current job's params for panel/tool visibility."""
+    job = _current_job
+    if job is None:
+        return
+    job.params.update({
+        "status": status,
+        "total": total,
+        "indexed": indexed,
+    })
+    if current:
+        job.params["current"] = current
+
+
+def _statusbar_start(text, total):
+    """Start the status bar progress indicator."""
+    global _status_indicator
+    try:
+        from plugin.framework.uno_context import get_ctx
+        from plugin.framework.main_thread import post_to_main_thread
+        ctx = get_ctx()
+        if not ctx:
+            return
+        desktop = ctx.ServiceManager.createInstanceWithContext(
+            "com.sun.star.frame.Desktop", ctx)
+        frame = desktop.getCurrentFrame()
+        if frame is None:
+            return
+        sb = frame.createStatusIndicator()
+        _status_indicator = sb
+        post_to_main_thread(lambda: sb.start(text, total))
+    except Exception:
+        pass
+
+
+def _statusbar_update(value, text=None):
+    """Update the status bar progress value."""
+    sb = _status_indicator
+    if sb is None:
+        return
+    try:
+        from plugin.framework.main_thread import post_to_main_thread
+        if text:
+            post_to_main_thread(lambda: (sb.setText(text), sb.setValue(value)))
+        else:
+            post_to_main_thread(lambda: sb.setValue(value))
+    except Exception:
+        pass
+
+
+def _statusbar_end(text=None):
+    """Close the status bar indicator, optionally showing a final message."""
+    global _status_indicator
+    sb = _status_indicator
+    _status_indicator = None
+    if sb is None:
+        return
+    try:
+        from plugin.framework.uno_context import get_ctx
+        from plugin.framework.main_thread import post_to_main_thread
+        if text:
+            # Show final message briefly, then close
+            post_to_main_thread(lambda: (sb.setText(text), sb.setValue(100)))
+            threading.Timer(5.0, lambda: post_to_main_thread(sb.end)).start()
+        else:
+            post_to_main_thread(sb.end)
+    except Exception:
+        pass
 
 
 def _run_indexer(services):
@@ -56,6 +134,7 @@ def _run_indexer(services):
         return _run_indexer_inner(services)
     finally:
         _running = False
+        _update_progress("done")
 
 
 def _run_indexer_inner(services):
@@ -120,10 +199,15 @@ def _run_indexer_inner(services):
             log.warning("AI indexer: no untagged images in '%s'", gallery_inst.name)
             continue
 
+        batch_total = len(untagged)
         log.warning("AI indexer: %d untagged images in '%s'",
-                    len(untagged), gallery_inst.name)
+                    batch_total, gallery_inst.name)
+        _update_progress("indexing", total=batch_total, indexed=total)
+        _statusbar_start(
+            "AI indexing '%s': 0/%d" % (gallery_inst.name, batch_total),
+            batch_total)
 
-        for item in untagged:
+        for item_idx, item in enumerate(untagged):
             if _stop_event.is_set():
                 log.info("Indexing stopped by user after %d images", total)
                 break
@@ -158,12 +242,20 @@ def _run_indexer_inner(services):
                     gp.update_metadata(image_id, meta)
                     total += 1
                     log.debug("Indexed %s: %s", image_id, caption[:80])
+                    _update_progress("indexing", total=batch_total,
+                                     indexed=total, current=image_id)
+                    _statusbar_update(
+                        item_idx + 1,
+                        "AI indexing: %d/%d" % (item_idx + 1, batch_total))
 
             except Exception:
                 log.exception("Error indexing %s", image_id)
                 errors += 1
 
-    log.info("Indexing complete: %d indexed, %d errors", total, errors)
+    msg = "AI indexing complete: %d indexed, %d errors" % (total, errors)
+    log.info(msg)
+    _update_progress("done", indexed=total)
+    _statusbar_end(msg)
     return {"indexed": total, "errors": errors}
 
 
@@ -258,7 +350,6 @@ def _resize_and_encode(file_path):
 def _resize_with_magick(file_path, ext):
     """Resize using ImageMagick if available. Returns base64 or None."""
     import shutil
-    import subprocess
     import tempfile
 
     magick = shutil.which("magick") or shutil.which("convert")
@@ -272,7 +363,8 @@ def _resize_with_magick(file_path, ext):
         cmd = [magick, file_path,
                "-resize", "%dx%d>" % (_THUMB_MAX, _THUMB_MAX),
                "-quality", "85", tmp_path]
-        subprocess.run(cmd, capture_output=True, timeout=10)
+        subprocess.run(cmd, capture_output=True, timeout=10,
+                       creationflags=_CREATION_FLAGS)
 
         import os
         if os.path.isfile(tmp_path) and os.path.getsize(tmp_path) > 0:
