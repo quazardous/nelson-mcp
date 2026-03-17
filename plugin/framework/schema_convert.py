@@ -8,6 +8,17 @@
 import copy
 
 
+_DOCUMENT_PARAM = {
+    "type": "string",
+    "description": (
+        "Optional document target. By default, tools operate on the "
+        "active document. Use this to target a specific document. "
+        "Formats: id:<doc_id>, path:<file_path>, title:<frame_title>, "
+        "or a bare 32-char hex doc_id."
+    ),
+}
+
+
 def to_mcp_schema(tool):
     """Convert a ToolBase instance to an MCP tools/list schema.
 
@@ -22,6 +33,12 @@ def to_mcp_schema(tool):
     input_schema = copy.deepcopy(tool.parameters) if tool.parameters else {}
     if "type" not in input_schema:
         input_schema["type"] = "object"
+
+    # Inject _document meta-parameter on all tools that require a document
+    if getattr(tool, "requires_doc", True):
+        props = input_schema.setdefault("properties", {})
+        if "_document" not in props:
+            props["_document"] = _DOCUMENT_PARAM
 
     return {
         "name": tool.name,

@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.5.0] — 2026-03-17
+
+### Added
+
+- **Document IDs** — every document gets a persistent `NelsonDocId` (UUID stored in UserDefinedProperties). Survives save, save-as, and close+reopen. Returned by `create_document`, `open_document`, `list_open_documents`, and `get_document_info`
+- **`_document` meta-parameter** — all tools accept an optional `_document` parameter to target a specific document instead of the active one. Supports `id:<doc_id>`, `path:<file_path>`, `title:<frame_title>`, or bare 32-char hex doc_id
+- **Multi-document awareness** — `get_document_info` now includes `_other_open_documents` hint listing other open docs with their `doc_id`, title, and type
+- **`save_document` first-save support** — accepts an optional `path` parameter to save unsaved documents for the first time (no more "Use File > Save As" error)
+- **`create_document` with `path`** — optional `path` parameter to create and save a document in a single call (recommended to avoid ambiguity with multiple unsaved docs)
+- **`read_log` tool (mcp-dev)** — new tool in the dev MCP proxy to read Nelson and LibreOffice logs with level/pattern filtering, so agents can diagnose friction without filesystem access
+
+### Changed
+
+- **`enumerate_open_documents` helper** — centralized in DocumentService, used by `list_open_documents` (replaces per-tool frame enumeration)
+- **`_document` URI resolution** — protocol handler activates the matching frame before tool execution, so all existing tools benefit from document targeting without code changes
+- **`_document` schema injection** — `schema_convert.py` auto-injects the `_document` parameter into all tools with `requires_doc=True`
+- **Error messages** — `save_document` on unsaved docs now suggests the `path` parameter and lists supported extensions
+
 ## [0.4.1] — 2026-03-14
 
 ### Added

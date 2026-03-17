@@ -23,19 +23,39 @@ _PDF_FILTERS = {
     "impress": "impress_pdf_Export",
 }
 
+_EXT_FILTERS = {
+    ".odt": "writer8",
+    ".docx": "MS Word 2007 XML",
+    ".ods": "calc8",
+    ".xlsx": "Calc MS Excel 2007 XML",
+    ".odp": "impress8",
+    ".pptx": "Impress MS PowerPoint 2007 XML",
+}
+
 
 class SaveDocument(ToolBase):
     """Save the current document to its existing location."""
 
     name = "save_document"
     description = (
-        "Saves the current document. Only works if the document has already "
-        "been saved to a file (has a URL). Returns an error for unsaved "
-        "new documents."
+        "Saves the current document. If the document has never been saved, "
+        "provide a 'path' to save it for the first time (e.g. "
+        "C:/Users/me/doc.odt). Supported extensions: "
+        + ", ".join(sorted(_EXT_FILTERS))
+        + "."
     )
     parameters = {
         "type": "object",
-        "properties": {},
+        "properties": {
+            "path": {
+                "type": "string",
+                "description": (
+                    "File path for first save of an unsaved document "
+                    "(absolute path, e.g. C:/Users/me/report.odt). "
+                    "Ignored if the document already has a file location."
+                ),
+            },
+        },
         "required": [],
     }
     doc_types = None
@@ -45,15 +65,47 @@ class SaveDocument(ToolBase):
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
         url = doc.getURL()
-        if not url:
+
+        if url:
+            doc.store()
+            return {"status": "ok", "file_url": url}
+
+        # Unsaved document — need a path
+        path = kwargs.get("path")
+        if not path:
             return {
                 "status": "error",
-                "error": "Document has never been saved. Use File > Save As "
-                         "in LibreOffice to save it first.",
+                "error": (
+                    "Document has never been saved. Provide a 'path' "
+                    "parameter (e.g. path='C:/Users/me/report.odt') or "
+                    "use save_document_as. Supported extensions: "
+                    + ", ".join(sorted(_EXT_FILTERS)) + "."
+                ),
             }
 
-        doc.store()
-        return {"status": "ok", "file_url": url}
+        # Save to the given path (same logic as SaveDocumentAs)
+        file_url = uno.systemPathToFileUrl(path)
+        _, ext = os.path.splitext(path)
+        ext = ext.lower()
+        filter_name = _EXT_FILTERS.get(ext)
+        if not filter_name:
+            return {
+                "status": "error",
+                "error": "Unsupported extension: %s. Supported: %s"
+                         % (ext, ", ".join(sorted(_EXT_FILTERS))),
+            }
+
+        pv = PropertyValue()
+        pv.Name = "FilterName"
+        pv.Value = filter_name
+
+        try:
+            doc.storeToURL(file_url, (pv,))
+        except Exception as exc:
+            log.exception("SaveDocument (first save) failed: %s", exc)
+            return {"status": "error", "error": str(exc)}
+
+        return {"status": "ok", "file_url": file_url, "first_save": True}
 
 
 class ExportPdf(ToolBase):
@@ -106,18 +158,6 @@ class ExportPdf(ToolBase):
             return {"status": "error", "error": str(exc)}
 
         return {"status": "ok", "file_url": url, "filter": filter_name}
-
-
-# ── Extension → filter name mapping ──────────────────────────────────
-
-_EXT_FILTERS = {
-    ".odt": "writer8",
-    ".docx": "MS Word 2007 XML",
-    ".ods": "calc8",
-    ".xlsx": "Calc MS Excel 2007 XML",
-    ".odp": "impress8",
-    ".pptx": "Impress MS PowerPoint 2007 XML",
-}
 
 
 class SaveDocumentAs(ToolBase):
@@ -191,7 +231,11 @@ class CreateDocument(ToolBase):
 
     name = "create_document"
     intent = "media"
-    description = "Create a new empty document in LibreOffice."
+    description = (
+        "Create a new empty document in LibreOffice. "
+        "Optionally provide a 'path' to save it immediately "
+        "(recommended — avoids ambiguity with multiple unsaved documents)."
+    )
     parameters = {
         "type": "object",
         "properties": {
@@ -206,6 +250,14 @@ class CreateDocument(ToolBase):
                     "Optional initial text content (only for writer documents)."
                 ),
             },
+            "path": {
+                "type": "string",
+                "description": (
+                    "Optional file path to save the document immediately "
+                    "(e.g. C:/Users/me/report.odt). Supported extensions: "
+                    + ", ".join(sorted(_EXT_FILTERS)) + "."
+                ),
+            },
         },
         "required": ["doc_type"],
     }
@@ -216,6 +268,7 @@ class CreateDocument(ToolBase):
     def execute(self, ctx, **kwargs):
         doc_type = kwargs["doc_type"]
         content = kwargs.get("content")
+        path = kwargs.get("path")
 
         factory_url = _FACTORY_URLS.get(doc_type)
         if not factory_url:
@@ -240,7 +293,41 @@ class CreateDocument(ToolBase):
             except Exception as exc:
                 log.warning("Could not set initial content: %s", exc)
 
-        return {"status": "ok", "doc_type": doc_type}
+        # Assign and return a stable doc_id
+        doc_id = None
+        try:
+            doc_svc = ctx.services.document
+            doc_id = doc_svc.get_doc_id(new_doc)
+        except Exception:
+            pass
+
+        result = {"status": "ok", "doc_type": doc_type}
+        if doc_id:
+            result["doc_id"] = doc_id
+
+        # Optionally save immediately
+        if path:
+            file_url = uno.systemPathToFileUrl(path)
+            _, ext = os.path.splitext(path)
+            ext = ext.lower()
+            filter_name = _EXT_FILTERS.get(ext)
+            if not filter_name:
+                result["save_error"] = (
+                    "Unsupported extension: %s. Supported: %s"
+                    % (ext, ", ".join(sorted(_EXT_FILTERS)))
+                )
+            else:
+                pv = PropertyValue()
+                pv.Name = "FilterName"
+                pv.Value = filter_name
+                try:
+                    new_doc.storeToURL(file_url, (pv,))
+                    result["file_url"] = file_url
+                except Exception as exc:
+                    log.warning("CreateDocument save failed: %s", exc)
+                    result["save_error"] = str(exc)
+
+        return result
 
 
 class OpenDocument(ToolBase):
@@ -273,12 +360,23 @@ class OpenDocument(ToolBase):
 
         try:
             desktop = _get_desktop()
-            desktop.loadComponentFromURL(url, "_blank", 0, ())
+            new_doc = desktop.loadComponentFromURL(url, "_blank", 0, ())
         except Exception as exc:
             log.exception("OpenDocument failed: %s", exc)
             return {"status": "error", "error": str(exc)}
 
-        return {"status": "ok", "file_url": url}
+        # Return stable doc_id
+        doc_id = None
+        try:
+            doc_svc = ctx.services.document
+            doc_id = doc_svc.get_doc_id(new_doc)
+        except Exception:
+            pass
+
+        result = {"status": "ok", "file_url": url}
+        if doc_id:
+            result["doc_id"] = doc_id
+        return result
 
 
 class CloseDocument(ToolBase):
@@ -388,7 +486,11 @@ class ListOpenDocuments(ToolBase):
 
     name = "list_open_documents"
     intent = "media"
-    description = "List all currently open documents in LibreOffice."
+    description = (
+        "List all currently open documents in LibreOffice. "
+        "Each document has a unique doc_id for identification. "
+        "The active document (is_active=true) is the one MCP tools operate on."
+    )
     parameters = {
         "type": "object",
         "properties": {},
@@ -399,60 +501,9 @@ class ListOpenDocuments(ToolBase):
 
     def execute(self, ctx, **kwargs):
         try:
-            desktop = _get_desktop()
-            frames = desktop.getFrames()
-            documents = []
-            for i in range(frames.getCount()):
-                frame = frames.getByIndex(i)
-                comp = frame.getController()
-                if comp is None:
-                    continue
-                doc = comp.getModel()
-                if doc is None:
-                    continue
-
-                doc_url = ""
-                try:
-                    doc_url = doc.getURL()
-                except Exception:
-                    pass
-
-                title = ""
-                try:
-                    title = doc.getDocumentProperties().Title
-                except Exception:
-                    pass
-                if not title:
-                    title = frame.getTitle()
-
-                # Detect document type from supported services.
-                dtype = "unknown"
-                try:
-                    if doc.supportsService(
-                        "com.sun.star.text.TextDocument"
-                    ):
-                        dtype = "writer"
-                    elif doc.supportsService(
-                        "com.sun.star.sheet.SpreadsheetDocument"
-                    ):
-                        dtype = "calc"
-                    elif doc.supportsService(
-                        "com.sun.star.presentation.PresentationDocument"
-                    ):
-                        dtype = "impress"
-                    elif doc.supportsService(
-                        "com.sun.star.drawing.DrawingDocument"
-                    ):
-                        dtype = "draw"
-                except Exception:
-                    pass
-
-                documents.append({
-                    "title": title or "(untitled)",
-                    "url": doc_url or None,
-                    "doc_type": dtype,
-                })
-
+            doc_svc = ctx.services.document
+            documents = doc_svc.enumerate_open_documents(
+                active_model=ctx.doc)
             return {
                 "status": "ok",
                 "documents": documents,

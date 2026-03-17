@@ -21,3 +21,9 @@ servers:
     command: wbox-mcp
     args: ["serve", "/home/david/dev/projects/quazardous/nelson-mcp/dev/lo-wbox/config.yaml"]
     description: Wbox compositor MCP (lo-wbox)
+
+# Log files accessible via the read_log tool.
+# Keys are friendly names, values are absolute paths (~ is expanded).
+log_files:
+  nelson: ~/nelson.log
+  soffice: ~/soffice-debug.log

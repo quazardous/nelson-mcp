@@ -8,6 +8,7 @@
 import logging
 import re
 import time
+import uuid
 
 from plugin.framework.service_base import ServiceBase
 from plugin.framework.uno_context import get_ctx
@@ -481,6 +482,110 @@ class DocumentService(ServiceBase):
             return model.getURL() or str(id(model))
         except Exception:
             return str(id(model))
+
+    # ── Document ID (persistent) ──────────────────────────────────
+
+    _DOC_ID_PROP = "NelsonDocId"
+
+    def get_doc_id(self, model):
+        """Return a stable, persistent document ID.
+
+        Stored as a UserDefinedProperty on the document itself.
+        Survives save, save-as, and reopen from file.  Generated on
+        first access (UUID4 hex, 32 chars).
+        """
+        if model is None:
+            return None
+        try:
+            udp = model.getDocumentProperties().getUserDefinedProperties()
+            try:
+                return udp.getPropertyValue(self._DOC_ID_PROP)
+            except Exception:
+                pass
+            # First access — generate and store
+            doc_id = uuid.uuid4().hex
+            udp.addProperty(
+                self._DOC_ID_PROP,
+                0,  # com.sun.star.beans.PropertyAttribute.REMOVEABLE
+                doc_id,
+            )
+            log.debug("Assigned doc_id %s to %s",
+                       doc_id, model.getURL() or "(unsaved)")
+            return doc_id
+        except Exception:
+            log.debug("get_doc_id failed", exc_info=True)
+            return None
+
+    # ── Open documents enumeration ────────────────────────────────
+
+    def enumerate_open_documents(self, active_model=None):
+        """Return list of all open documents with metadata.
+
+        Each entry: {doc_id, title, doc_type, url, is_active}.
+        *active_model* is the currently active UNO model (for is_active flag).
+        """
+        desktop = self._get_desktop()
+        if desktop is None:
+            return []
+        docs = []
+        try:
+            frames = desktop.getFrames()
+            for i in range(frames.getCount()):
+                try:
+                    frame = frames.getByIndex(i)
+                    controller = frame.getController()
+                    if controller is None:
+                        continue
+                    model = controller.getModel()
+                    if model is None:
+                        continue
+                    if not hasattr(model, "supportsService"):
+                        continue
+
+                    doc_type = self.detect_doc_type(model)
+                    if doc_type is None:
+                        continue
+
+                    url = ""
+                    try:
+                        url = model.getURL()
+                    except Exception:
+                        pass
+
+                    title = ""
+                    try:
+                        title = model.getDocumentProperties().Title
+                    except Exception:
+                        pass
+                    if not title:
+                        title = frame.getTitle()
+
+                    doc_id = self.get_doc_id(model)
+
+                    is_active = False
+                    if active_model is not None:
+                        try:
+                            is_active = (
+                                model.getURL() == active_model.getURL()
+                                and frame.getTitle()
+                                == active_model.getCurrentController()
+                                    .getFrame().getTitle()
+                            )
+                        except Exception:
+                            is_active = (model is active_model)
+
+                    docs.append({
+                        "doc_id": doc_id,
+                        "title": title or "(untitled)",
+                        "doc_type": doc_type,
+                        "url": url or None,
+                        "is_active": is_active,
+                    })
+                except Exception:
+                    continue
+        except Exception:
+            log.debug("enumerate_open_documents failed", exc_info=True)
+        return docs
 
     def get_document_end(self, model, max_chars=4000):
         """Return the last *max_chars* characters of the document."""

@@ -22,6 +22,9 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
+import os
+import re
+
 import yaml
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
@@ -178,12 +181,57 @@ async def _dispatch(srv_cfg: dict, srv_name: str,
 
 
 # ---------------------------------------------------------------------------
+# Log reader
+# ---------------------------------------------------------------------------
+
+_LOG_LEVEL_RE = re.compile(r"\[(DEBUG|INFO|WARN(?:ING)?|ERROR|CRITICAL)\]")
+_LOG_LEVELS = ("DEBUG", "INFO", "WARN", "WARNING", "ERROR", "CRITICAL")
+_LEVEL_RANK = {l: i for i, l in enumerate(_LOG_LEVELS)}
+
+
+def _read_log_lines(path: str, last_n: int = 50,
+                    level: str | None = None,
+                    pattern: str | None = None) -> list[str]:
+    """Read the last *last_n* lines of a log file, optionally filtered."""
+    path = os.path.expanduser(path)
+    if not os.path.isfile(path):
+        return ["[file not found: %s]" % path]
+    with open(path, "r", encoding="utf-8", errors="replace") as f:
+        lines = f.readlines()
+
+    # Filter by minimum level
+    if level:
+        min_rank = _LEVEL_RANK.get(level.upper(), 0)
+        filtered = []
+        for line in lines:
+            m = _LOG_LEVEL_RE.search(line)
+            if m:
+                lv = m.group(1)
+                if lv == "WARNING":
+                    lv = "WARN"
+                if _LEVEL_RANK.get(lv, 0) >= min_rank:
+                    filtered.append(line)
+        lines = filtered
+
+    # Filter by regex pattern
+    if pattern:
+        try:
+            rx = re.compile(pattern, re.IGNORECASE)
+            lines = [l for l in lines if rx.search(l)]
+        except re.error:
+            lines = [l for l in lines if pattern.lower() in l.lower()]
+
+    return [l.rstrip() for l in lines[-last_n:]]
+
+
+# ---------------------------------------------------------------------------
 # MCP server
 # ---------------------------------------------------------------------------
 
 def create_server(config: dict) -> Server:
     servers = config.get("servers", {})
     server_names = list(servers.keys())
+    log_files = config.get("log_files", {})
 
     app = Server("mcp-dev")
 
@@ -200,7 +248,43 @@ def create_server(config: dict) -> Server:
             if d:
                 desc_lines[-1] += " — " + d
 
+        log_names = list(log_files.keys())
+
         return [
+            Tool(
+                name="read_log",
+                description=(
+                    "Read recent lines from a log file. "
+                    "Available logs: %s" % ", ".join(
+                        "%s (%s)" % (n, os.path.expanduser(p))
+                        for n, p in log_files.items()
+                    )
+                ),
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "log": {
+                            "type": "string",
+                            "description": "Log name.",
+                            "enum": log_names,
+                        },
+                        "last_n": {
+                            "type": "integer",
+                            "description": "Number of lines to return (default 50).",
+                        },
+                        "level": {
+                            "type": "string",
+                            "description": "Minimum log level filter.",
+                            "enum": ["DEBUG", "INFO", "WARN", "ERROR"],
+                        },
+                        "pattern": {
+                            "type": "string",
+                            "description": "Regex or substring to filter lines.",
+                        },
+                    },
+                    "required": ["log"],
+                },
+            ),
             Tool(
                 name="mcp_list_tools",
                 description=(
@@ -249,6 +333,24 @@ def create_server(config: dict) -> Server:
 
     @app.call_tool()
     async def call_tool_handler(name: str, arguments: dict):
+        # ── read_log ──────────────────────────────────────────────────
+        if name == "read_log":
+            log_name = arguments.get("log", "")
+            if log_name not in log_files:
+                return [TextContent(type="text", text=json.dumps({
+                    "error": "Unknown log '%s'. Available: %s"
+                    % (log_name, ", ".join(log_files.keys()))
+                }))]
+            lines = await asyncio.to_thread(
+                _read_log_lines,
+                log_files[log_name],
+                arguments.get("last_n", 50),
+                arguments.get("level"),
+                arguments.get("pattern"),
+            )
+            return [TextContent(type="text", text="\n".join(lines))]
+
+        # ── mcp_list_tools / mcp_call_tool ────────────────────────────
         server_name = arguments.get("server", "")
         if server_name not in servers:
             return [TextContent(

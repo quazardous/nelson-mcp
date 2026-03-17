@@ -53,8 +53,8 @@ _INTERNAL_ERROR = -32603
 _SERVER_BUSY = -32000
 _EXECUTION_TIMEOUT = -32001
 
-# Session management
-_mcp_session_id = None
+# Session management — pre-initialized so every response includes it
+_mcp_session_id = str(uuid.uuid4())
 
 
 class MCPProtocolHandler:
@@ -163,6 +163,26 @@ class MCPProtocolHandler:
         is_initialize = (isinstance(msg, dict)
                          and msg.get("method") == "initialize")
 
+        # Validate incoming session ID (MCP spec: reject stale sessions)
+        client_session = handler.headers.get("Mcp-Session-Id")
+        if (client_session
+                and client_session != _mcp_session_id
+                and not is_initialize):
+            log.warning("[MCP] Stale session ID: client=%s server=%s",
+                        client_session, _mcp_session_id)
+            self._send_json(handler, 409, {
+                "jsonrpc": "2.0",
+                "id": req_id,
+                "error": {
+                    "code": -32000,
+                    "message": (
+                        "Session expired (server restarted). "
+                        "Please re-initialize the MCP connection."
+                    ),
+                },
+            })
+            return
+
         # Batch request
         if isinstance(msg, list):
             responses = []
@@ -172,10 +192,18 @@ class MCPProtocolHandler:
                     _status, response = result
                     responses.append(response)
             if responses:
-                self._send_json(handler, 200, responses)
+                handler.send_response(200)
+                self._send_cors_headers(handler)
+                handler.send_header("Content-Type", "application/json")
+                handler.send_header("Mcp-Session-Id", _mcp_session_id)
+                handler.end_headers()
+                handler.wfile.write(json.dumps(
+                    responses, ensure_ascii=False, default=str
+                ).encode("utf-8"))
             else:
                 handler.send_response(202)
                 self._send_cors_headers(handler)
+                handler.send_header("Mcp-Session-Id", _mcp_session_id)
                 handler.end_headers()
             return
 
@@ -190,8 +218,9 @@ class MCPProtocolHandler:
             return
         status, response = result
 
-        if is_initialize and status == 200:
-            _mcp_session_id = str(uuid.uuid4())
+        # Session ID is stable for the server's lifetime — generated at
+        # module import time.  A redeploy restarts the process and gets
+        # a new ID automatically.
 
         handler.send_response(status)
         self._send_cors_headers(handler)
@@ -340,13 +369,22 @@ class MCPProtocolHandler:
 
         registry = self.tool_registry
         svc_registry = self.services
+        doc_svc = svc_registry.document
 
-        # Resolve active document
+        # Extract _document meta-parameter (not passed to tool)
+        doc_uri = arguments.pop("_document", None)
+
+        # Resolve target document
         doc = None
         doc_type = None
         try:
-            doc_svc = svc_registry.document
-            doc = doc_svc.get_active_document()
+            if doc_uri:
+                doc = self._resolve_document_uri(doc_svc, doc_uri)
+                if doc is None:
+                    return {"status": "error",
+                            "message": "Document not found: %s" % doc_uri}
+            else:
+                doc = doc_svc.get_active_document()
             if doc:
                 doc_type = doc_svc.detect_doc_type(doc)
         except Exception:
@@ -380,8 +418,72 @@ class MCPProtocolHandler:
 
         if isinstance(result, dict):
             result["_elapsed_ms"] = round(elapsed * 1000, 1)
+            if doc_uri:
+                result["_document"] = doc_uri
 
         return result
+
+    def _resolve_document_uri(self, doc_svc, uri):
+        """Resolve a document URI to a UNO model.
+
+        Supported formats:
+            id:<nelson_doc_id>       — by NelsonDocId property
+            path:<file_path>         — by file system path
+            file:<file_url>          — by file:// URL
+            title:<frame_title>      — by frame title (partial match)
+            <32-hex-chars>           — bare doc_id shorthand
+
+        Returns the UNO model, or None if not found.
+        Also activates the matching frame so subsequent calls target it.
+        """
+        import re
+
+        scheme, _, value = uri.partition(":")
+
+        # Bare 32-char hex → treat as id
+        if not value and re.fullmatch(r"[0-9a-f]{32}", scheme):
+            value = scheme
+            scheme = "id"
+
+        desktop = doc_svc._get_desktop()
+        if desktop is None:
+            return None
+
+        frames = desktop.getFrames()
+        for i in range(frames.getCount()):
+            try:
+                frame = frames.getByIndex(i)
+                controller = frame.getController()
+                if controller is None:
+                    continue
+                model = controller.getModel()
+                if model is None or not hasattr(model, "supportsService"):
+                    continue
+
+                match = False
+                if scheme == "id":
+                    match = (doc_svc.get_doc_id(model) == value)
+                elif scheme == "path":
+                    try:
+                        import uno as _uno
+                        model_path = _uno.fileUrlToSystemPath(model.getURL())
+                        match = (model_path == value)
+                    except Exception:
+                        pass
+                elif scheme == "file":
+                    match = (model.getURL() == value)
+                elif scheme == "title":
+                    match = (value.lower() in frame.getTitle().lower())
+
+                if match:
+                    frame.activate()
+                    log.debug("_resolve_document_uri: activated %s → %s",
+                              uri, frame.getTitle())
+                    return model
+            except Exception:
+                continue
+
+        return None
 
     # ── Helpers ───────────────────────────────────────────────────────
 

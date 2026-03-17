@@ -31,10 +31,12 @@ class GetDocumentInfo(ToolBase):
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
         url = doc.getURL()
+        doc_svc = ctx.services.document
 
         # Basic info.
         info = {
             "status": "ok",
+            "doc_id": doc_svc.get_doc_id(doc),
             "doc_type": ctx.doc_type,
             "file_url": url or None,
             "is_modified": doc.isModified(),
@@ -81,5 +83,18 @@ class GetDocumentInfo(ToolBase):
                 info["title"] = url.rsplit("/", 1)[-1]
             else:
                 info["title"] = "(untitled)"
+
+        # Hint: other open documents
+        try:
+            all_docs = doc_svc.enumerate_open_documents(active_model=doc)
+            other_docs = [d for d in all_docs if not d.get("is_active")]
+            if other_docs:
+                info["_other_open_documents"] = [
+                    {"doc_id": d["doc_id"], "title": d["title"],
+                     "doc_type": d["doc_type"]}
+                    for d in other_docs
+                ]
+        except Exception:
+            pass
 
         return info
