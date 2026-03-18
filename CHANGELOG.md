@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.6.1] — 2026-03-18
+
+### Added
+
+- **Insert image with frame + caption** — Writer images are wrapped in a TextFrame with auto-caption (description > title > filename). Aspect ratio always preserved, `max_height_mm` default 160 for portrait images. `caption=false` for standalone mode
+- **PageMap** — sparse `{para_index → page}` cache with linear interpolation for fast navigation. Self-correcting: enriched by every goto_paragraph, tool result, and cursor movement
+- **Cursor tracker** — `XSelectionChangeListener` on the document controller tracks `current_page` in real-time, zero overhead
+- **MCP bridge** — `dev/mcp-bridge/server.py`: stdio-to-HTTP proxy with auto re-initialize on 409, `-Xutf8` for Windows UTF-8 support
+- **Systematic result enrichment** — `_enrich_result` adds `paragraph_index`, `_page`, `_bookmark` to every Writer tool response. Calc gets `_sheet`, Draw/Impress gets `_page_index`. All resolved from cached data (no scan)
+- **Ollama install scripts** — `install.ps1` / `install.sh` for detect/install/pull model
+
+### Changed
+
+- **follow_activity works** — auto-scrolls to mutation location via `jumpToPage` (instant) or `goto_paragraph` (PageMap-assisted). Tools return `paragraph_index` for the event
+- **goto_paragraph** — iterative page jumps via PageMap instead of O(n) scan. Skips jump if already on correct page, skips gotoRange if already at paragraph
+- **Panel "Show" button** — uses PageMap-based goto_paragraph (no freeze)
+- **Cache invalidation preserves PageMap** — PageMap is a flexible guide, not a binary cache. Never cleared on mutation, self-corrects via observations
+- **Deploy** — polls `/health` + log marker instead of `sleep 12`. Returns immediately when ready
+
+### Fixed
+
+- **Post-insertion freeze** — `_enrich_result` no longer calls `goto_paragraph` or `find_heading_for_paragraph` (both triggered full para scan after cache invalidation). Uses PageMap estimation + cached bookmark map instead
+- **ActionLog nested args** — resolves `writer.paragraph_index` for panel "Show" button
+- **UTF-8 in MCP bridge** — `-Xutf8` flag fixes accent corruption on Windows
+
 ## [0.6.0] — 2026-03-17
 
 ### Added
