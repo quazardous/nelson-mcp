@@ -187,11 +187,7 @@ class ToolRegistry:
             bus.emit("tool:executing", name=tool_name, caller=ctx.caller,
                      kwargs=kwargs)
 
-        # Invalidate document cache on mutations (skipped in batch mode)
-        if tool.detects_mutation() and not self.batch_mode:
-            doc_svc = self._services.get("document")
-            if doc_svc:
-                doc_svc.invalidate_cache(ctx.doc)
+        # Cache invalidation moved AFTER execution (see below)
 
         # Auto-enable track changes for MCP mutations
         if (tool.detects_mutation() and ctx.caller == "mcp"
@@ -216,6 +212,13 @@ class ToolRegistry:
             bus.emit("tool:completed", name=tool_name, caller=ctx.caller,
                      result=result, is_mutation=tool.detects_mutation(),
                      doc=ctx.doc)
+
+        # Invalidate cache AFTER execution so the tool uses valid data
+        # and the next tool gets a fresh scan
+        if tool.detects_mutation() and not self.batch_mode:
+            doc_svc = self._services.get("document")
+            if doc_svc:
+                doc_svc.invalidate_cache(ctx.doc)
 
         return result
 

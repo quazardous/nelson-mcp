@@ -322,27 +322,14 @@ class DocumentService(ServiceBase):
         if cache.para_ranges is not None:
             return cache.para_ranges
         try:
-            # Lock controllers during scan to prevent viewport jump
-            locked = False
-            try:
-                model.lockControllers()
-                locked = True
-            except Exception:
-                pass
             text = model.getText()
             enum = text.createEnumeration()
             ranges = []
             while enum.hasMoreElements():
                 ranges.append(enum.nextElement())
             cache.para_ranges = ranges
-            if locked:
-                model.unlockControllers()
             return ranges
         except Exception:
-            try:
-                model.unlockControllers()
-            except Exception:
-                pass
             return []
 
     def find_paragraph_for_range(self, match_range, para_ranges, text_obj=None):
