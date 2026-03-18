@@ -448,21 +448,12 @@ class MCPProtocolHandler:
             if doc_uri:
                 result["_document"] = doc_uri
             result["_session"] = _mcp_session_id
-            self._enrich_result(result, doc, doc_svc, doc_type,
-                                arguments)
+            self._enrich_result(result, doc, doc_svc, doc_type)
 
         return result
 
-    def _enrich_result(self, result, doc, doc_svc, doc_type,
-                       arguments=None):
-        """Add systematic meta to every tool result.
-
-        Writer: _page, paragraph_index
-        Calc: _sheet
-        Draw/Impress: _page_index
-
-        Resolves paragraph_index from: result > arguments > locator.
-        """
+    def _enrich_result(self, result, doc, doc_svc, doc_type):
+        """Add lightweight meta to every tool result. No scanning."""
         if doc is None:
             return
 
@@ -489,56 +480,10 @@ class MCPProtocolHandler:
         except Exception:
             return
 
-        # --- Writer meta ---
+        # --- Writer meta (lightweight — no scanning) ---
         if doc_type == "writer":
             try:
                 vc = controller.getViewCursor()
-                args = arguments or {}
-
-                # Resolve paragraph_index: result > args > locator
-                pi = result.get("paragraph_index")
-                if pi is None:
-                    pi = result.get("para_index")
-                if pi is None and isinstance(args.get("paragraph_index"), int):
-                    pi = args["paragraph_index"]
-                if pi is None and args.get("locator"):
-                    try:
-                        resolved = doc_svc.resolve_locator(
-                            doc, args["locator"])
-                        pi = resolved.get("para_index")
-                    except Exception:
-                        pass
-                # Also check nested writer args
-                if pi is None:
-                    w = args.get("writer", {})
-                    if isinstance(w, dict):
-                        if isinstance(w.get("paragraph_index"), int):
-                            pi = w["paragraph_index"]
-                        elif w.get("locator"):
-                            try:
-                                resolved = doc_svc.resolve_locator(
-                                    doc, w["locator"])
-                                pi = resolved.get("para_index")
-                            except Exception:
-                                pass
-
-                if pi is not None and isinstance(pi, int):
-                    result.setdefault("paragraph_index", pi)
-
-                    # Nearest bookmark (cached, no rebuild)
-                    try:
-                        bm_svc = self.services.get("writer_bookmarks")
-                        if bm_svc:
-                            bm_map = bm_svc.get_mcp_bookmark_map(doc)
-                            nearest = bm_svc.find_nearest_heading_bookmark(
-                                pi, bm_map)
-                            if nearest:
-                                result.setdefault(
-                                    "_bookmark", nearest["bookmark"])
-                    except Exception:
-                        pass
-
-                # Current page from ViewCursor (where the user is)
                 result["_page"] = vc.getPage()
             except Exception:
                 pass

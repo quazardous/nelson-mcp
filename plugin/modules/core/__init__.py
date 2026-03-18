@@ -45,24 +45,11 @@ class Module(ModuleBase):
 
     def _on_tool_completed(self, name=None, caller=None, result=None,
                            is_mutation=False, doc=None, **_kw):
-        """Auto-scroll to mutation location when follow_activity is on."""
-        if not is_mutation or caller != "mcp" or doc is None:
-            return
-        if not self._cfg.get("follow_activity", True):
-            return
-        if result is None or result.get("status") == "error":
-            return
-
-        # Simple: if result has a known page, jump there
-        page = result.get("_page") or result.get("page")
-        if page and isinstance(page, int):
-            try:
-                controller = doc.getCurrentController()
-                vc = controller.getViewCursor()
-                if page != vc.getPage():
-                    vc.jumpToPage(page)
-            except Exception:
-                pass
+        """Handle tool completion events."""
+        # --- idxV2: follow_activity disabled ---
+        # Auto-scroll caused freezes and wrong page jumps.
+        # User uses panel "Show" button for navigation instead.
+        pass
 
     # ==================================================================
     # idxV2: all below is disabled pending unified index redesign.
