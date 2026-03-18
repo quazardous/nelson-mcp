@@ -36,6 +36,8 @@ class Module(ModuleBase):
 
     def start_background(self, services):
         self._attach_cursor_tracker()
+        # Trigger initial cache build after idle
+        self._reset_idle_timer()
 
     def _reset_idle_timer(self):
         """Reset the idle timer. When it expires, rebuild caches."""
@@ -66,6 +68,8 @@ class Module(ModuleBase):
 
             def _rebuild():
                 try:
+                    # Status bar feedback
+                    sb = self._statusbar_start(doc, "Nelson: indexing paragraphs...")
                     text = doc.getText()
                     enum = text.createEnumeration()
                     fresh = []
@@ -75,8 +79,17 @@ class Module(ModuleBase):
                     cache.para_ranges = fresh
                     cache.length = len(fresh)
                     cache.dirty = False
-                    # Update PageMap total
-                    cache.page_map.set_total(len(fresh))
+                    # Seed PageMap with doc dimensions
+                    pmap = cache.page_map
+                    pmap.set_total(len(fresh))
+                    try:
+                        pc = doc.getPropertyValue("PageCount")
+                        pmap.observe(0, 1)
+                        pmap.observe(len(fresh) - 1, pc)
+                    except Exception:
+                        pass
+                    self._statusbar_end(sb,
+                        "Nelson: %d paragraphs indexed" % len(fresh))
                     log.debug("idle: rebuilt para cache (%d paras)",
                               len(fresh))
                 except Exception:
@@ -85,6 +98,33 @@ class Module(ModuleBase):
             post_to_main_thread(_rebuild)
         except Exception:
             log.debug("idle: cache rebuild failed", exc_info=True)
+
+    @staticmethod
+    def _statusbar_start(doc, text):
+        """Show a brief message in the LO status bar."""
+        try:
+            frame = doc.getCurrentController().getFrame()
+            sb = frame.createStatusIndicator()
+            sb.start(text, 0)
+            return sb
+        except Exception:
+            return None
+
+    @staticmethod
+    def _statusbar_end(sb, text=None):
+        """Update and close status bar indicator."""
+        if sb is None:
+            return
+        try:
+            import threading
+            from plugin.framework.main_thread import post_to_main_thread
+            if text:
+                sb.setText(text)
+                sb.setValue(100)
+            threading.Timer(
+                2.0, lambda: post_to_main_thread(sb.end)).start()
+        except Exception:
+            pass
 
     def _on_tool_completed(self, name=None, caller=None, result=None,
                            is_mutation=False, doc=None, **_kw):
