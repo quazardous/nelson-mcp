@@ -82,10 +82,14 @@ class Module(ModuleBase):
                     # Seed PageMap with doc dimensions
                     pmap = cache.page_map
                     pmap.set_total(len(fresh))
+                    pmap.observe(0, 1)
                     try:
-                        pc = doc.getPropertyValue("PageCount")
-                        pmap.observe(0, 1)
-                        pmap.observe(len(fresh) - 1, pc)
+                        controller = doc.getCurrentController()
+                        vc = controller.getViewCursor()
+                        saved = vc.getPage()
+                        vc.jumpToLastPage()
+                        pmap.observe(len(fresh) - 1, vc.getPage())
+                        vc.jumpToPage(saved)
                     except Exception:
                         pass
                     self._statusbar_end(sb,
@@ -161,18 +165,9 @@ class Module(ModuleBase):
             from plugin.modules.core.services.document import DocumentCache
             cache = DocumentCache.get(doc)
             pmap = cache.page_map
-            # Seed with doc stats if empty
+            # Seed with current page info if empty
             if not pmap._samples:
-                try:
-                    pc = doc.getPropertyValue("PageCount")
-                    # Rough para count from doc stats (no scan)
-                    wc = doc.getPropertyValue("ParagraphCount")
-                    pmap.observe(0, 1)
-                    if wc > 0 and pc > 0:
-                        pmap.observe(wc, pc)
-                        pmap.set_total(wc)
-                except Exception:
-                    pass
+                pmap.observe(0, 1)
             est_page = pmap.estimate_page(pi)
             controller = doc.getCurrentController()
             vc = controller.getViewCursor()

@@ -563,17 +563,20 @@ class DocumentService(ServiceBase):
             cache = DocumentCache.get(model)
             pmap = cache.page_map
 
-            # Seed PageMap from doc properties if empty (no scan)
+            # Seed PageMap if empty — quick: just origin + last page
             if not pmap._samples:
+                pmap.observe(0, 1)
                 try:
-                    pc = model.getPropertyValue("PageCount")
-                    wc = model.getPropertyValue("ParagraphCount")
-                    pmap.observe(0, 1)
-                    if wc > 0 and pc > 0:
-                        pmap.observe(wc, pc)
-                        pmap.set_total(wc)
+                    saved = vc.getPage()
+                    vc.jumpToLastPage()
+                    last_page = vc.getPage()
+                    # Rough total from cache or estimate
+                    total = cache.length or 500
+                    pmap.observe(total, last_page)
+                    pmap.set_total(total)
+                    vc.jumpToPage(saved)
                 except Exception:
-                    pmap.observe(0, 1)
+                    pass
 
             # Estimate page and jump if needed
             known_page = pmap._samples.get(para_index)
