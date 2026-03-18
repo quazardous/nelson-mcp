@@ -524,14 +524,14 @@ class MCPProtocolHandler:
 
                 if pi is not None and isinstance(pi, int):
                     result.setdefault("paragraph_index", pi)
-                    # Estimate page from PageMap (known or interpolated)
+                    # Set _page only from known observations (not estimates)
                     try:
                         from plugin.modules.core.services.document import \
                             DocumentCache
                         pmap = DocumentCache.get(doc).page_map
-                        if pmap._samples:
-                            known = pmap._samples.get(pi)
-                            result["_page"] = known or pmap.estimate_page(pi)
+                        known = pmap._samples.get(pi)
+                        if known:
+                            result["_page"] = known
                     except Exception:
                         pass
 

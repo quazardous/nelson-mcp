@@ -147,26 +147,20 @@ class Module(ModuleBase):
         if result is None or result.get("status") == "error":
             return
 
-        # Priority: paragraph_index → PageMap estimate → _page fallback
-        pi = result.get("paragraph_index")
-        if pi is None:
-            pi = result.get("para_index")
-
-        try:
-            controller = doc.getCurrentController()
-            vc = controller.getViewCursor()
-            cur_page = vc.getPage()
-
-            if pi is not None and isinstance(pi, int):
-                # Use goto_paragraph (PageMap + jumpToPage, no scan)
-                self._doc_svc.goto_paragraph(doc, pi)
-            else:
-                # Fallback to _page if no paragraph info
-                page = result.get("_page") or result.get("page")
-                if page and isinstance(page, int) and page != cur_page:
+        # Jump to the page of the mutation (no paragraph scan)
+        from plugin.modules.core.services.document import DocumentCache
+        page = result.get("_page") or result.get("page")
+        if page and isinstance(page, int):
+            try:
+                controller = doc.getCurrentController()
+                vc = controller.getViewCursor()
+                cur_page = getattr(
+                    DocumentCache.get(doc), "current_page", None
+                ) or vc.getPage()
+                if page != cur_page:
                     vc.jumpToPage(page)
-        except Exception:
-            log.debug("follow_activity: jump failed", exc_info=True)
+            except Exception:
+                log.debug("follow_activity: jump failed", exc_info=True)
 
     def _attach_cursor_tracker(self):
         """Attach a lightweight listener to track the current page."""
