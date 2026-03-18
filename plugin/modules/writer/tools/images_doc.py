@@ -720,13 +720,16 @@ class InsertImage(ToolBase):
         caption_text = desc or title or _basename_from_url(file_url)
 
         if add_caption and caption_text:
-            return self._insert_with_frame(
+            result = self._insert_with_frame(
                 doc, doc_text, cursor, file_url, width, height,
                 title, desc, caption_text)
         else:
-            return self._insert_standalone(
+            result = self._insert_standalone(
                 doc, doc_text, cursor, file_url, width, height,
                 title, desc)
+        if paragraph_index is not None:
+            result["paragraph_index"] = paragraph_index
+        return result
 
     def _insert_with_frame(self, doc, doc_text, cursor,
                            file_url, width, height,
