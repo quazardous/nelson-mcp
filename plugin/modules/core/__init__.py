@@ -143,39 +143,24 @@ class Module(ModuleBase):
         if result is None or result.get("status") == "error":
             return
 
-        # Prefer page-based jump (instant) over paragraph-based
-        page = result.get("_page") or result.get("page")
-        if page and isinstance(page, int):
-            try:
-                controller = doc.getCurrentController()
-                vc = controller.getViewCursor()
-                vc.jumpToPage(page)
-                log.debug("follow_activity: jumped to page %d", page)
-                return
-            except Exception:
-                pass
-
-        # Fallback: estimate page from PageMap and jump (no scan)
+        # Priority: paragraph_index → PageMap estimate → _page fallback
         pi = result.get("paragraph_index")
         if pi is None:
             pi = result.get("para_index")
-        if pi is None:
-            return
+
         try:
-            from plugin.modules.core.services.document import DocumentCache
-            cache = DocumentCache.get(doc)
-            pmap = cache.page_map
-            # Seed with current page info if empty
-            if not pmap._samples:
-                pmap.observe(0, 1)
-            est_page = pmap.estimate_page(pi)
             controller = doc.getCurrentController()
             vc = controller.getViewCursor()
             cur_page = vc.getPage()
-            if est_page != cur_page:
-                vc.jumpToPage(est_page)
-            log.debug("follow_activity: jumped to page %d for para %d",
-                      est_page, pi)
+
+            if pi is not None and isinstance(pi, int):
+                # Use goto_paragraph (PageMap + jumpToPage, no scan)
+                self._doc_svc.goto_paragraph(doc, pi)
+            else:
+                # Fallback to _page if no paragraph info
+                page = result.get("_page") or result.get("page")
+                if page and isinstance(page, int) and page != cur_page:
+                    vc.jumpToPage(page)
         except Exception:
             log.debug("follow_activity: jump failed", exc_info=True)
 
