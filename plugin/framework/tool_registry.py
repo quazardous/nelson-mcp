@@ -195,9 +195,23 @@ class ToolRegistry:
                 and tool_name != "set_track_changes"):
             self._ensure_track_changes(ctx.doc)
 
+        # Wrap mutations in an undo context so Ctrl+Z works
+        undo_mgr = None
+        if tool.detects_mutation() and ctx.doc is not None:
+            try:
+                undo_mgr = ctx.doc.getUndoManager()
+                undo_mgr.enterUndoContext("Nelson: %s" % tool_name)
+            except Exception:
+                undo_mgr = None
+
         try:
             result = tool.execute(ctx, **kwargs)
         except Exception as exc:
+            if undo_mgr:
+                try:
+                    undo_mgr.leaveUndoContext()
+                except Exception:
+                    pass
             log.exception("Tool execution failed: %s", tool_name)
             if bus:
                 bus.emit("tool:failed", name=tool_name, error=str(exc), caller=ctx.caller)
@@ -207,6 +221,12 @@ class ToolRegistry:
                 "message": str(exc),
                 "retryable": True,
             }
+
+        if undo_mgr:
+            try:
+                undo_mgr.leaveUndoContext()
+            except Exception:
+                pass
 
         if bus:
             bus.emit("tool:completed", name=tool_name, caller=ctx.caller,
