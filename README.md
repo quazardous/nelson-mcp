@@ -18,7 +18,8 @@ Nelson MCP runs an HTTP server inside LibreOffice and speaks the [Model Context 
 
 ## Features
 
-- **100+ document tools** — read content, edit text, manage styles, insert images, handle tables, charts, conditional formatting, hyperlinks, track changes, navigate headings, search, and more
+- **148 document tools** — read content, edit text, manage styles, insert images, handle tables, charts, conditional formatting, hyperlinks, track changes, navigate headings, search, and more
+- **Custom MCP endpoints** — expose only the tools your agent needs. Built-in presets (minimal, writer-edit, writer-read, calc, gallery) or create your own filtered endpoints
 - **Writer, Calc, Draw, Impress** — tools adapt to the active document type
 - **Calc `=PROMPT()`** — call an LLM directly from a spreadsheet cell
 - **Built-in launchers** — launch Claude Code, Gemini CLI, or OpenCode directly from LibreOffice with one click. Nelson handles MCP config, prompt injection, and working directory setup automatically
@@ -52,6 +53,8 @@ Once installed, point your MCP client at the server:
 
 Open a document in LibreOffice, then ask your AI client to read or edit it.
 
+**For AI agents:** see [`QUICKSTART.md`](QUICKSTART.md) — a step-by-step guide for LLM agents on how to discover documents, navigate structure, and use tools effectively.
+
 ## Modules
 
 | Module | Description |
@@ -77,6 +80,13 @@ make test                 # Run tests
 ```
 
 See [DEVEL.md](DEVEL.md) for the complete developer guide and [docs/modules.md](docs/modules.md) for the module framework reference.
+
+## Documentation
+
+- [`QUICKSTART.md`](QUICKSTART.md) — agent guide: discovery, workflows, tool patterns
+- [`AGENTS.md`](AGENTS.md) — developer cheatsheet: project structure, build pipeline, critical rules
+- [`docs/howto/`](docs/howto/) — user guides: Tailscale + ChatGPT, Forge, Ollama indexation, image galleries
+- [`CHANGELOG.md`](CHANGELOG.md) — version history
 
 ## Acknowledgments
 

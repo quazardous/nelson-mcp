@@ -2,29 +2,32 @@
 
 Vision for AI-driven presentation capabilities, extending the existing Draw module.
 
-## Current capabilities (shared with Draw)
+## Current capabilities
 
+### Shared with Draw
 - `create_shape` — rectangles, ellipses, text boxes, lines
 - `edit_shape` — move, resize, recolor, change text
 - `delete_shape` — remove shapes
 - `get_draw_summary` — list shapes and properties on current slide
-- `list_pages` / `add_slide` / `delete_slide` — basic slide management
+- `get_page_objects` — detailed page content
+- `list_master_slides` / `get_slide_master` / `set_slide_master` — master page management
+- `insert_image` / `list_images` / `delete_image` — images on slides
 
-## Near term: slide & layout management
+### Impress-specific
+- `get_speaker_notes` / `set_speaker_notes` — speaker notes
+- `get_slide_transition` / `set_slide_transition` — 25 FadeEffect types, speed, auto-advance
+- `get_slide_layout` / `set_slide_layout` — 30 named layout types
+- `list_placeholders` / `get_placeholder_text` / `set_placeholder_text` — title, subtitle, body placeholders
+- `goto_page` — navigate to a slide
 
-- `add_slide(index, layout)` — insert with chosen layout (Title Slide, Title and Content, etc.)
+## Remaining roadmap
+
+### Near term
 - `reorder_slides(from_index, to_index)` — change slide sequence
 - `duplicate_slide(index)` — clone slides for templating
-- `list_master_slides()` / `apply_master_slide(master_name, page_index)` — theme management
+- Structured slide content export (title + bullets + images in one call)
 
-## Medium term: content & context
-
-- `get_notes(page_index)` / `set_notes(text, page_index)` — speaker notes
-- `get_slide_content_full(page_index)` — structured text (title, bullets, subtitles)
-- `create_table` — native Impress table support
-
-## Long term: generative workflows
-
+### Long term: generative workflows
 - Outline-to-deck conversion from Writer documents
 - AI slide audits (text density, contrast, visual balance)
 - Image generation for slide content
