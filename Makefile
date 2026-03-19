@@ -37,10 +37,8 @@ LO_PYTHON_VERSION ?= 3.12
 # Create Makefile.local with e.g. USE_DOCKER = 1
 -include Makefile.local
 
-# Set USE_DOCKER=1 to build via Docker instead of local Python/PyYAML.
-# Persistent: echo "USE_DOCKER = 1" > Makefile.local
-# One-shot:   make deploy USE_DOCKER=1
-USE_DOCKER ?=
+# Build always runs inside the dev Docker container.
+# Use `make _build` to run locally (requires Python, PyYAML, ImageMagick).
 
 # ── OS detection ─────────────────────────────────────────────────────────────
 
@@ -150,17 +148,13 @@ DOCKER_GID ?= $(shell id -g)
 endif
 export DOCKER_UID DOCKER_GID
 
+DOCKER_DEV = docker compose -f dev/docker/docker-compose.yml run --rm dev-build
+DOCKER_CI  = docker compose -f builder/docker-compose.yml up --build
+
+# Legacy Docker build (CI/release — ephemeral container)
 docker-build:
-	docker compose -f builder/docker-compose.yml up --build
+	$(DOCKER_CI)
 	@echo "Done: build/nelson.oxt"
-
-docker-dev:
-	docker compose -f dev/docker/docker-compose.yml run --rm dev-build build USE_DOCKER=
-	@echo "Done: build/nelson.oxt"
-
-docker-dev-rebuild:
-	docker compose -f dev/docker/docker-compose.yml run --rm dev-build rebuild USE_DOCKER=
-	@echo "Done: build/nelson.oxt (rebuilt)"
 
 # ── RDB (UNO type library) ────────────────────────────────────────────────
 # Requires LibreOffice SDK (unoidl-write).
@@ -203,17 +197,22 @@ else
 	@echo "sqlite3 bundling is Windows-only, skipping"
 endif
 
-ifeq ($(USE_DOCKER),1)
+# Build: always via dev Docker container (tools + make inside container)
+# The container runs `make _build` which uses local targets with deps.
+# Use `make _build` directly if running inside the container or locally.
 build:
-	@$(MAKE) docker-build
-else
-build: vendor manifest rdb icons sqlite3
+	$(DOCKER_DEV) _build
+
+rebuild:
+	$(DOCKER_DEV) _rebuild
+
+# Internal targets (called inside container or locally)
+_build: vendor manifest rdb icons sqlite3
 	@echo "Building $(EXTENSION_NAME).oxt..."
 	$(PYTHON) $(SCRIPTS)/build_oxt.py --output build/$(EXTENSION_NAME).oxt
 	@echo "Done: build/$(EXTENSION_NAME).oxt  (bundle in build/bundle/)"
-endif
 
-rebuild: clean build
+_rebuild: clean _build
 
 repack:
 	@echo "Re-packing from build/bundle/..."
