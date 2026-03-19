@@ -48,11 +48,18 @@ ifeq ($(OS),Windows_NT)
     # Use Git Bash as shell so Unix commands (sleep, rm, cat, tail...) work everywhere.
     # Run install.ps1 to ensure Git for Windows is installed.
     BASH_PATH := $(firstword $(wildcard C:/Program\ Files/Git/usr/bin/bash.exe) $(wildcard C:/Program\ Files/Git/bin/bash.exe))
+    ifeq ($(BASH_PATH),)
+        # Fallback: try common paths directly
+        ifneq (,$(wildcard C:/Program\ Files/Git/bin/bash.exe))
+            BASH_PATH := C:/Program Files/Git/bin/bash.exe
+        endif
+    endif
     ifneq ($(BASH_PATH),)
         SHELL   := $(BASH_PATH)
     endif
     .SHELLFLAGS := -c
     MAKE    := "$(MAKE)"
+    export SHELL
     SCRIPTS = scripts
     RUN_SH  = powershell -ExecutionPolicy Bypass -File
     EXT     = .ps1
