@@ -195,12 +195,16 @@ class ToolRegistry:
                 and tool_name != "set_track_changes"):
             self._ensure_track_changes(ctx.doc)
 
-        # Wrap mutations in an undo context so Ctrl+Z works
+        # Generate action ID for mutations (tracked in undo + result)
+        import uuid
+        action_id = None
         undo_mgr = None
         if tool.detects_mutation() and ctx.doc is not None:
+            action_id = uuid.uuid4().hex[:8]
             try:
                 undo_mgr = ctx.doc.getUndoManager()
-                undo_mgr.enterUndoContext("Nelson: %s" % tool_name)
+                undo_mgr.enterUndoContext(
+                    "Nelson: %s [%s]" % (tool_name, action_id))
             except Exception:
                 undo_mgr = None
 
@@ -227,6 +231,10 @@ class ToolRegistry:
                 undo_mgr.leaveUndoContext()
             except Exception:
                 pass
+
+        # Add action_id to result for traceability
+        if action_id and isinstance(result, dict):
+            result["_action_id"] = action_id
 
         if bus:
             bus.emit("tool:completed", name=tool_name, caller=ctx.caller,
