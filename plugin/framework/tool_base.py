@@ -75,6 +75,7 @@ class ToolBase(ABC):
 
     name: Optional[str] = None
     description: str = ""
+    help: Optional[str] = None  # detailed help (for docs, not MCP schema)
     parameters: Optional[Dict[str, Any]] = None
     doc_types: Optional[List[str]] = None
     tier: str = "extended"
