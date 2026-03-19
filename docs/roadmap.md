@@ -49,6 +49,19 @@ Bring back the two-tier tool delivery, adapted for MCP:
 - Writer document → Writer tools only (no Calc/Draw noise)
 - First edit done → surface `undo`, `save_document`
 
+### Pre-trained baseline rules
+
+Nelson ships with a `rules.json` generated from reference sessions — not hand-written heuristics. During development, we run scripted scenarios (open document, navigate, edit, save; create spreadsheet, fill data, chart; etc.) against the tool suite, collect the traces, and mine them with PrefixSpan + Markov analysis.
+
+The result: on first install, Nelson already knows the common workflows and suggests relevant `_next` actions. No user training needed, no "cold start" problem.
+
+```
+Dev time: scripted scenarios → traces → PrefixSpan/Markov → rules.json → shipped in .oxt
+Runtime:  rules.json loaded at boot → _next suggestions from day one
+```
+
+The baseline covers generic patterns (Writer editing, Calc data entry, document lifecycle). As the user works, their own traces accumulate and refine the suggestions over time (see v0.9).
+
 ### Session trace collection
 
 Nelson logs every tool call to a local SQLite database:
@@ -57,13 +70,13 @@ Nelson logs every tool call to a local SQLite database:
 session_traces (session_id, seq, tool_name, doc_type, success, prev_tool, ts)
 ```
 
-No telemetry, no cloud — just local data that fuels the learning cycle (see v0.9).
+No telemetry, no cloud — just local data that accumulates alongside the baseline and eventually personalizes the suggestions.
 
 ---
 
 ## v0.9 — Learn from usage
 
-The key insight: every agent session is a training signal. Nelson collects traces at runtime (zero cost), then uses established techniques from process mining and sequential analysis to extract patterns — and optionally an LLM to interpret them into actionable rules.
+v0.8 ships with baseline rules from reference sessions. v0.9 makes them personal: the user's own traces refine the baseline, and an offline LLM interprets the patterns into richer guidance. Same techniques (PrefixSpan, Markov), now applied to real usage data.
 
 ### Research foundations
 
