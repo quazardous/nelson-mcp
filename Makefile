@@ -79,7 +79,7 @@ endif
 
 # ── Phony targets ────────────────────────────────────────────────────────────
 
-.PHONY: help build rebuild repack repack-deploy xcu clean \
+.PHONY: help build rebuild repack repack-deploy xcu clean dev-up dev-down \
         install install-force uninstall cache \
         dev-deploy dev-deploy-remove \
         lo-start lo-start-full lo-kill lo-restart \
@@ -136,7 +136,7 @@ help:
 # Vendor: only reinstall if requirements changed
 vendor: vendor/.installed
 vendor/.installed: requirements-vendor.txt
-	uv pip install --target vendor -r requirements-vendor.txt
+	$(DOCKER_EXEC) pip install --target vendor -r requirements-vendor.txt
 	@touch vendor/.installed
 
 ifeq ($(OS),Windows_NT)
@@ -148,8 +148,16 @@ DOCKER_GID ?= $(shell id -g)
 endif
 export DOCKER_UID DOCKER_GID
 
-DOCKER_DEV = docker compose -f dev/docker/docker-compose.yml run --rm dev-build
-DOCKER_CI  = docker compose -f builder/docker-compose.yml up --build
+DOCKER_EXEC = docker exec nelson-dev
+DOCKER_UP   = docker compose -f dev/docker/docker-compose.yml up -d --build
+DOCKER_CI   = docker compose -f builder/docker-compose.yml up --build
+
+# Start dev container if not running
+dev-up:
+	@docker inspect nelson-dev >/dev/null 2>&1 || $(DOCKER_UP)
+
+dev-down:
+	docker compose -f dev/docker/docker-compose.yml down
 
 # Legacy Docker build (CI/release — ephemeral container)
 docker-build:
@@ -179,13 +187,13 @@ MAGICK      ?= magick
 icons: $(ICON_PNGS)
 
 $(ICON_DIR)/icon_16.png: $(ICON_SVG) | $(ICON_DIR)
-	$(MAGICK) -background none -density 256 $< -resize 16x16 $@
+	$(DOCKER_EXEC) magick -background none -density 256 $< -resize 16x16 $@
 
 $(ICON_DIR)/icon_24.png: $(ICON_SVG) | $(ICON_DIR)
-	$(MAGICK) -background none -density 256 $< -resize 24x24 $@
+	$(DOCKER_EXEC) magick -background none -density 256 $< -resize 24x24 $@
 
 $(ICON_DIR)/logo.png: $(ICON_SVG) | $(ICON_DIR)
-	$(MAGICK) -background none -density 256 $< -resize 42x42 $@
+	$(DOCKER_EXEC) magick -background none -density 256 $< -resize 42x42 $@
 
 $(ICON_DIR):
 	$(MKDIR) $(ICON_DIR)
@@ -200,11 +208,12 @@ endif
 # Build: always via dev Docker container (tools + make inside container)
 # The container runs `make _build` which uses local targets with deps.
 # Use `make _build` directly if running inside the container or locally.
-build:
-	$(DOCKER_DEV) _build
+build: dev-up vendor manifest rdb icons sqlite3
+	@echo "Building $(EXTENSION_NAME).oxt..."
+	$(DOCKER_EXEC) python3 scripts/build_oxt.py --output build/$(EXTENSION_NAME).oxt
+	@echo "Done: build/$(EXTENSION_NAME).oxt"
 
-rebuild:
-	$(DOCKER_DEV) _rebuild
+rebuild: clean build
 
 # Internal targets (called inside container or locally)
 _build: vendor manifest rdb icons sqlite3
@@ -240,7 +249,7 @@ MANIFEST_SOURCES = $(wildcard plugin/modules/*/module.yaml) \
 manifest: build/generated/Addons.xcu
 build/generated/Addons.xcu: $(MANIFEST_SOURCES) $(SCRIPTS)/generate_manifest.py
 	@echo "Generating manifest and XCS/XCU..."
-	$(PYTHON) $(SCRIPTS)/generate_manifest.py
+	$(DOCKER_EXEC) python3 $(SCRIPTS)/generate_manifest.py
 
 xcu: manifest
 

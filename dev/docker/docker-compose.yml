@@ -1,19 +1,17 @@
-# Dev build container — mounts project, runs make.
-#
-# Usage:
-#   make docker-dev              → make build (incremental)
-#   make docker-dev-rebuild      → make rebuild (force)
+# Dev build container — persistent, runs in background.
+# Start:  docker compose -f dev/docker/docker-compose.yml up -d
+# Stop:   docker compose -f dev/docker/docker-compose.yml down
+# Makefile uses `docker exec` for each command.
 
 services:
-  dev-build:
+  dev:
     build: .
+    container_name: nelson-dev
     user: "${DOCKER_UID:-1000}:${DOCKER_GID:-1000}"
     volumes:
       - ../../:/src
     working_dir: /src
     environment:
       - HOME=/tmp
-    entrypoint: ["make"]
-    command: ["USE_DOCKER=", "build"]
-
-volumes: {}
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
