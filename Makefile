@@ -141,8 +141,17 @@ vendor/.installed: requirements-vendor.txt
 	uv pip install --target vendor -r requirements-vendor.txt
 	@touch vendor/.installed
 
+ifeq ($(OS),Windows_NT)
+DOCKER_UID ?= 1000
+DOCKER_GID ?= 1000
+else
+DOCKER_UID ?= $(shell id -u)
+DOCKER_GID ?= $(shell id -g)
+endif
+export DOCKER_UID DOCKER_GID
+
 docker-build:
-	DOCKER_UID=$$(id -u) DOCKER_GID=$$(id -g) docker compose -f builder/docker-compose.yml up --build
+	docker compose -f builder/docker-compose.yml up --build
 	@echo "Done: build/nelson.oxt"
 
 # ── RDB (UNO type library) ────────────────────────────────────────────────
