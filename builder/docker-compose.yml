@@ -6,8 +6,11 @@ services:
       - ..:/src:ro
       - ../build:/output
       - pip-cache:/tmp/pip-cache
+      - build-work:/tmp/build-work
     environment:
       - PIP_CACHE_DIR=/tmp/pip-cache
+      - BUILD_WORK=/tmp/build-work
 
 volumes:
   pip-cache:
+  build-work:

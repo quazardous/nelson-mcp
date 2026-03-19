@@ -74,7 +74,7 @@ endif
 
 # ── Phony targets ────────────────────────────────────────────────────────────
 
-.PHONY: help build repack repack-deploy manifest xcu clean \
+.PHONY: help build rebuild repack repack-deploy xcu clean \
         install install-force uninstall cache \
         dev-deploy dev-deploy-remove \
         lo-start lo-start-full lo-kill lo-restart \
@@ -128,8 +128,11 @@ help:
 
 # ── Build ────────────────────────────────────────────────────────────────────
 
-vendor:
+# Vendor: only reinstall if requirements changed
+vendor: vendor/.installed
+vendor/.installed: requirements-vendor.txt
 	uv pip install --target vendor -r requirements-vendor.txt
+	@touch vendor/.installed
 
 docker-build:
 	DOCKER_UID=$$(id -u) DOCKER_GID=$$(id -g) docker compose -f builder/docker-compose.yml up --build
@@ -186,6 +189,8 @@ build: vendor manifest rdb icons sqlite3
 	@echo "Done: build/$(EXTENSION_NAME).oxt  (bundle in build/bundle/)"
 endif
 
+rebuild: clean build
+
 repack:
 	@echo "Re-packing from build/bundle/..."
 	$(PYTHON) $(SCRIPTS)/build_oxt.py --repack --output build/$(EXTENSION_NAME).oxt
@@ -204,7 +209,13 @@ repack-deploy: repack
 	@sleep 12
 	@$(MAKE) log
 
-manifest:
+# Manifest sources: all module.yaml + plugin.yaml + version.py
+MANIFEST_SOURCES = $(wildcard plugin/modules/*/module.yaml) \
+                   $(wildcard plugin/modules/*/*/module.yaml) \
+                   plugin/plugin.yaml plugin/version.py
+
+manifest: build/generated/Addons.xcu
+build/generated/Addons.xcu: $(MANIFEST_SOURCES) $(SCRIPTS)/generate_manifest.py
 	@echo "Generating manifest and XCS/XCU..."
 	$(PYTHON) $(SCRIPTS)/generate_manifest.py
 
