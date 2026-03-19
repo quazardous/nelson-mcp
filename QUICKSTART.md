@@ -19,14 +19,79 @@ Nelson MCP runs as an HTTP server inside LibreOffice on port 8766.
 
 For remote access via Tailscale tunnel: `https://your-machine.tail1234.ts.net/mcp`
 
-## First Steps
+## Getting Started — Discovery Phase
 
-After connecting, always start with these two calls:
+When you first connect, you don't know what the user has. **Explore before acting.** Follow this discovery sequence:
 
-1. **`list_open_documents`** — see what's open (returns doc_id, title, type, path)
-2. **`get_document_info`** — get details about the active document (page count, word count, sections)
+### Step 1 — What's already open?
 
-If no document is open, use `open_document` or `create_document`.
+```
+list_open_documents
+```
+
+Returns all documents currently open in LibreOffice with their `doc_id`, title, type, and file path. This is your starting point. If documents are open, the user likely wants to work on one of them.
+
+### Step 2 — What was recently used?
+
+```
+get_recent_documents
+```
+
+Returns the user's recently opened documents (from LibreOffice history). Useful when nothing is open or the user mentions a document by name — you can find its path here and open it.
+
+### Step 3 — What's available in galleries?
+
+If document or image gallery tools are available, explore what the user has indexed:
+
+```
+docs_gallery_list           → browse indexed document folders
+docs_gallery_search("report")  → search documents by content/metadata
+gallery_providers           → list configured image galleries
+gallery_list                → browse images in a gallery
+gallery_search("safari")    → search images by keywords
+```
+
+Galleries give you access to files the user has organized — you can open documents or insert images from them.
+
+### Step 4 — Understand the active document
+
+Once you know which document to work on, get its structure:
+
+```
+get_document_info           → page count, word count, type, path
+get_document_outline        → heading tree with bookmarks (Writer)
+list_tables                 → sheets (Calc) or tables (Writer)
+```
+
+For Writer documents, `get_document_outline` is essential — it gives you the heading hierarchy and stable bookmark references you'll use for all subsequent operations.
+
+### Decision Tree
+
+```
+Connected
+ ├─ list_open_documents
+ │   ├─ Documents open → get_document_info / get_document_outline
+ │   └─ Nothing open
+ │       ├─ User names a doc → get_recent_documents → open_document
+ │       ├─ User wants to find a doc → docs_gallery_search
+ │       └─ User wants a new doc → create_document
+ └─ User mentions images → gallery_search / gallery_list
+```
+
+### Example: First Exchange
+
+User says: *"Add a summary to my report"*
+
+```
+1. list_open_documents          → find "Annual Report 2025.odt" (doc_id: abc123)
+2. get_document_outline(_document="id:abc123")
+                                → headings: Introduction, Chapter 1, Chapter 2, Conclusion
+3. get_heading_content(heading="Conclusion")
+                                → read existing content
+4. insert_at_paragraph(index=N, text="## Summary\n\nKey findings...", position="before")
+```
+
+Don't skip steps 1-3. Without discovery, you risk creating a new document when one is already open, or inserting text in the wrong place.
 
 ## Target a Specific Document
 
