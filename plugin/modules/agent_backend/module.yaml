@@ -1,0 +1,44 @@
+name: agent_backend
+title: Agent backends (Aider, Hermes)
+requires: [config, document]
+
+config:
+  backend_id:
+    type: string
+    default: builtin
+    widget: select
+    label: Backend
+    options:
+      - value: builtin
+        label: Built-in
+      # - value: aider
+      #   label: Aider
+      - value: hermes
+        label: Hermes
+      - value: claude
+        label: Claude Code (ACP)
+      # - value: openhands
+      #   label: OpenHands
+      # - value: opencode
+      #   label: OpenCode
+
+  path:
+    type: string
+    default: ""
+    widget: text
+    label: Path / URL
+    helper: "Path to backend CLI (e.g. aider) or ACP server URL (e.g. http://localhost:8000 for Hermes). Empty = try default."
+
+  args:
+    type: string
+    default: ""
+    widget: text
+    label: Extra arguments
+    helper: "Optional arguments for the selected backend (space-separated)."
+
+  acp_agent_name:
+    type: string
+    default: ""
+    widget: text
+    label: ACP agent name
+    helper: "Agent name on the ACP server (e.g. hermes). Empty = auto-discover first agent."
