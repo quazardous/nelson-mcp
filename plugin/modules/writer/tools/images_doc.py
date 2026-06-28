@@ -128,6 +128,145 @@ def _fit_dimensions(image_path, width_mm, height_mm, max_height_mm=None):
 
 
 # ------------------------------------------------------------------
+# XGraphic / rotation / crop helpers (Writer images)
+# ------------------------------------------------------------------
+
+def _xgraphic_size_px(graphic):
+    """Return the actual content size in pixels from the embedded XGraphic.
+
+    This is the robust, server-side source of truth for an image's real
+    aspect ratio — independent of the frame Size the document gives it.
+    Returns (w, h) in pixels, or (0, 0) if unreadable.
+    """
+    try:
+        xg = graphic.getPropertyValue("Graphic")
+    except Exception:
+        xg = None
+    if xg is None:
+        return (0, 0)
+    for prop in ("SizePixel", "Size100thMM"):
+        try:
+            sz = xg.getPropertyValue(prop)
+            if sz and sz.Width > 0 and sz.Height > 0:
+                return (sz.Width, sz.Height)
+        except Exception:
+            continue
+    return (0, 0)
+
+
+def _xgraphic_origin_url(graphic):
+    """Return the source URL of the embedded image, or '' if unavailable.
+
+    Modern LibreOffice leaves the legacy GraphicURL property empty; the
+    real source lives on the XGraphic's OriginURL.
+    """
+    try:
+        xg = graphic.getPropertyValue("Graphic")
+        if xg is not None:
+            return xg.getPropertyValue("OriginURL") or ""
+    except Exception:
+        pass
+    return ""
+
+
+def _get_rotation_deg10(graphic):
+    """Return the image rotation as stored by Writer (1/10 deg, counterclockwise)."""
+    try:
+        return int(graphic.getPropertyValue("GraphicRotation"))
+    except Exception:
+        return 0
+
+
+def _rotation_to_clockwise_deg(deg10):
+    """Convert Writer's GraphicRotation (1/10 deg CCW) to whole degrees clockwise."""
+    ccw = (deg10 / 10.0) % 360.0
+    return int(round((-ccw) % 360.0))
+
+
+def _clockwise_deg_to_rotation(deg):
+    """Convert whole degrees clockwise to Writer's GraphicRotation (1/10 deg CCW, [0,3600))."""
+    ccw = (-float(deg)) % 360.0
+    return int(round(ccw * 10)) % 3600
+
+
+def _content_ratio(graphic):
+    """Effective displayed width/height ratio of the image content.
+
+    Reads the real pixel ratio and swaps it for 90°/270° rotations so callers
+    can size the frame to match what the user actually sees. Returns 0.0 if
+    the content size can't be read.
+    """
+    px_w, px_h = _xgraphic_size_px(graphic)
+    if px_w <= 0 or px_h <= 0:
+        return 0.0
+    ratio = px_w / px_h
+    deg = (_get_rotation_deg10(graphic) // 10) % 360
+    if deg in (90, 270):
+        ratio = 1.0 / ratio
+    return ratio
+
+
+def _reset_crop(graphic):
+    """Reset any cropping on a Writer image. Returns True if applied."""
+    import uno
+    try:
+        crop = uno.createUnoStruct("com.sun.star.text.GraphicCrop")
+        crop.Top = 0
+        crop.Bottom = 0
+        crop.Left = 0
+        crop.Right = 0
+        graphic.setPropertyValue("GraphicCrop", crop)
+        return True
+    except Exception:
+        return False
+
+
+def _apply_fit(graphic, fit, ratio):
+    """Resize a Writer image to `ratio` (w/h), keeping one dimension fixed.
+
+    fit='width'  → keep current width, recompute height.
+    fit='height' → keep current height, recompute width.
+    Returns (width_100mm, height_100mm) actually applied.
+    """
+    from com.sun.star.awt import Size
+    cur = graphic.getPropertyValue("Size")
+    if ratio <= 0:
+        return (cur.Width, cur.Height)
+    if fit == "height":
+        new_h = cur.Height
+        new_w = int(round(cur.Height * ratio))
+    else:  # width (default)
+        new_w = cur.Width
+        new_h = int(round(cur.Width / ratio))
+    graphic.setPropertyValue("Size", Size(new_w, new_h))
+    return (new_w, new_h)
+
+
+def _find_parent_frame(doc, graphic):
+    """Return the TextFrame that contains an image, or None.
+
+    Images inserted by insert_image live inside a TextFrame (image + caption).
+    We match by comparing the anchor's text object with each frame's text.
+    """
+    try:
+        anchor_text = graphic.getAnchor().getText()
+    except Exception:
+        return None
+    try:
+        frames = doc.getTextFrames()
+    except Exception:
+        return None
+    for name in frames.getElementNames():
+        try:
+            fr = frames.getByName(name)
+            if fr.getText() == anchor_text:
+                return fr
+        except Exception:
+            continue
+    return None
+
+
+# ------------------------------------------------------------------
 # ListImages — all doc types
 # ------------------------------------------------------------------
 
@@ -294,6 +433,14 @@ class GetImageInfo(ToolBase):
             graphic_url = graphic.getPropertyValue("GraphicURL")
         except Exception:
             pass
+        # Modern LibreOffice leaves GraphicURL empty — fall back to the
+        # XGraphic OriginURL so callers can locate the source file.
+        if not graphic_url:
+            graphic_url = _xgraphic_origin_url(graphic)
+
+        native_w_px, native_h_px = _xgraphic_size_px(graphic)
+        native_ratio = (native_w_px / native_h_px) if native_h_px else None
+        rotation = _rotation_to_clockwise_deg(_get_rotation_deg10(graphic))
 
         anchor_type = None
         try:
@@ -346,6 +493,10 @@ class GetImageInfo(ToolBase):
             "height_mm": size.Height / 100.0,
             "width_100mm": size.Width,
             "height_100mm": size.Height,
+            "native_width_px": native_w_px,
+            "native_height_px": native_h_px,
+            "native_ratio": native_ratio,
+            "rotation": rotation,
             "anchor_type": anchor_type,
             "hori_orient": hori_orient,
             "vert_orient": vert_orient,
@@ -405,6 +556,14 @@ class SetImageProperties(ToolBase):
             "vert_orient": {
                 "type": "integer",
                 "description": "Vertical orientation constant.",
+            },
+            "rotation": {
+                "type": "number",
+                "description": (
+                    "Rotation in degrees clockwise (0-359). "
+                    "Rotates the image content in place; does not change the frame. "
+                    "Use fit_image afterwards if the frame should follow the new shape."
+                ),
             },
         },
         "required": ["image_name"],
@@ -474,6 +633,18 @@ class SetImageProperties(ToolBase):
         if vert_orient is not None:
             graphic.setPropertyValue("VertOrient", vert_orient)
             updated.append("vert_orient")
+
+        rotation = kwargs.get("rotation")
+        if rotation is not None:
+            try:
+                graphic.setPropertyValue(
+                    "GraphicRotation", _clockwise_deg_to_rotation(rotation))
+                updated.append("rotation")
+            except Exception as e:
+                return {
+                    "status": "error",
+                    "message": "Failed to set rotation: %s" % e,
+                }
 
         return {
             "status": "ok",
@@ -989,8 +1160,10 @@ class ReplaceImage(ToolBase):
     name = "replace_image"
     intent = "media"
     description = (
-        "Replace a Writer image's source file keeping position and frame. "
-        "Writer-only: preserves TextFrame anchor position."
+        "Replace a Writer image's source file, keeping its position and anchor. "
+        "By default (fit='width') it resets any cropping and adapts the height to "
+        "the new image's aspect ratio so portrait/landscape swaps are not distorted. "
+        "Writer-only."
     )
     parameters = {
         "type": "object",
@@ -1003,13 +1176,24 @@ class ReplaceImage(ToolBase):
                 "type": "string",
                 "description": "Local file path or URL of the replacement image.",
             },
+            "fit": {
+                "type": "string",
+                "enum": ["width", "height", "exact"],
+                "description": (
+                    "How to size the replacement (default 'width'): "
+                    "'width' keeps the old width and recomputes height from the new "
+                    "image ratio; 'height' keeps the old height and recomputes width; "
+                    "'exact' keeps the old frame size unchanged (may distort). "
+                    "Ignored when both width_mm and height_mm are given."
+                ),
+            },
             "width_mm": {
                 "type": "number",
-                "description": "Optionally update width in millimetres.",
+                "description": "Explicit width in millimetres (overrides fit for width).",
             },
             "height_mm": {
                 "type": "number",
-                "description": "Optionally update height in millimetres.",
+                "description": "Explicit height in millimetres (overrides fit for height).",
             },
         },
         "required": ["image_name", "new_image_path"],
@@ -1053,23 +1237,320 @@ class ReplaceImage(ToolBase):
         file_url = uno.systemPathToFileUrl(os.path.abspath(new_image_path))
 
         graphic = graphics.getByName(image_name)
+        fit = kwargs.get("fit") or "width"
+        width_mm = kwargs.get("width_mm")
+        height_mm = kwargs.get("height_mm")
 
         try:
+            from com.sun.star.awt import Size
+
             graphic.setPropertyValue("GraphicURL", file_url)
 
-            width_mm = kwargs.get("width_mm")
-            height_mm = kwargs.get("height_mm")
+            applied = {"fit": fit}
+
             if width_mm is not None or height_mm is not None:
-                from com.sun.star.awt import Size
+                # Explicit dimensions win. Whatever side is omitted is kept.
                 current = graphic.getPropertyValue("Size")
                 new_size = Size()
                 new_size.Width = int(width_mm * 100) if width_mm is not None else current.Width
                 new_size.Height = int(height_mm * 100) if height_mm is not None else current.Height
                 graphic.setPropertyValue("Size", new_size)
+                _reset_crop(graphic)
+                applied["fit"] = "explicit"
+                applied["width_mm"] = new_size.Width / 100.0
+                applied["height_mm"] = new_size.Height / 100.0
+            elif fit == "exact":
+                # Keep the old frame size as-is (legacy behaviour).
+                cur = graphic.getPropertyValue("Size")
+                applied["width_mm"] = cur.Width / 100.0
+                applied["height_mm"] = cur.Height / 100.0
+            else:
+                # Adapt to the new image's aspect ratio, reset cropping.
+                _reset_crop(graphic)
+                px_w, px_h = _read_image_dimensions(new_image_path)
+                if px_w > 0 and px_h > 0:
+                    w, h = _apply_fit(graphic, fit, px_w / px_h)
+                    applied["width_mm"] = w / 100.0
+                    applied["height_mm"] = h / 100.0
+                else:
+                    applied["warning"] = "Could not read new image dimensions; size unchanged."
+
+            result = {"status": "ok", "image_name": image_name}
+            result.update(applied)
+            return result
+        except Exception as e:
+            return {"status": "error", "message": str(e)}
+
+
+# ------------------------------------------------------------------
+# FitImage — Writer-only
+# ------------------------------------------------------------------
+
+class FitImage(ToolBase):
+    """Resize an image to its real aspect ratio, or fit it to its frame."""
+
+    name = "fit_image"
+    intent = "media"
+    description = (
+        "Auto-fit a Writer image using its real content aspect ratio (read "
+        "server-side from the image data, so it stays correct even after a "
+        "manual rotation). Resets cropping. "
+        "fit='width' keeps the current width and recomputes the height; "
+        "fit='height' keeps the current height and recomputes the width; "
+        "fit='frame' fits the image to its parent text frame's inner width and "
+        "resizes the frame height to match (preserving caption space). "
+        "Use after replace_image, a manual rotation, or any resize that broke the ratio."
+    )
+    parameters = {
+        "type": "object",
+        "properties": {
+            "image_name": {
+                "type": "string",
+                "description": "Name of the image (from list_images).",
+            },
+            "fit": {
+                "type": "string",
+                "enum": ["width", "height", "frame"],
+                "description": "Fit mode (default 'width').",
+            },
+        },
+        "required": ["image_name"],
+    }
+    doc_types = ["writer"]
+    is_mutation = True
+
+    def execute(self, ctx, **kwargs):
+        image_name = kwargs.get("image_name", "")
+        if not image_name:
+            return {"status": "error", "message": "image_name is required."}
+
+        fit = kwargs.get("fit") or "width"
+        doc = ctx.doc
+        graphics = doc.getGraphicObjects()
+        if not graphics.hasByName(image_name):
+            return {
+                "status": "error",
+                "message": "Image '%s' not found." % image_name,
+                "available": list(graphics.getElementNames()),
+            }
+
+        graphic = graphics.getByName(image_name)
+        ratio = _content_ratio(graphic)
+        if ratio <= 0:
+            return {
+                "status": "error",
+                "message": "Could not read the image content ratio (no embedded graphic).",
+            }
+
+        _reset_crop(graphic)
+
+        if fit == "frame":
+            return self._fit_to_frame(doc, graphic, image_name, ratio)
+
+        w, h = _apply_fit(graphic, fit, ratio)
+        return {
+            "status": "ok",
+            "image_name": image_name,
+            "fit": fit,
+            "ratio": ratio,
+            "width_mm": w / 100.0,
+            "height_mm": h / 100.0,
+        }
+
+    def _fit_to_frame(self, doc, graphic, image_name, ratio):
+        from com.sun.star.awt import Size
+
+        frame = _find_parent_frame(doc, graphic)
+        if frame is None:
+            return {
+                "status": "error",
+                "message": "Image is not inside a text frame; use fit='width' or 'height'.",
+            }
+
+        frame_size = frame.getPropertyValue("Size")
+        left = _safe_prop(frame, "LeftMargin", 0)
+        right = _safe_prop(frame, "RightMargin", 0)
+        inner_w = frame_size.Width - left - right
+        if inner_w <= 0:
+            inner_w = frame_size.Width
+
+        cur_img = graphic.getPropertyValue("Size")
+        # Space currently taken by caption + vertical margins, preserved as-is.
+        extra_h = max(0, frame_size.Height - cur_img.Height)
+
+        new_w = inner_w
+        new_h = int(round(inner_w / ratio))
+        graphic.setPropertyValue("Size", Size(new_w, new_h))
+
+        new_frame = Size()
+        new_frame.Width = frame_size.Width
+        new_frame.Height = new_h + extra_h
+        try:
+            frame.setPropertyValue("Size", new_frame)
+        except Exception:
+            pass
+
+        return {
+            "status": "ok",
+            "image_name": image_name,
+            "fit": "frame",
+            "ratio": ratio,
+            "frame_name": frame.getName(),
+            "width_mm": new_w / 100.0,
+            "height_mm": new_h / 100.0,
+            "frame_height_mm": new_frame.Height / 100.0,
+        }
+
+
+# ------------------------------------------------------------------
+# WrapImageInFrame — Writer-only
+# ------------------------------------------------------------------
+
+class WrapImageInFrame(ToolBase):
+    """Wrap an existing frameless image into a captioned text frame."""
+
+    name = "wrap_image_in_frame"
+    intent = "media"
+    description = (
+        "Wrap an existing frameless Writer image into a text frame with a caption "
+        "below it (the same layout insert_image produces). Preserves the image's "
+        "size, rotation and anchor position. Works even when the source file path "
+        "is unknown, because it reuses the embedded image data directly. "
+        "Returns the new frame name. Writer-only."
+    )
+    parameters = {
+        "type": "object",
+        "properties": {
+            "image_name": {
+                "type": "string",
+                "description": "Name of the image to wrap (from list_images).",
+            },
+            "caption": {
+                "type": "string",
+                "description": (
+                    "Caption text. Defaults to the image description, then title, "
+                    "then source filename."
+                ),
+            },
+        },
+        "required": ["image_name"],
+    }
+    doc_types = ["writer"]
+    is_mutation = True
+
+    def execute(self, ctx, **kwargs):
+        image_name = kwargs.get("image_name", "")
+        if not image_name:
+            return {"status": "error", "message": "image_name is required."}
+
+        doc = ctx.doc
+        graphics = doc.getGraphicObjects()
+        if not graphics.hasByName(image_name):
+            return {
+                "status": "error",
+                "message": "Image '%s' not found." % image_name,
+                "available": list(graphics.getElementNames()),
+            }
+
+        graphic = graphics.getByName(image_name)
+
+        if _find_parent_frame(doc, graphic) is not None:
+            return {
+                "status": "error",
+                "message": "Image '%s' is already inside a text frame." % image_name,
+            }
+
+        try:
+            from com.sun.star.awt import Size
+
+            xgraphic = _safe_prop(graphic, "Graphic")
+            if xgraphic is None:
+                return {
+                    "status": "error",
+                    "message": "Image has no embedded graphic to reuse.",
+                }
+            size = graphic.getPropertyValue("Size")
+            title = _safe_prop(graphic, "Title", "") or ""
+            description = _safe_prop(graphic, "Description", "") or ""
+            rotation = _get_rotation_deg10(graphic)
+            crop = _safe_prop(graphic, "GraphicCrop")
+
+            caption_text = (
+                kwargs.get("caption")
+                or description
+                or title
+                or _basename_from_url(_xgraphic_origin_url(graphic))
+                or image_name
+            )
+
+            anchor = graphic.getAnchor()
+            anchor_text = anchor.getText()
+            cursor = anchor_text.createTextCursorByRange(anchor)
+
+            # Build the frame (mirrors insert_image's captioned-frame layout).
+            frame = doc.createInstance("com.sun.star.text.TextFrame")
+            frame.setPropertyValue("Size", Size(size.Width, size.Height))
+            frame.setPropertyValue("AnchorType", 4)   # AT_CHARACTER
+            frame.setPropertyValue("HoriOrient", 0)
+            frame.setPropertyValue("VertOrient", 0)
+            frame.setPropertyValue("SizeType", 2)      # FIX
+            frame.setPropertyValue("WidthType", 1)     # FIX
+            frame.setPropertyValue("TopMargin", 0)
+            frame.setPropertyValue("BottomMargin", 499)
+            frame.setPropertyValue("LeftMargin", 0)
+            frame.setPropertyValue("RightMargin", 499)
+            from com.sun.star.table import BorderLine2
+            empty_border = BorderLine2()
+            for side in ("TopBorder", "BottomBorder", "LeftBorder", "RightBorder"):
+                try:
+                    frame.setPropertyValue(side, empty_border)
+                except Exception:
+                    pass
+
+            anchor_text.insertTextContent(cursor, frame, False)
+
+            # Recreate the image inside the frame from the embedded data.
+            new_graphic = doc.createInstance("com.sun.star.text.TextGraphicObject")
+            new_graphic.setPropertyValue("Graphic", xgraphic)
+            new_graphic.setPropertyValue("AnchorType", 1)  # AS_CHARACTER
+            new_graphic.setPropertyValue("Size", Size(size.Width, size.Height))
+            if title:
+                new_graphic.setPropertyValue("Title", title)
+            if description:
+                new_graphic.setPropertyValue("Description", description)
+            if rotation:
+                try:
+                    new_graphic.setPropertyValue("GraphicRotation", rotation)
+                except Exception:
+                    pass
+            if crop is not None:
+                try:
+                    new_graphic.setPropertyValue("GraphicCrop", crop)
+                except Exception:
+                    pass
+
+            frame_text = frame.getText()
+            frame_cursor = frame_text.createTextCursor()
+            frame_cursor.setPropertyValue("CharHeight", 1)
+            frame_text.insertTextContent(frame_cursor, new_graphic, False)
+
+            # Caption line below the image.
+            cap_cursor = frame_text.createTextCursorByRange(frame_text.getEnd())
+            frame_text.insertControlCharacter(cap_cursor, 0, False)  # PARAGRAPH_BREAK
+            cap_cursor = frame_text.createTextCursorByRange(frame_text.getEnd())
+            cap_cursor.setPropertyValue("CharHeight", 10)
+            frame_text.insertString(cap_cursor, caption_text, False)
+
+            # Remove the original frameless image.
+            anchor_text.removeTextContent(graphic)
 
             return {
                 "status": "ok",
-                "image_name": image_name,
+                "frame_name": frame.getName(),
+                "image_name": new_graphic.getName(),
+                "caption": caption_text,
+                "width_mm": size.Width / 100.0,
+                "height_mm": size.Height / 100.0,
             }
         except Exception as e:
             return {"status": "error", "message": str(e)}
@@ -1078,6 +1559,14 @@ class ReplaceImage(ToolBase):
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
+
+def _safe_prop(obj, name, default=None):
+    """Read a UNO property, returning default on any failure."""
+    try:
+        return obj.getPropertyValue(name)
+    except Exception:
+        return default
+
 
 def _download_image_to_cache(url, verify_ssl=False, force=False):
     """Download an image URL to the local cache directory.

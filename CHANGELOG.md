@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **`fit_image` tool** (#10) — auto-fit a Writer image using its real content aspect ratio (read server-side from the embedded image data, so it stays correct even after a manual rotation). `fit="width"`/`"height"` keep one dimension and recompute the other; `fit="frame"` fits the image to its parent text frame's inner width and resizes the frame height to match. Resets cropping
+- **`wrap_image_in_frame` tool** (#12) — wrap an existing frameless Writer image into a captioned text frame, preserving size/rotation/anchor. Reuses the embedded image data directly, so it works even when the source file path is unknown
+- **Image rotation** (#9) — `set_image_properties` gains a `rotation` parameter (degrees clockwise), mapped to Writer's `GraphicRotation`
+- **`get_image_info` enrichment** (#12) — now returns `native_width_px`, `native_height_px`, `native_ratio` (real content ratio) and `rotation`, plus an `OriginURL` fallback for the otherwise-empty `graphic_url`
+
+### Changed
+
+- **`replace_image` adapts to aspect ratio** (#8) — by default (`fit="width"`) it now resets cropping and recomputes the height from the new image's aspect ratio, so portrait↔landscape swaps are no longer distorted. `fit="height"` keeps the height; `fit="exact"` preserves the previous behaviour (old frame size). Explicit `width_mm`/`height_mm` still override
+
 ## [0.8.2] — 2026-04-08
 
 ### Fixed
