@@ -12,10 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - **`wrap_image_in_frame` tool** (#12) — wrap an existing frameless Writer image into a captioned text frame, preserving size/rotation/anchor. Reuses the embedded image data directly, so it works even when the source file path is unknown
 - **Image rotation** (#9) — `set_image_properties` gains a `rotation` parameter (degrees clockwise), mapped to Writer's `GraphicRotation`
 - **`get_image_info` enrichment** (#12) — now returns `native_width_px`, `native_height_px`, `native_ratio` (real content ratio) and `rotation`, plus an `OriginURL` fallback for the otherwise-empty `graphic_url`
+- **Search backend option** — new `search_backend` Writer option (`direct` exact/regex, default, vs `index` stemmed/fuzzy). `search_in_document` gains a per-call `backend` override; the index backend falls back to direct for regex or when the index module is unavailable
 
 ### Changed
 
 - **`replace_image` adapts to aspect ratio** (#8) — by default (`fit="width"`) it now resets cropping and recomputes the height from the new image's aspect ratio, so portrait↔landscape swaps are no longer distorted. `fit="height"` keeps the height; `fit="exact"` preserves the previous behaviour (old frame size). Explicit `width_mm`/`height_mm` still override
+- **`search_in_document` searches text frames** (#5) — body + text frames are now both searched (toggle with `include_frames`), so image captions/legends placed in frames are findable. Frame matches carry the frame name, a snippet, and the anchor paragraph. Results gain `source`, `backend`, `body_count`, `frame_count` fields
+- **`goto_page` returns page topology** (#13) — by default also returns the images, tables and text frames on the target page (pass `topology=false` to skip), removing the need for a follow-up `get_page_objects` call
 
 ## [0.8.2] — 2026-04-08
 

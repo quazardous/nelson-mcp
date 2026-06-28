@@ -13,12 +13,17 @@ log = logging.getLogger("nelson.writer")
 
 
 class SearchInDocument(ToolBase):
-    """Search for text in a document with paragraph context."""
+    """Search for text in a document body and text frames."""
 
     name = "search_in_document"
     description = (
-        "Search for text in the document using LibreOffice native search. "
-        "Returns matches with surrounding paragraph text for context."
+        "Search for text in the document. Searches the body AND text frames "
+        "(captions, sidebars), so images/legends placed in frames are findable. "
+        "Two body backends: 'direct' (exact literal/regex, always fresh) or "
+        "'index' (stemmed/fuzzy word matching with AND/OR/NOT/NEAR, faster on "
+        "large docs, no regex). The default backend is configurable in Options "
+        "and can be overridden per call. Text frames are always searched directly. "
+        "Returns matches with surrounding context."
     )
     parameters = {
         "type": "object",
@@ -29,7 +34,10 @@ class SearchInDocument(ToolBase):
             },
             "regex": {
                 "type": "boolean",
-                "description": "Use regular expression (default: false).",
+                "description": (
+                    "Use regular expression (default: false). "
+                    "Forces the 'direct' backend (the index cannot do regex)."
+                ),
             },
             "case_sensitive": {
                 "type": "boolean",
@@ -37,13 +45,25 @@ class SearchInDocument(ToolBase):
             },
             "max_results": {
                 "type": "integer",
-                "description": "Maximum results to return (default: 20).",
+                "description": "Maximum results to return per source (default: 20).",
             },
             "context_paragraphs": {
                 "type": "integer",
                 "description": (
                     "Number of paragraphs of context around each match "
                     "(default: 1)."
+                ),
+            },
+            "include_frames": {
+                "type": "boolean",
+                "description": "Also search inside text frames (default: true).",
+            },
+            "backend": {
+                "type": "string",
+                "enum": ["direct", "index"],
+                "description": (
+                    "Override the body-search backend for this call. "
+                    "Defaults to the configured Options value."
                 ),
             },
         },
@@ -53,8 +73,6 @@ class SearchInDocument(ToolBase):
     tier = "core"
 
     def execute(self, ctx, **kwargs):
-        import re as re_mod
-
         pattern = kwargs.get("pattern", "")
         if not pattern:
             return {"status": "error", "message": "pattern is required."}
@@ -63,90 +81,142 @@ class SearchInDocument(ToolBase):
         case_sensitive = kwargs.get("case_sensitive", False)
         max_results = kwargs.get("max_results", 20)
         context_paragraphs = kwargs.get("context_paragraphs", 1)
+        include_frames = kwargs.get("include_frames", True)
+
+        doc = ctx.doc
+
+        # Resolve the body-search backend: per-call override > config > default.
+        backend = kwargs.get("backend")
+        if not backend:
+            try:
+                backend = ctx.services.config.proxy_for("writer").get(
+                    "search_backend", "direct")
+            except Exception:
+                backend = "direct"
+
+        idx_svc = getattr(ctx.services, "writer_index", None)
+        backend_note = None
+        if backend == "index":
+            if use_regex:
+                backend = "direct"
+                backend_note = "regex requested — fell back to direct backend"
+            elif idx_svc is None:
+                backend = "direct"
+                backend_note = "index module unavailable — fell back to direct backend"
+
+        try:
+            if backend == "index":
+                body = self._search_body_index(
+                    ctx, idx_svc, pattern, max_results, context_paragraphs)
+            else:
+                body = self._search_body_direct(
+                    ctx, pattern, use_regex, case_sensitive,
+                    max_results, context_paragraphs)
+            if body.get("status") == "error":
+                return body
+            matches = body["matches"]
+            total_count = body["total_count"]
+
+            frame_count = 0
+            if include_frames:
+                frame_matches, frame_count = _search_frames(
+                    ctx, pattern, use_regex, case_sensitive, max_results)
+                matches = matches + frame_matches
+
+            # Enrich with nearest-heading context where a paragraph is known.
+            tree_svc = getattr(ctx.services, "writer_tree", None)
+            if tree_svc and matches:
+                enrichable = [m for m in matches
+                              if m.get("paragraph_index") is not None]
+                if enrichable:
+                    tree_svc.enrich_search_results(doc, enrichable)
+
+            return {
+                "status": "ok",
+                "backend": backend,
+                "matches": matches,
+                "count": total_count + frame_count,
+                "body_count": total_count,
+                "frame_count": frame_count,
+                **({"backend_note": backend_note} if backend_note else {}),
+            }
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+    def _search_body_direct(self, ctx, pattern, use_regex, case_sensitive,
+                            max_results, context_paragraphs):
+        """Exact literal/regex scan of body paragraphs (legacy behaviour)."""
+        import re as re_mod
 
         doc = ctx.doc
         doc_svc = ctx.services.document
         para_ranges = doc_svc.get_paragraph_ranges(doc)
         para_count = len(para_ranges)
 
-        try:
-            # Read paragraph texts once
-            para_texts = []
-            for para in para_ranges:
-                try:
-                    if para.supportsService(
-                        "com.sun.star.text.Paragraph"
-                    ):
-                        para_texts.append(para.getString())
-                    else:
-                        para_texts.append("")
-                except Exception:
-                    para_texts.append("")
-
-            # Compile regex if needed
-            if use_regex:
-                flags = 0 if case_sensitive else re_mod.IGNORECASE
-                try:
-                    compiled = re_mod.compile(pattern, flags)
-                except re_mod.error as e:
-                    return {
-                        "status": "error",
-                        "error": "Invalid regex: %s" % e,
-                    }
-
-            # Search within paragraphs
-            matches = []
-            total_count = 0
-
-            for i, ptext in enumerate(para_texts):
-                if not ptext:
-                    continue
-
-                if use_regex:
-                    for m in compiled.finditer(ptext):
-                        total_count += 1
-                        if len(matches) < max_results:
-                            matches.append(
-                                _build_match(
-                                    m.group(), i,
-                                    context_paragraphs, para_count,
-                                    para_texts,
-                                )
-                            )
+        para_texts = []
+        for para in para_ranges:
+            try:
+                if para.supportsService("com.sun.star.text.Paragraph"):
+                    para_texts.append(para.getString())
                 else:
-                    haystack = ptext if case_sensitive else ptext.lower()
-                    needle = (
-                        pattern if case_sensitive else pattern.lower()
-                    )
-                    step = max(1, len(needle))
-                    pos = 0
-                    while True:
-                        pos = haystack.find(needle, pos)
-                        if pos == -1:
-                            break
-                        total_count += 1
-                        if len(matches) < max_results:
-                            matches.append(
-                                _build_match(
-                                    ptext[pos:pos + len(pattern)], i,
-                                    context_paragraphs, para_count,
-                                    para_texts,
-                                )
-                            )
-                        pos += step
+                    para_texts.append("")
+            except Exception:
+                para_texts.append("")
 
-            # Enrich with heading context if tree service available
-            tree_svc = getattr(ctx.services, "writer_tree", None)
-            if tree_svc and matches:
-                tree_svc.enrich_search_results(doc, matches)
+        compiled = None
+        if use_regex:
+            flags = 0 if case_sensitive else re_mod.IGNORECASE
+            try:
+                compiled = re_mod.compile(pattern, flags)
+            except re_mod.error as e:
+                return {"status": "error", "error": "Invalid regex: %s" % e}
 
-            return {
-                "status": "ok",
-                "matches": matches,
-                "count": total_count,
-            }
-        except Exception as e:
+        matches = []
+        total_count = 0
+        for i, ptext in enumerate(para_texts):
+            if not ptext:
+                continue
+            if use_regex:
+                for m in compiled.finditer(ptext):
+                    total_count += 1
+                    if len(matches) < max_results:
+                        matches.append(_build_match(
+                            m.group(), i, context_paragraphs,
+                            para_count, para_texts))
+            else:
+                haystack = ptext if case_sensitive else ptext.lower()
+                needle = pattern if case_sensitive else pattern.lower()
+                step = max(1, len(needle))
+                pos = 0
+                while True:
+                    pos = haystack.find(needle, pos)
+                    if pos == -1:
+                        break
+                    total_count += 1
+                    if len(matches) < max_results:
+                        matches.append(_build_match(
+                            ptext[pos:pos + len(pattern)], i,
+                            context_paragraphs, para_count, para_texts))
+                    pos += step
+
+        for m in matches:
+            m["source"] = "body"
+        return {"matches": matches, "total_count": total_count}
+
+    def _search_body_index(self, ctx, idx_svc, pattern,
+                           max_results, context_paragraphs):
+        """Stemmed full-text body search via the writer_index service."""
+        try:
+            result = idx_svc.search_boolean(
+                ctx.doc, pattern,
+                max_results=max_results,
+                context_paragraphs=context_paragraphs)
+        except ValueError as e:
             return {"status": "error", "error": str(e)}
+        matches = result.get("matches", [])
+        for m in matches:
+            m["source"] = "body"
+        return {"matches": matches, "total_count": result.get("total_found", len(matches))}
 
 
 def _build_match(text, para_idx, ctx_paras, para_count, para_texts):
@@ -162,6 +232,103 @@ def _build_match(text, para_idx, ctx_paras, para_count, para_texts):
         "paragraph_index": para_idx,
         "context": context,
     }
+
+
+def _frame_snippet(text, pos, length, window=60):
+    """Return a short snippet of frame text around a match position."""
+    lo = max(0, pos - window)
+    hi = min(len(text), pos + length + window)
+    snippet = text[lo:hi].replace("\n", " ").strip()
+    if lo > 0:
+        snippet = "…" + snippet
+    if hi < len(text):
+        snippet = snippet + "…"
+    return snippet
+
+
+def _search_frames(ctx, pattern, use_regex, case_sensitive, max_results):
+    """Search inside every text frame. Returns (matches, total_count).
+
+    Frame matches carry the frame name, a text snippet, and the frame's anchor
+    paragraph index (best-effort) so they integrate with heading enrichment and
+    navigation. Resolves #5.
+    """
+    import re as re_mod
+
+    doc = ctx.doc
+    if not hasattr(doc, "getTextFrames"):
+        return [], 0
+    frames = doc.getTextFrames()
+
+    compiled = None
+    if use_regex:
+        flags = 0 if case_sensitive else re_mod.IGNORECASE
+        try:
+            compiled = re_mod.compile(pattern, flags)
+        except re_mod.error:
+            return [], 0
+
+    doc_svc = ctx.services.document
+    para_ranges = None
+    text_obj = None
+
+    matches = []
+    total = 0
+    for name in frames.getElementNames():
+        try:
+            frame = frames.getByName(name)
+            ftext = frame.getString()
+        except Exception:
+            continue
+        if not ftext:
+            continue
+
+        hits = []  # list of (matched_text, pos)
+        if use_regex:
+            for m in compiled.finditer(ftext):
+                hits.append((m.group(), m.start()))
+        else:
+            haystack = ftext if case_sensitive else ftext.lower()
+            needle = pattern if case_sensitive else pattern.lower()
+            step = max(1, len(needle))
+            pos = 0
+            while True:
+                pos = haystack.find(needle, pos)
+                if pos == -1:
+                    break
+                hits.append((ftext[pos:pos + len(pattern)], pos))
+                pos += step
+
+        if not hits:
+            continue
+        total += len(hits)
+
+        # Resolve the frame anchor paragraph once we know we need it.
+        anchor_para = None
+        try:
+            if para_ranges is None:
+                para_ranges = doc_svc.get_paragraph_ranges(doc)
+                text_obj = doc.getText()
+            anchor = frame.getAnchor()
+            anchor_para = doc_svc.find_paragraph_for_range(
+                anchor, para_ranges, text_obj)
+            if anchor_para is not None and anchor_para < 0:
+                anchor_para = None
+        except Exception:
+            anchor_para = None
+
+        for matched_text, pos in hits:
+            if len(matches) >= max_results:
+                break
+            matches.append({
+                "source": "frame",
+                "frame_name": name,
+                "text": matched_text,
+                "snippet": _frame_snippet(ftext, pos, len(matched_text)),
+                "paragraph_index": anchor_para,
+            })
+
+    return matches, total
 
 
 class ReplaceInDocument(ToolBase):

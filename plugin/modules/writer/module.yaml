@@ -12,3 +12,20 @@ config:
     widget: number
     label: Max Content Size
     public: true
+  search_backend:
+    type: string
+    default: direct
+    widget: select
+    label: Search backend for search_in_document
+    public: true
+    description: >
+      How search_in_document searches the document body. 'direct' does an exact
+      literal/regex scan (always fresh, regex-capable). 'index' uses the
+      stemmed full-text index (fuzzy word matching, boolean operators, faster on
+      large documents, but no regex). Text frames are always searched in both
+      modes. Falls back to direct when the index module is unavailable.
+    options:
+      - value: direct
+        label: Direct (exact / regex)
+      - value: index
+        label: Index (stemmed / fuzzy)

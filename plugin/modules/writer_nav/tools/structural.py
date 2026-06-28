@@ -39,11 +39,22 @@ class ListSections(ToolBase):
 class GotoPage(ToolBase):
     name = "goto_page"
     intent = "navigate"
-    description = "Navigate the view cursor to a specific page."
+    description = (
+        "Navigate the view cursor to a specific page. By default also returns the "
+        "page topology (images, tables, text frames on that page) so a follow-up "
+        "get_page_objects call is not needed. Pass topology=false to skip it."
+    )
     parameters = {
         "type": "object",
         "properties": {
             "page": {"type": "integer", "description": "Page number to navigate to"},
+            "topology": {
+                "type": "boolean",
+                "description": (
+                    "Return the objects on the page (images, tables, frames). "
+                    "Default: true."
+                ),
+            },
         },
         "required": ["page"],
     }
@@ -51,10 +62,24 @@ class GotoPage(ToolBase):
 
     def execute(self, ctx, **kwargs):
         try:
-            controller = ctx.doc.getCurrentController()
+            doc = ctx.doc
+            controller = doc.getCurrentController()
             vc = controller.getViewCursor()
-            vc.jumpToPage(kwargs["page"])
-            return {"status": "ok", "page": vc.getPage()}
+            page = kwargs["page"]
+            vc.jumpToPage(page)
+            actual_page = vc.getPage()
+
+            if not kwargs.get("topology", True):
+                return {"status": "ok", "page": actual_page}
+
+            doc.lockControllers()
+            try:
+                objects = _scan_page_objects(doc, vc, actual_page)
+            finally:
+                doc.unlockControllers()
+            # Leave the cursor on the requested page (scanning moved it around).
+            vc.jumpToPage(actual_page)
+            return {"status": "ok", "page": actual_page, **objects}
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
@@ -106,7 +131,7 @@ class GetPageObjects(ToolBase):
             saved_page = vc.getPage()
             doc.lockControllers()
             try:
-                objects = self._scan_page(doc, vc, page)
+                objects = _scan_page_objects(doc, vc, page)
             finally:
                 doc.unlockControllers()
             # Restore AFTER unlock so viewport actually scrolls back
@@ -116,56 +141,58 @@ class GetPageObjects(ToolBase):
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-    def _scan_page(self, doc, vc, page):
-        images = []
-        if hasattr(doc, "getGraphicObjects"):
-            for name in doc.getGraphicObjects().getElementNames():
-                try:
-                    g = doc.getGraphicObjects().getByName(name)
-                    vc.gotoRange(g.getAnchor(), False)
-                    if vc.getPage() == page:
-                        size = g.getPropertyValue("Size")
-                        images.append({
-                            "name": name,
-                            "width_mm": size.Width // 100,
-                            "height_mm": size.Height // 100,
-                            "title": g.getPropertyValue("Title"),
-                        })
-                except Exception:
-                    pass
 
-        tables = []
-        if hasattr(doc, "getTextTables"):
-            for name in doc.getTextTables().getElementNames():
-                try:
-                    t = doc.getTextTables().getByName(name)
-                    vc.gotoRange(t.getAnchor(), False)
-                    if vc.getPage() == page:
-                        tables.append({
-                            "name": name,
-                            "rows": t.getRows().getCount(),
-                            "cols": t.getColumns().getCount(),
-                        })
-                except Exception:
-                    pass
+def _scan_page_objects(doc, vc, page):
+    """Scan a page for images, tables and text frames. Moves the view cursor."""
+    images = []
+    if hasattr(doc, "getGraphicObjects"):
+        for name in doc.getGraphicObjects().getElementNames():
+            try:
+                g = doc.getGraphicObjects().getByName(name)
+                vc.gotoRange(g.getAnchor(), False)
+                if vc.getPage() == page:
+                    size = g.getPropertyValue("Size")
+                    images.append({
+                        "name": name,
+                        "width_mm": size.Width // 100,
+                        "height_mm": size.Height // 100,
+                        "title": g.getPropertyValue("Title"),
+                    })
+            except Exception:
+                pass
 
-        frames = []
-        if hasattr(doc, "getTextFrames"):
-            for fname in doc.getTextFrames().getElementNames():
-                try:
-                    fr = doc.getTextFrames().getByName(fname)
-                    vc.gotoRange(fr.getAnchor(), False)
-                    if vc.getPage() == page:
-                        size = fr.getPropertyValue("Size")
-                        frames.append({
-                            "name": fname,
-                            "width_mm": size.Width // 100,
-                            "height_mm": size.Height // 100,
-                        })
-                except Exception:
-                    pass
+    tables = []
+    if hasattr(doc, "getTextTables"):
+        for name in doc.getTextTables().getElementNames():
+            try:
+                t = doc.getTextTables().getByName(name)
+                vc.gotoRange(t.getAnchor(), False)
+                if vc.getPage() == page:
+                    tables.append({
+                        "name": name,
+                        "rows": t.getRows().getCount(),
+                        "cols": t.getColumns().getCount(),
+                    })
+            except Exception:
+                pass
 
-        return {"images": images, "tables": tables, "frames": frames}
+    frames = []
+    if hasattr(doc, "getTextFrames"):
+        for fname in doc.getTextFrames().getElementNames():
+            try:
+                fr = doc.getTextFrames().getByName(fname)
+                vc.gotoRange(fr.getAnchor(), False)
+                if vc.getPage() == page:
+                    size = fr.getPropertyValue("Size")
+                    frames.append({
+                        "name": fname,
+                        "width_mm": size.Width // 100,
+                        "height_mm": size.Height // 100,
+                    })
+            except Exception:
+                pass
+
+    return {"images": images, "tables": tables, "frames": frames}
 
 
 class RefreshIndexes(ToolBase):
