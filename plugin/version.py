@@ -5,7 +5,7 @@
 
 """Single source of truth for extension version."""
 
-EXTENSION_VERSION = "0.8.2"
+EXTENSION_VERSION = "0.9.0"
 # Optional build tag for patch releases (e.g. "-2", "-rc1").
 # Appended to the .oxt filename but NOT to description.xml (LO needs strict semver).
 BUILD_TAG = ""
