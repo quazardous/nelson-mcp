@@ -302,7 +302,7 @@ class _BrowseListener(unohelper.Base, XActionListener):
 # Layout constants — single source of truth in plugin/_layout.py
 # Loaded via exec() because UNO's import system can't resolve plugin._layout
 _layout_ns = {}
-with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '_layout.py')) as _f:
+with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '_layout.py'), encoding='utf-8') as _f:
     exec(_f.read(), _layout_ns)
 _PAGE_WIDTH = _layout_ns['PAGE_WIDTH']
 _PAGE_HEIGHT = _layout_ns['PAGE_HEIGHT']
