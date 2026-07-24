@@ -82,9 +82,14 @@ def _save_to_path(doc, path):
     pv_overwrite.Value = True
 
     try:
-        doc.storeToURL(file_url, (pv_filter, pv_overwrite))
+        # storeAsURL (NOT storeToURL) performs a real "File > Save As": it
+        # writes the file AND rebinds the model to the new location — getURL()
+        # is updated, the modified flag cleared, the active filter switched.
+        # storeToURL is an export/copy that leaves the model bound to its old
+        # URL, so a subsequent save_document overwrote the original file (#19).
+        doc.storeAsURL(file_url, (pv_filter, pv_overwrite))
     except Exception as exc:
-        log.exception("storeToURL failed for %s: %s", file_url, exc)
+        log.exception("storeAsURL failed for %s: %s", file_url, exc)
         return None, {
             "status": "error",
             "code": "store_failed",
@@ -92,34 +97,6 @@ def _save_to_path(doc, path):
             "hint": "Check that the path is valid and writable: %s" % path,
             "retryable": False,
         }
-
-    # storeToURL should act as "Save As" and update the doc URL.
-    # If it didn't (known LO quirk on some platforms), fall back to
-    # dispatch .uno:SaveAs which is the real "File > Save As".
-    try:
-        if not doc.getURL() and os.path.isfile(path):
-            log.info("storeToURL did not update URL; trying .uno:SaveAs")
-            frame = doc.getCurrentController().getFrame()
-            from plugin.framework.uno_context import get_ctx
-            ctx = get_ctx()
-            dispatcher = ctx.ServiceManager.createInstanceWithContext(
-                "com.sun.star.frame.DispatchHelper", ctx)
-            dispatcher.executeDispatch(
-                frame, ".uno:SaveAs", "", 0,
-                (pv_filter, pv_overwrite,
-                 PropertyValue("URL", 0, file_url, 0)),
-            )
-    except Exception:
-        log.debug("SaveAs dispatch fallback failed", exc_info=True)
-
-    # Final verification
-    try:
-        saved_url = doc.getURL()
-        if not saved_url and os.path.isfile(path):
-            log.warning("Document saved to disk but URL not updated: %s",
-                        path)
-    except Exception:
-        pass
 
     return file_url, None
 

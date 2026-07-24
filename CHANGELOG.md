@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.2] — 2026-07-24
+
+### Fixed
+
+- **`save_document_as` no longer overwrites the original file** (#19) — it now persists via `storeAsURL` (a real "File > Save As") instead of `storeToURL` (an export/copy), so the open document rebinds to the new location. Previously the model stayed bound to its original URL, so a later `save_document` wrote back to — and silently overwrote — the source file while the save-as target stayed frozen
+
 ## [0.9.1] — 2026-07-24
 
 ### Fixed
