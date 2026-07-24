@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.1] — 2026-07-24
+
+### Fixed
+
+- **CJK-locale Windows startup crash** (#16, #17) — on Windows systems whose ANSI code page is not UTF-8 (zh-CN cp936/GBK, ja-JP cp932, ko-KR cp949…), extension registration aborted with `UnicodeDecodeError` while `options_handler.py` read `_layout.py` at import time (an em-dash byte is illegal in GBK). Registration stopped there, `Jobs.xcu` never registered, and the MCP server never started even though the extension looked installed. The four startup-critical reads (`_layout.py`, `version.py`, `_build_id.py`, `module.yaml`) now open explicitly with `encoding="utf-8"`. Thanks @7errry for the diagnosis, fix, and verification on Windows 11 zh-CN / LO 26.2.4.2
+
 ## [0.9.0] — 2026-06-28
 
 ### Added
