@@ -1,6 +1,9 @@
 # Generated files (make build)
 build/
 *.oxt
+
+# Persistent download cache (pysqlite3 wheels — survives `make clean`)
+.cache/
 plugin/_manifest.py
 extension/META-INF/manifest.xml
 extension/description.xml

@@ -13,6 +13,7 @@ script to copy into plugin/lib/.
 """
 
 import argparse
+import glob
 import io
 import os
 import shutil
@@ -23,52 +24,84 @@ import zipfile
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUTPUT_DIR = os.path.join(PROJECT_ROOT, "build", "sqlite3_win")
 
+# Persistent wheel cache — survives `make clean` (which wipes build/), so
+# repeated test builds do not re-download. Override with NELSON_WHEEL_CACHE.
+CACHE_DIR = os.environ.get(
+    "NELSON_WHEEL_CACHE",
+    os.path.join(PROJECT_ROOT, ".cache", "wheels"),
+)
+
 # PyPI JSON API to find the wheel URL
 PYPI_URL = "https://pypi.org/pypi/pysqlite3/json"
 
 
+def _cached_wheel(cp_tag):
+    """Return the path to a cached matching wheel, or None."""
+    pattern = os.path.join(CACHE_DIR, "pysqlite3-*-%s-*win_amd64.whl" % cp_tag)
+    matches = sorted(glob.glob(pattern))
+    return matches[-1] if matches else None
+
+
 def fetch_pysqlite3(python_version="3.12"):
-    """Download pysqlite3 wheel and extract to build/sqlite3_win/."""
+    """Download pysqlite3 wheel (cached) and extract to build/sqlite3_win/."""
     marker = os.path.join(OUTPUT_DIR, "pysqlite3", "__init__.py")
     if os.path.isfile(marker):
         print("pysqlite3 already present in %s" % OUTPUT_DIR)
         return 0
 
-    # Find the right wheel from PyPI
-    import json
-    print("Fetching pysqlite3 wheel info from PyPI...")
-    resp = urllib.request.urlopen(PYPI_URL)
-    data = json.loads(resp.read())
-
-    # Look for cp312-win_amd64 wheel
     cp_tag = "cp%s" % python_version.replace(".", "")
-    wheel_url = None
-    for url_info in data.get("urls", []):
-        fn = url_info["filename"]
-        if cp_tag in fn and "win_amd64" in fn and fn.endswith(".whl"):
-            wheel_url = url_info["url"]
-            break
 
-    if not wheel_url:
-        # Search all releases
-        for ver, files in data.get("releases", {}).items():
-            for url_info in files:
-                fn = url_info["filename"]
-                if cp_tag in fn and "win_amd64" in fn and fn.endswith(".whl"):
-                    wheel_url = url_info["url"]
-                    break
-            if wheel_url:
+    # ── Fast path: reuse a cached wheel, no network at all ────────────────
+    whl_data = None
+    cached = _cached_wheel(cp_tag)
+    if cached:
+        print("Using cached wheel %s" % os.path.relpath(cached, PROJECT_ROOT))
+        with open(cached, "rb") as f:
+            whl_data = f.read()
+
+    # ── Slow path: resolve + download from PyPI, then cache it ────────────
+    if whl_data is None:
+        import json
+        print("Fetching pysqlite3 wheel info from PyPI...")
+        resp = urllib.request.urlopen(PYPI_URL)
+        data = json.loads(resp.read())
+
+        # Look for cp<ver>-win_amd64 wheel
+        wheel_url = None
+        wheel_fn = None
+        for url_info in data.get("urls", []):
+            fn = url_info["filename"]
+            if cp_tag in fn and "win_amd64" in fn and fn.endswith(".whl"):
+                wheel_url, wheel_fn = url_info["url"], fn
                 break
 
-    if not wheel_url:
-        print("ERROR: No pysqlite3 wheel found for %s win_amd64" % cp_tag,
-              file=sys.stderr)
-        return 1
+        if not wheel_url:
+            # Search all releases
+            for ver, files in data.get("releases", {}).items():
+                for url_info in files:
+                    fn = url_info["filename"]
+                    if cp_tag in fn and "win_amd64" in fn and fn.endswith(".whl"):
+                        wheel_url, wheel_fn = url_info["url"], fn
+                        break
+                if wheel_url:
+                    break
 
-    print("Downloading %s ..." % wheel_url)
-    resp = urllib.request.urlopen(wheel_url)
-    whl_data = resp.read()
-    print("Downloaded %.1f KB" % (len(whl_data) / 1024))
+        if not wheel_url:
+            print("ERROR: No pysqlite3 wheel found for %s win_amd64" % cp_tag,
+                  file=sys.stderr)
+            return 1
+
+        print("Downloading %s ..." % wheel_url)
+        resp = urllib.request.urlopen(wheel_url)
+        whl_data = resp.read()
+        print("Downloaded %.1f KB" % (len(whl_data) / 1024))
+
+        # Save to the persistent cache for next time.
+        os.makedirs(CACHE_DIR, exist_ok=True)
+        cache_path = os.path.join(CACHE_DIR, wheel_fn)
+        with open(cache_path, "wb") as f:
+            f.write(whl_data)
+        print("Cached wheel in %s" % os.path.relpath(cache_path, PROJECT_ROOT))
 
     # Extract pysqlite3/ directory from wheel
     os.makedirs(OUTPUT_DIR, exist_ok=True)

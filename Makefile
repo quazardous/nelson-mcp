@@ -89,7 +89,8 @@ OXT_NAME = $(EXTENSION_NAME)-$(EXTENSION_VERSION)$(BUILD_TAG)
         lo-start lo-start-full lo-kill lo-restart \
         clean-cache nuke-cache nuke-cache-force unbundle \
         log log-tail lo-log test check-ext check-setup deploy \
-        set-config vendor docker-build rdb icons sqlite3
+        set-config vendor docker-build rdb icons sqlite3 \
+        release release-dry
 
 # ── Help ─────────────────────────────────────────────────────────────────────
 
@@ -102,6 +103,10 @@ help:
 	@echo "  make build                  Build .oxt (all modules)"
 	@echo "  make xcu                    Generate XCS/XCU from config schemas"
 	@echo "  make clean                  Remove build artifacts"
+	@echo ""
+	@echo "Release:"
+	@echo "  make release                Tag + build + publish GitHub release (gated)"
+	@echo "  make release-dry            Dry run: build + verify, no tag/publish"
 	@echo ""
 	@echo "Install:"
 	@echo "  make deploy                 Build + reinstall + restart LO + show log"
@@ -222,6 +227,16 @@ build-force: dev-up vendor manifest rdb icons sqlite3
 	$(DOCKER_EXEC) python3 scripts/build_oxt.py --output build/$(EXTENSION_NAME).oxt
 
 rebuild: clean build
+
+# ── Release ────────────────────────────────────────────────────────────────
+# Disciplined, one-command release: pre-flight gates, Windows-complete build,
+# tag, push, and GitHub release with the .oxt asset. Bump plugin/version.py and
+# update CHANGELOG.md first. See scripts/release.sh for the full gate list.
+release:
+	bash $(SCRIPTS)/release.sh
+
+release-dry:
+	bash $(SCRIPTS)/release.sh --dry-run
 
 # Internal targets (called inside container or locally)
 _build: vendor manifest rdb icons sqlite3
