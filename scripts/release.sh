@@ -75,9 +75,17 @@ BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 [ "$BRANCH" = "main" ] || die "Not on 'main' (on '$BRANCH'). Releases are cut from main."
 ok "on branch main"
 
-# ── Gate 4: clean working tree ───────────────────────────────────────────────
-[ -z "$(git status --porcelain)" ] || die "Working tree is dirty. Commit or stash first."
-ok "working tree clean"
+# ── Gate 4: no uncommitted *tracked* changes ─────────────────────────────────
+# Untracked files can't affect the build or the tag, so they only warn.
+[ -z "$(git status --porcelain --untracked-files=no)" ] \
+    || die "Uncommitted changes to tracked files. Commit or stash first."
+UNTRACKED="$(git ls-files --others --exclude-standard)"
+if [ -n "$UNTRACKED" ]; then
+    warn "untracked files present (not part of this release):"
+    echo "$UNTRACKED" | sed 's/^/      /'
+else
+    ok "working tree clean"
+fi
 
 # ── Gate 5: local == origin/main (everything pushed) ─────────────────────────
 git fetch --quiet origin main
