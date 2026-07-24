@@ -52,6 +52,9 @@ portage/
 libre_calc_ai*/
 loshd*/
 
+# aiball (local ticketing config)
+.aiball.yaml
+
 # Claude Code
 .claude/settings.local.json
 
