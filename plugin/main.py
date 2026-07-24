@@ -39,7 +39,7 @@ log = logging.getLogger("nelson.main")
 _version = "?"
 try:
     _vf = os.path.join(os.path.dirname(__file__), "version.py")
-    with open(_vf) as _f:
+    with open(_vf, encoding="utf-8") as _f:
         for _line in _f:
             if _line.startswith("EXTENSION_VERSION"):
                 _version = _line.split("=", 1)[1].strip().strip("\"'")
@@ -49,7 +49,7 @@ except Exception:
 _build_id = "dev"
 try:
     _bid_path = os.path.join(os.path.dirname(__file__), "_build_id.py")
-    with open(_bid_path) as _bf:
+    with open(_bid_path, encoding="utf-8") as _bf:
         for _bl in _bf:
             if _bl.startswith("BUILD_ID"):
                 _build_id = _bl.split("=", 1)[1].strip().strip("\"'")
@@ -154,7 +154,7 @@ def _fallback_discover_modules():
             continue
         try:
             import yaml
-            with open(yaml_path) as f:
+            with open(yaml_path, encoding="utf-8") as f:
                 manifest = yaml.safe_load(f)
             manifest.setdefault("name", entry)
             result.append(manifest)
