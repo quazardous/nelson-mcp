@@ -9,6 +9,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Fixed
 
 - **`save_document_as` no longer overwrites the original file** (#19) — it now persists via `storeAsURL` (a real "File > Save As") instead of `storeToURL` (an export/copy), so the open document rebinds to the new location. Previously the model stayed bound to its original URL, so a later `save_document` wrote back to — and silently overwrote — the source file while the save-as target stayed frozen
+- **Distinct documents no longer share a `doc_id`** (#20) — the per-document id is stored inside the file, so a copied or `save_document_as`'d file used to inherit the source's id, making two open documents collide and `id:` addressing target the wrong one. `get_doc_id` now detects when a persisted id is already in use by another open document and reassigns a fresh one (self-healing on the next save); `save_document_as` proactively mints a new id for the freshly written file so it gets its own identity from the start
 
 ## [0.9.1] — 2026-07-24
 

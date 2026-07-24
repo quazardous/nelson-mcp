@@ -631,31 +631,142 @@ class DocumentService(ServiceBase):
     def get_doc_id(self, model):
         """Return a stable, persistent document ID.
 
-        Stored as a UserDefinedProperty on the document itself.
-        Survives save, save-as, and reopen from file.  Generated on
+        Stored as a UserDefinedProperty on the document itself, so it
+        survives save, save-as, and reopen from file.  Generated on
         first access (UUID4 hex, 32 chars).
+
+        Collision guard: a copied or save-as'd file inherits the
+        original's ``NelsonDocId``.  If two distinct open documents
+        carried the same id, ``id:`` addressing would silently target
+        the wrong one (#20).  When a persisted id is already in use by
+        another currently-open document, we mint a fresh id for *this*
+        instance and rewrite the property, healing the duplicate for
+        good on the next save.
         """
         if model is None:
             return None
         try:
             udp = model.getDocumentProperties().getUserDefinedProperties()
-            try:
-                return udp.getPropertyValue(self._DOC_ID_PROP)
-            except Exception:
-                pass
-            # First access — generate and store
-            doc_id = uuid.uuid4().hex
-            udp.addProperty(
-                self._DOC_ID_PROP,
-                0,  # com.sun.star.beans.PropertyAttribute.REMOVEABLE
-                doc_id,
-            )
-            log.debug("Assigned doc_id %s to %s",
-                       doc_id, model.getURL() or "(unsaved)")
-            return doc_id
         except Exception:
             log.debug("get_doc_id failed", exc_info=True)
             return None
+
+        try:
+            persisted = udp.getPropertyValue(self._DOC_ID_PROP)
+        except Exception:
+            persisted = None
+
+        # No id yet — first access: generate and store.
+        if not persisted:
+            doc_id = uuid.uuid4().hex
+            try:
+                udp.addProperty(
+                    self._DOC_ID_PROP,
+                    0,  # com.sun.star.beans.PropertyAttribute.REMOVEABLE
+                    doc_id,
+                )
+            except Exception:
+                log.debug("addProperty NelsonDocId failed", exc_info=True)
+            log.debug("Assigned doc_id %s to %s",
+                      doc_id, model.getURL() or "(unsaved)")
+            return doc_id
+
+        # Id exists — heal it if a *different* open document already uses it.
+        try:
+            if self._doc_id_in_use_by_other(model, persisted):
+                doc_id = uuid.uuid4().hex
+                try:
+                    udp.setPropertyValue(self._DOC_ID_PROP, doc_id)
+                except Exception:
+                    log.debug("setPropertyValue NelsonDocId failed",
+                              exc_info=True)
+                log.info(
+                    "Duplicate NelsonDocId %s on %s — reassigned to %s",
+                    persisted, model.getURL() or "(unsaved)", doc_id)
+                return doc_id
+        except Exception:
+            log.debug("doc_id collision check failed", exc_info=True)
+
+        return persisted
+
+    def reassign_doc_id(self, model):
+        """Force a fresh doc_id on *model*, overwriting any existing one.
+
+        Used after ``save_document_as`` so the newly written file — now a
+        distinct document — gets its own identity instead of inheriting
+        the source file's ``NelsonDocId`` (#20).
+        """
+        if model is None:
+            return None
+        try:
+            udp = model.getDocumentProperties().getUserDefinedProperties()
+            doc_id = uuid.uuid4().hex
+            try:
+                udp.setPropertyValue(self._DOC_ID_PROP, doc_id)
+            except Exception:
+                udp.addProperty(self._DOC_ID_PROP, 0, doc_id)
+            log.debug("Reassigned doc_id %s to %s",
+                      doc_id, model.getURL() or "(unsaved)")
+            return doc_id
+        except Exception:
+            log.debug("reassign_doc_id failed", exc_info=True)
+            return None
+
+    def _iter_open_models(self):
+        """Yield every open document model (UNO component)."""
+        desktop = self._get_desktop()
+        if desktop is None:
+            return
+        try:
+            frames = desktop.getFrames()
+        except Exception:
+            return
+        for i in range(frames.getCount()):
+            try:
+                controller = frames.getByIndex(i).getController()
+                if controller is None:
+                    continue
+                model = controller.getModel()
+                if model is not None:
+                    yield model
+            except Exception:
+                continue
+
+    def _read_persisted_doc_id(self, model):
+        """Read the stored NelsonDocId without ever generating one."""
+        try:
+            udp = model.getDocumentProperties().getUserDefinedProperties()
+            return udp.getPropertyValue(self._DOC_ID_PROP)
+        except Exception:
+            return None
+
+    def _doc_id_in_use_by_other(self, model, doc_id):
+        """True if another *distinct* open document already holds *doc_id*.
+
+        Documents are distinguished by URL: pyuno may hand back different
+        proxy objects for the same document, but two genuinely different
+        files always have different URLs (an unsaved document has an empty
+        URL and never reaches here, as it has no persisted id).
+        """
+        try:
+            my_url = model.getURL()
+        except Exception:
+            my_url = ""
+        # An unsaved document (empty URL) can't be an on-disk duplicate of
+        # another, and it would match *itself* in the enumeration below since
+        # empty URLs can't be told apart. Nothing to heal — skip.
+        if not my_url:
+            return False
+        for other in self._iter_open_models():
+            try:
+                other_url = other.getURL()
+            except Exception:
+                other_url = ""
+            if other_url and other_url == my_url:
+                continue  # same document
+            if self._read_persisted_doc_id(other) == doc_id:
+                return True
+        return False
 
     # ── Open documents enumeration ────────────────────────────────
 
