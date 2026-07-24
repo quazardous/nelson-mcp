@@ -69,11 +69,17 @@ class ListCellComments(ToolBase):
             for i in range(annotations.getCount()):
                 ann = annotations.getByIndex(i)
                 pos = ann.getPosition()
+                # Read text/date through the cell's own CellAnnotation
+                # (as the write path does), not the XSheetAnnotations
+                # collection item, whose getString()/getDate() come back
+                # empty in current LibreOffice (#21).
+                cell_ann = sheet.getCellByPosition(
+                    pos.Column, pos.Row).getAnnotation()
                 comments.append({
                     "cell": _cell_label(pos.Column, pos.Row),
                     "author": ann.getAuthor(),
-                    "date": ann.getDate(),
-                    "text": ann.getString(),
+                    "date": cell_ann.getDate(),
+                    "text": cell_ann.getString(),
                     "is_visible": ann.getIsVisible(),
                 })
             return {

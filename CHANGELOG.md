@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.3] — 2026-07-24
+
+### Fixed
+
+- **`list_cell_comments` returned empty `text` and `date`** (#21) — the read path pulled these from the `XSheetAnnotations` collection item (`getAnnotations().getByIndex(i)`), whose `getString()`/`getDate()` come back empty in current LibreOffice, while the write path stores them on the cell's own `CellAnnotation`. The read path now resolves each note through `cell.getAnnotation()` (mirroring the write path), so the comment body and date round-trip correctly
+
 ## [0.9.2] — 2026-07-24
 
 ### Fixed
