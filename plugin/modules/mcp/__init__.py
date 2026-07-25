@@ -24,22 +24,22 @@ _UNKNOWN = object()
 # Tool presets — pre-filled tool lists for common use cases
 PRESETS = {
     "writer-edit": [
-        "list_open_documents", "get_document_info", "get_document_outline",
+        "list_open_documents", "get_document_info", "nav_outline",
         "open_document", "create_document", "save_document", "close_document",
-        "text_read", "get_heading_content", "text_find",
+        "text_read", "nav_heading_content", "text_find",
         "text_insert", "text_insert_batch", "text_set",
         "text_set_style", "text_delete", "text_duplicate",
         "image_insert", "insert_hyperlink",
         "table_create", "table_write_cell",
         "execute_batch", "undo", "redo",
-        "resolve_locator", "get_document_stats",
+        "nav_resolve", "get_document_stats",
     ],
     "writer-read": [
-        "list_open_documents", "get_document_info", "get_document_outline",
-        "text_get_range", "text_read", "get_heading_content",
+        "list_open_documents", "get_document_info", "nav_outline",
+        "text_get_range", "text_read", "nav_heading_content",
         "text_find", "text_search", "get_document_stats",
         "image_list", "table_list", "list_comments",
-        "resolve_locator", "get_document_tree",
+        "nav_resolve", "nav_tree",
     ],
     "calc": [
         "list_open_documents", "get_document_info",

@@ -56,7 +56,7 @@ class ToolBase(ABC):
     implement ``execute``.
 
     Attributes:
-        name:        Unique tool identifier (e.g. "get_document_outline").
+        name:        Unique tool identifier (e.g. "nav_outline").
         aliases:     Former names that still resolve to this tool. They are
                      callable but never advertised in ``tools/list``, so a
                      rename does not break existing callers (custom

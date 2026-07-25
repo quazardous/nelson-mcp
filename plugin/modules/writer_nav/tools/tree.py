@@ -3,13 +3,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Heading tree tools: get_document_tree, get_heading_children."""
+"""Heading tree tools: nav_tree, nav_heading_children."""
 
 from plugin.framework.tool_base import ToolBase
 
 
 class GetDocumentTree(ToolBase):
-    name = "get_document_tree"
+    name = "nav_tree"
+    aliases = ["get_document_tree"]
     intent = "navigate"
     description = (
         "Get the document heading tree with bookmarks and content previews. "
@@ -46,7 +47,8 @@ class GetDocumentTree(ToolBase):
 
 
 class GetHeadingChildren(ToolBase):
-    name = "get_heading_children"
+    name = "nav_heading_children"
+    aliases = ["get_heading_children"]
     intent = "navigate"
     description = (
         "Drill into a heading's children — body paragraphs and sub-headings. "

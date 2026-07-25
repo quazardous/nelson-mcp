@@ -24,13 +24,13 @@ create_document(doc_type="writer")                 # create new empty document
 For Writer documents, get the structure first:
 
 ```
-get_document_tree(depth=0)   # shows all headings with bookmark IDs
+nav_tree(depth=0)   # shows all headings with bookmark IDs
 ```
 
 This returns headings with `_mcp_` bookmark IDs like `_mcp_h1`, `_mcp_h2`, etc. Use these IDs to read specific sections:
 
 ```
-get_heading_content(heading_path="1")        # read first heading section
+nav_heading_content(heading_path="1")        # read first heading section
 text_read(start=0, count=20)           # read first 20 paragraphs
 text_read(locator="heading_text:Annexes", count=10)  # read from a heading by name
 text_read(locator="bookmark:_mcp_h3", count=10)      # read from a bookmark ID
@@ -66,7 +66,7 @@ export_pdf(path="/home/user/output.pdf")           # export as PDF
 
 1. **Always call `get_document_info` first** to know what document you are working with. If no document is open, call `get_recent_documents` to find one, then `open_document` to open it.
 2. **Read before you edit.** Always read the content before changing it.
-3. **Use locators for navigation.** Many tools accept a `locator` parameter. Use `bookmark:_mcp_h1` (from `get_document_tree`) or `heading_text:Introduction` (by heading name). These are more reliable than paragraph numbers.
+3. **Use locators for navigation.** Many tools accept a `locator` parameter. Use `bookmark:_mcp_h1` (from `nav_tree`) or `heading_text:Introduction` (by heading name). These are more reliable than paragraph numbers.
 4. **Call `request_tools(intent="edit")` before editing.** Edit tools are not available by default.
 5. **Style names depend on language.** Call `style_list(family="paragraph")` to see available style names before applying styles.
 
@@ -104,4 +104,4 @@ execute_batch(operations=[
 - `image_list()` / `image_insert()` — work with images
 - `list_comments()` / `add_comment()` — work with comments
 - `set_track_changes(enabled=false)` — disable auto track changes temporarily (enabled by default on MCP mutations)
-- `list_bookmarks()` — see all bookmarks in the document
+- `bookmark_list()` — see all bookmarks in the document

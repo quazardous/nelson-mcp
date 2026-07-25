@@ -3,14 +3,15 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Structural tools: list_sections, goto_page, get_page_objects, refresh_indexes,
-read_section, resolve_bookmark, update_fields, resolve_locator."""
+"""Structural tools: section_list, nav_goto_page, nav_page_objects, refresh_indexes,
+section_read, bookmark_resolve, update_fields, nav_resolve."""
 
 from plugin.framework.tool_base import ToolBase
 
 
 class ListSections(ToolBase):
-    name = "list_sections"
+    name = "section_list"
+    aliases = ["list_sections"]
     intent = "navigate"
     description = "List all named sections in the document."
     parameters = {"type": "object", "properties": {}, "required": []}
@@ -37,12 +38,13 @@ class ListSections(ToolBase):
 
 
 class GotoPage(ToolBase):
-    name = "goto_page"
+    name = "nav_goto_page"
+    aliases = ["goto_page"]
     intent = "navigate"
     description = (
         "Navigate the view cursor to a specific page. By default also returns the "
         "page topology (images, tables, text frames on that page) so a follow-up "
-        "get_page_objects call is not needed. Pass topology=false to skip it."
+        "nav_page_objects call is not needed. Pass topology=false to skip it."
     )
     parameters = {
         "type": "object",
@@ -85,7 +87,8 @@ class GotoPage(ToolBase):
 
 
 class GetPageObjects(ToolBase):
-    name = "get_page_objects"
+    name = "nav_page_objects"
+    aliases = ["get_page_objects"]
     intent = "navigate"
     description = (
         "Get images, tables, and frames on a specific page. "
@@ -224,7 +227,8 @@ class RefreshIndexes(ToolBase):
 class ReadSection(ToolBase):
     """Read the content of a named text section."""
 
-    name = "read_section"
+    name = "section_read"
+    aliases = ["read_section"]
     intent = "navigate"
     description = (
         "Read the text content of a named section. "
@@ -289,12 +293,13 @@ class ReadSection(ToolBase):
 class ResolveBookmark(ToolBase):
     """Resolve a bookmark to its paragraph index and heading text."""
 
-    name = "resolve_bookmark"
+    name = "bookmark_resolve"
+    aliases = ["resolve_bookmark"]
     intent = "navigate"
     description = (
         "Resolve a bookmark to its current paragraph index and text. "
         "Most tools accept 'bookmark:NAME' as locator directly -- use "
-        "resolve_bookmark only when you need the raw paragraph index."
+        "bookmark_resolve only when you need the raw paragraph index."
     )
     parameters = {
         "type": "object",
@@ -325,7 +330,7 @@ class ResolveBookmark(ToolBase):
                     hint += (
                         " It may have been deleted or the document changed. "
                         "Use heading_text:<text> locator for resilient "
-                        "heading addressing, or call get_document_tree "
+                        "heading addressing, or call nav_tree "
                         "to refresh bookmarks."
                     )
                     existing = [
@@ -373,7 +378,8 @@ class ResolveBookmark(ToolBase):
 class ResolveLocator(ToolBase):
     """Resolve any locator to its canonical form with metadata."""
 
-    name = "resolve_locator"
+    name = "nav_resolve"
+    aliases = ["resolve_locator"]
     intent = "navigate"
     description = (
         "Resolve any locator string to its current paragraph position "

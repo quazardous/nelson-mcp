@@ -36,7 +36,7 @@ Nelson resolves "Introduction" internally (heading lookup → bookmark → parag
 
 Bring back the two-tier tool delivery, adapted for MCP:
 
-- **Core tools** always visible: `list_open_documents`, `get_document_info`, `get_document_outline`, `do`, `request_tools`
+- **Core tools** always visible: `list_open_documents`, `get_document_info`, `nav_outline`, `do`, `request_tools`
 - **Extended tools** unlocked on demand by intent: `request_tools(intent="edit")` adds editing tools to the session
 - Intent groups: `navigate`, `edit`, `search`, `tables`, `images`, `styles`, `review`, `calc`, `draw`
 - `tools/list` reflects the current session — starts small, grows as the agent asks
@@ -102,7 +102,7 @@ This approach builds on well-established fields:
 - **Sequential Pattern Mining** (PrefixSpan, Pei et al. 2001) — finding frequent subsequences in logs. "80% of sessions that do A→B end up doing C" — more robust than counting bigrams.
 - **Markov chains** — tool transitions form a natural Markov chain. The matrix `P(next_tool | current_tool, doc_type)` is computed directly from traces. No ML needed — pure statistics.
 - **Voyager** (Wang et al. 2023) — Minecraft agent that builds a *skill library* from gameplay traces, analyzed by an LLM. Our `rules.json` is their skill library: patterns extracted from experience, refined over time.
-- **LATM — LLM As Tool Maker** (Cai et al. 2023) — LLM identifies repetitive tool sequences and synthesizes composite tools. If `resolve_locator → get_heading_content → text_insert` appears 50 times, the LLM can generate `insert_under_heading` as a reusable workflow.
+- **LATM — LLM As Tool Maker** (Cai et al. 2023) — LLM identifies repetitive tool sequences and synthesizes composite tools. If `nav_resolve → nav_heading_content → text_insert` appears 50 times, the LLM can generate `insert_under_heading` as a reusable workflow.
 
 ### Three-level analysis
 
@@ -146,20 +146,20 @@ All three levels feed a single rules file, loaded at boot:
 ```json
 [
   {
-    "after": ["list_open_documents", "get_document_outline"],
+    "after": ["list_open_documents", "nav_outline"],
     "doc_type": "writer",
-    "suggest": ["get_heading_content", "text_find"],
+    "suggest": ["nav_heading_content", "text_find"],
     "confidence": 0.85,
     "source": "markov"
   },
   {
     "after": ["text_insert"],
     "followed_by_undo_rate": 0.30,
-    "hint": "Verify paragraph_index with resolve_locator before inserting",
+    "hint": "Verify paragraph_index with nav_resolve before inserting",
     "source": "prefixspan"
   },
   {
-    "pattern": "resolve_locator → get_heading_content → text_insert → save",
+    "pattern": "nav_resolve → nav_heading_content → text_insert → save",
     "name": "edit_section",
     "frequency": 0.60,
     "source": "llm",
@@ -182,7 +182,7 @@ Both MCP and `/api/do` return `_next` after every action, powered by the learned
 {
   "result": { "paragraph_index": 12 },
   "_next": [
-    {"tool": "get_heading_content", "args": {"heading": "Conclusion"}},
+    {"tool": "nav_heading_content", "args": {"heading": "Conclusion"}},
     {"tool": "save_document", "reason": "5 unsaved edits"}
   ]
 }

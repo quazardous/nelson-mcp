@@ -777,7 +777,8 @@ class DuplicateParagraph(ToolBase):
 class CloneHeadingBlock(ToolBase):
     """Clone an entire heading block (heading + all sub-headings + body)."""
 
-    name = "clone_heading_block"
+    name = "nav_heading_clone"
+    aliases = ["clone_heading_block"]
     intent = "edit"
     description = (
         "Clone an entire heading block (heading + all sub-headings + body). "

@@ -15,7 +15,8 @@ log = logging.getLogger("nelson.writer")
 class GetDocumentOutline(ToolBase):
     """Return the heading tree (outline) of a Writer document."""
 
-    name = "get_document_outline"
+    name = "nav_outline"
+    aliases = ["get_document_outline"]
     description = "Returns the document outline (headings hierarchy)."
     parameters = {
         "type": "object",
@@ -42,7 +43,8 @@ class GetDocumentOutline(ToolBase):
 class GetHeadingContent(ToolBase):
     """Return content under a heading identified by its path."""
 
-    name = "get_heading_content"
+    name = "nav_heading_content"
+    aliases = ["get_heading_content"]
     intent = "navigate"
     description = (
         "Returns content under a heading identified by its path "

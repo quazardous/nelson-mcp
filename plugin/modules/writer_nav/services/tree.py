@@ -674,7 +674,7 @@ class TreeService:
             hint = "Bookmark '%s' not found." % bookmark_name
             if bookmark_name.startswith("_mcp_"):
                 hint += (" Use heading_text:<text> locator for resilient "
-                         "heading addressing, or call get_document_tree "
+                         "heading addressing, or call nav_tree "
                          "to refresh bookmarks.")
                 existing = [n for n in bookmarks.getElementNames()
                             if n.startswith("_mcp_")]

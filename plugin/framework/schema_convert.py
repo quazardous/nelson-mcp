@@ -64,7 +64,7 @@ def to_mcp_schema(tool, doc_type=None):
     Returns::
 
         {
-            "name": "get_document_outline",
+            "name": "nav_outline",
             "description": "...",
             "inputSchema": { ... JSON Schema ... }
         }

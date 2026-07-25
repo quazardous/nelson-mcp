@@ -3,13 +3,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Bookmark tools: list_bookmarks, cleanup_bookmarks."""
+"""Bookmark tools: bookmark_list, bookmark_cleanup."""
 
 from plugin.framework.tool_base import ToolBase
 
 
 class ListBookmarks(ToolBase):
-    name = "list_bookmarks"
+    name = "bookmark_list"
+    aliases = ["list_bookmarks"]
     intent = "navigate"
     description = (
         "List all bookmarks in the document with their anchor text preview. "
@@ -39,7 +40,8 @@ class ListBookmarks(ToolBase):
 
 
 class CleanupBookmarks(ToolBase):
-    name = "cleanup_bookmarks"
+    name = "bookmark_cleanup"
+    aliases = ["cleanup_bookmarks"]
     intent = "navigate"
     description = (
         "Remove all _mcp_* bookmarks from the document. "

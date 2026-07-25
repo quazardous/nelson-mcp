@@ -59,18 +59,18 @@ Once you know which document to work on, get its structure:
 
 ```
 get_document_info           → page count, word count, type, path
-get_document_outline        → heading tree with bookmarks (Writer)
+nav_outline        → heading tree with bookmarks (Writer)
 table_list                 → sheets (Calc) or tables (Writer)
 ```
 
-For Writer documents, `get_document_outline` is essential — it gives you the heading hierarchy and stable bookmark references you'll use for all subsequent operations.
+For Writer documents, `nav_outline` is essential — it gives you the heading hierarchy and stable bookmark references you'll use for all subsequent operations.
 
 ### Decision Tree
 
 ```
 Connected
  ├─ list_open_documents
- │   ├─ Documents open → get_document_info / get_document_outline
+ │   ├─ Documents open → get_document_info / nav_outline
  │   └─ Nothing open
  │       ├─ User names a doc → get_recent_documents → open_document
  │       ├─ User wants to find a doc → docs_gallery_search
@@ -84,9 +84,9 @@ User says: *"Add a summary to my report"*
 
 ```
 1. list_open_documents          → find "Annual Report 2025.odt" (doc_id: abc123)
-2. get_document_outline(_document="id:abc123")
+2. nav_outline(_document="id:abc123")
                                 → headings: Introduction, Chapter 1, Chapter 2, Conclusion
-3. get_heading_content(heading="Conclusion")
+3. nav_heading_content(heading="Conclusion")
                                 → read existing content
 4. text_insert(index=N, text="## Summary\n\nKey findings...", position="before")
 ```
@@ -108,13 +108,13 @@ When working with multiple documents, always specify `_document` to avoid ambigu
 ### Read a Document
 
 ```
-get_document_outline        → heading tree with bookmarks
-get_heading_content         → read text under a specific heading
+nav_outline        → heading tree with bookmarks
+nav_heading_content         → read text under a specific heading
 text_read             → read paragraphs by index range
 text_find / text_search → search for text
 ```
 
-**Tip:** Use `get_document_outline` first to understand the document structure. Headings have stable bookmarks — use `heading_text:` or `bookmark:` locators to target sections.
+**Tip:** Use `nav_outline` first to understand the document structure. Headings have stable bookmarks — use `heading_text:` or `bookmark:` locators to target sections.
 
 ### Edit a Document
 
@@ -126,7 +126,7 @@ text_delete            → remove a paragraph
 text_insert_batch     → insert multiple paragraphs at once
 ```
 
-**Tip:** Use `resolve_locator` to convert a heading name or bookmark to a paragraph index before editing. Example: `resolve_locator(locator="heading_text:Chapter 3")` returns the paragraph index.
+**Tip:** Use `nav_resolve` to convert a heading name or bookmark to a paragraph index before editing. Example: `nav_resolve(locator="heading_text:Chapter 3")` returns the paragraph index.
 
 ### Tables
 
@@ -181,8 +181,8 @@ Use `execute_batch` to run multiple tools in one call. Supports variable chainin
 ```json
 {
   "steps": [
-    {"tool": "get_document_outline", "output_var": "outline"},
-    {"tool": "get_heading_content", "args": {"heading": "Introduction"}}
+    {"tool": "nav_outline", "output_var": "outline"},
+    {"tool": "nav_heading_content", "args": {"heading": "Introduction"}}
   ]
 }
 ```
@@ -215,8 +215,8 @@ If you're on a custom endpoint, use `tools/list` to see which tools are availabl
 ### "Add text under heading X"
 
 ```
-1. get_document_outline          → find heading bookmark
-2. resolve_locator("heading_text:X")  → get paragraph index
+1. nav_outline          → find heading bookmark
+2. nav_resolve("heading_text:X")  → get paragraph index
 3. text_insert(index=N+1, text="...", position="after")
 ```
 
@@ -247,7 +247,7 @@ If you're on a custom endpoint, use `tools/list` to see which tools are availabl
 
 ## Tips
 
-- **Bookmarks over indices** — paragraph indices shift when content is added/deleted. Use heading bookmarks or `resolve_locator` for stable references.
+- **Bookmarks over indices** — paragraph indices shift when content is added/deleted. Use heading bookmarks or `nav_resolve` for stable references.
 - **Check doc_type** — tools are filtered by document type. A Writer tool won't appear on a Calc document.
 - **Batch when possible** — `execute_batch` reduces round-trips and runs faster.
 - **Read before writing** — always read the current state before making edits to avoid overwriting content.

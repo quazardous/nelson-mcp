@@ -10,7 +10,7 @@ description: Quick reference for Nelson MCP — LibreOffice document tools
 ### 1. Discover
 ```
 get_document_info          → doc type, title, path
-get_document_tree          → heading structure + _mcp_ bookmarks (depth=0 for all)
+nav_tree          → heading structure + _mcp_ bookmarks (depth=0 for all)
 get_document_stats         → word count, page count, etc.
 list_available_tools       → see extended tools you can activate
 request_tools(intent=...)  → activate: navigate, edit, review, media
@@ -18,11 +18,11 @@ request_tools(intent=...)  → activate: navigate, edit, review, media
 
 ### 2. Navigate
 ```
-get_heading_children       → body + sub-headings under a heading
-navigate_heading           → next, previous, parent, first_child, next_sibling
+nav_heading_children       → body + sub-headings under a heading
+nav_heading           → next, previous, parent, first_child, next_sibling
 text_read            → read N paragraphs from a position
 search_fulltext            → boolean search: "energy AND renewable", "ocean NEAR/3 warming"
-get_surroundings           → nearby paragraphs, images, tables around a locator
+nav_surroundings           → nearby paragraphs, images, tables around a locator
 ```
 
 ### 3. Edit
@@ -64,7 +64,7 @@ execute_batch(operations=[...])
 ```
 
 ## Locators (stable addressing)
-- `bookmark:_mcp_xxx` — best, created by get_document_tree
+- `bookmark:_mcp_xxx` — best, created by nav_tree
 - `heading_text:Introduction` — find by heading text
 - `paragraph:N` — fallback, 0-based index
 

@@ -3,13 +3,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Navigation tools: navigate_heading, get_surroundings."""
+"""Navigation tools: nav_heading, nav_surroundings."""
 
 from plugin.framework.tool_base import ToolBase
 
 
 class NavigateHeading(ToolBase):
-    name = "navigate_heading"
+    name = "nav_heading"
+    aliases = ["navigate_heading"]
     intent = "navigate"
     description = (
         "Navigate from a locator to a related heading. "
@@ -51,7 +52,8 @@ class NavigateHeading(ToolBase):
 
 
 class GetSurroundings(ToolBase):
-    name = "get_surroundings"
+    name = "nav_surroundings"
+    aliases = ["get_surroundings"]
     intent = "navigate"
     description = (
         "Discover objects within a radius of paragraphs around a locator. "

@@ -3,8 +3,8 @@ You are working with a LibreOffice document through **Nelson MCP**.
 ## Quick start
 
 1. Call `get_document_info` to know the document type (writer, calc, draw).
-2. For **Writer** documents, call `get_document_tree` (depth=0) to see the full heading structure. Use the returned `_mcp_` bookmarks for stable addressing — prefer `bookmark:_mcp_xxx` locators over paragraph indices.
-3. Drill into sections with `get_heading_children` or `text_read`.
+2. For **Writer** documents, call `nav_tree` (depth=0) to see the full heading structure. Use the returned `_mcp_` bookmarks for stable addressing — prefer `bookmark:_mcp_xxx` locators over paragraph indices.
+3. Drill into sections with `nav_heading_children` or `text_read`.
 4. Use `search_fulltext` for boolean queries (AND, OR, NOT, NEAR/N).
 
 ## Document management
@@ -24,9 +24,9 @@ You can work with unsaved documents — just use `save_document_as` to save them
 
 For large documents, use a top-down approach to avoid reading too much content at once:
 
-1. `get_document_tree(depth=1)` — Get top-level headings only (with `_mcp_` bookmarks).
-2. `get_heading_children(locator="bookmark:_mcp_xxx")` — Drill into a specific section.
-3. `get_heading_content(heading_path="2.3")` — Read content under a heading by path (e.g., 3rd child of 2nd heading).
+1. `nav_tree(depth=1)` — Get top-level headings only (with `_mcp_` bookmarks).
+2. `nav_heading_children(locator="bookmark:_mcp_xxx")` — Drill into a specific section.
+3. `nav_heading_content(heading_path="2.3")` — Read content under a heading by path (e.g., 3rd child of 2nd heading).
 4. `search_fulltext(query="...")` — Search across the entire document without reading it all.
 5. `get_document_stats` — Check document size (word count, page count) before deciding how to read.
 

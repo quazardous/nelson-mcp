@@ -9,7 +9,7 @@ Vision for AI-driven presentation capabilities, extending the existing Draw modu
 - `edit_shape` — move, resize, recolor, change text
 - `delete_shape` — remove shapes
 - `get_draw_summary` — list shapes and properties on current slide
-- `get_page_objects` — detailed page content
+- `nav_page_objects` — detailed page content
 - `list_master_slides` / `get_slide_master` / `set_slide_master` — master page management
 - `image_insert` / `image_list` / `image_delete` — images on slides
 
@@ -18,7 +18,7 @@ Vision for AI-driven presentation capabilities, extending the existing Draw modu
 - `get_slide_transition` / `set_slide_transition` — 25 FadeEffect types, speed, auto-advance
 - `get_slide_layout` / `set_slide_layout` — 30 named layout types
 - `list_placeholders` / `get_placeholder_text` / `set_placeholder_text` — title, subtitle, body placeholders
-- `goto_page` — navigate to a slide
+- `nav_goto_page` — navigate to a slide
 
 ## Remaining roadmap
 
