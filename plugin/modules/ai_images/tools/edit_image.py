@@ -17,7 +17,8 @@ log = logging.getLogger("nelson.ai_images.edit")
 class EditImage(ToolBase):
     """Edit the currently selected image using img2img."""
 
-    name = "edit_image"
+    name = "image_edit"
+    aliases = ["edit_image"]
     requires_service = "ai_images"
     intent = "media"
     description = (

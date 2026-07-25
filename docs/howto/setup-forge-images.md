@@ -61,7 +61,7 @@ For higher resolution output:
 
 ## Step 4 — Generate Images
 
-Use the `generate_image` MCP tool:
+Use the `image_generate` MCP tool:
 
 > "Generate an image of a sunset over the Mediterranean sea"
 

@@ -54,7 +54,7 @@ Returns matching images with paths, descriptions, and keywords.
 
 ### Insert into Document
 
-Use `insert_image` with the image path returned by gallery tools to insert directly into your Writer document.
+Use `image_insert` with the image path returned by gallery tools to insert directly into your Writer document.
 
 ## Step 4 — Add Metadata (optional)
 

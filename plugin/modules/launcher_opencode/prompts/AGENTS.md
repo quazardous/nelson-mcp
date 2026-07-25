@@ -101,7 +101,7 @@ execute_batch(operations=[
 ## Other useful tools
 
 - `get_document_stats()` — word count, page count, paragraph count
-- `list_images()` / `insert_image()` — work with images
+- `image_list()` / `image_insert()` — work with images
 - `list_comments()` / `add_comment()` — work with comments
 - `set_track_changes(enabled=false)` — disable auto track changes temporarily (enabled by default on MCP mutations)
 - `list_bookmarks()` — see all bookmarks in the document

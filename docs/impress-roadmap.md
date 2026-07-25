@@ -11,7 +11,7 @@ Vision for AI-driven presentation capabilities, extending the existing Draw modu
 - `get_draw_summary` — list shapes and properties on current slide
 - `get_page_objects` — detailed page content
 - `list_master_slides` / `get_slide_master` / `set_slide_master` — master page management
-- `insert_image` / `list_images` / `delete_image` — images on slides
+- `image_insert` / `image_list` / `image_delete` — images on slides
 
 ### Impress-specific
 - `get_speaker_notes` / `set_speaker_notes` — speaker notes

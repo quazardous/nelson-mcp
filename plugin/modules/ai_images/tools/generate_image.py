@@ -19,7 +19,8 @@ log = logging.getLogger("nelson.ai_images.generate")
 class GenerateImage(ToolBase):
     """Generate an image from a text prompt and insert it."""
 
-    name = "generate_image"
+    name = "image_generate"
+    aliases = ["generate_image"]
     requires_service = "ai_images"
     intent = "media"
     description = (

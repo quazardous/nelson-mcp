@@ -43,9 +43,9 @@ create_table(rows, cols, locator)
 
 ### 5. Images
 ```
-list_images → get_image_info
-insert_image(image_path, locator)
-replace_image / set_image_properties / delete_image
+image_list → image_info
+image_insert(image_path, locator)
+image_replace / image_set / image_delete
 ```
 
 ### 6. Comments & Review

@@ -141,8 +141,8 @@ write_table_row             → write an entire row
 ### Images
 
 ```
-list_images                 → find images in the document
-insert_image                → insert an image (with caption)
+image_list                 → find images in the document
+image_insert                → insert an image (with caption)
 gallery_search              → search image galleries by keyword
 ```
 
@@ -231,7 +231,7 @@ If you're on a custom endpoint, use `tools/list` to see which tools are availabl
 
 ```
 1. gallery_search("sunset beach") → find image path
-2. insert_image(path="/path/to/image.jpg", paragraph_index=10)
+2. image_insert(path="/path/to/image.jpg", paragraph_index=10)
 ```
 
 ### "Create a report from scratch"

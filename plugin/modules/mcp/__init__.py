@@ -29,7 +29,7 @@ PRESETS = {
         "read_paragraphs", "get_heading_content", "find_text",
         "insert_at_paragraph", "insert_paragraphs_batch", "set_paragraph_text",
         "set_paragraph_style", "delete_paragraph", "duplicate_paragraph",
-        "insert_image", "insert_hyperlink",
+        "image_insert", "insert_hyperlink",
         "create_table", "write_table_cell",
         "execute_batch", "undo", "redo",
         "resolve_locator", "get_document_stats",
@@ -38,7 +38,7 @@ PRESETS = {
         "list_open_documents", "get_document_info", "get_document_outline",
         "get_document_content", "read_paragraphs", "get_heading_content",
         "find_text", "search_in_document", "get_document_stats",
-        "list_images", "list_tables", "list_comments",
+        "image_list", "list_tables", "list_comments",
         "resolve_locator", "get_document_tree",
     ],
     "calc": [
@@ -51,14 +51,14 @@ PRESETS = {
     "gallery": [
         "gallery_list", "gallery_search", "gallery_get",
         "gallery_providers", "gallery_update",
-        "insert_image", "list_images", "download_image",
+        "image_insert", "image_list", "image_download",
         "docs_gallery_list", "docs_gallery_search",
     ],
     "minimal": [
         "list_open_documents", "get_document_info",
         "open_document", "create_document", "save_document",
         "read_paragraphs", "insert_at_paragraph",
-        "insert_image",
+        "image_insert",
     ],
 }
 

@@ -7,7 +7,7 @@
 
 Writer uses getGraphicObjects() (named TextGraphicObject collection).
 Calc/Draw/Impress use DrawPage shapes (GraphicObjectShape).
-Writer-specific tools (set_image_properties, replace_image) remain Writer-only.
+Writer-specific tools (image_set, image_replace) remain Writer-only.
 """
 
 import hashlib
@@ -245,7 +245,7 @@ def _apply_fit(graphic, fit, ratio):
 def _find_parent_frame(doc, graphic):
     """Return the TextFrame that contains an image, or None.
 
-    Images inserted by insert_image live inside a TextFrame (image + caption).
+    Images inserted by image_insert live inside a TextFrame (image + caption).
     We match by comparing the anchor's text object with each frame's text.
     """
     try:
@@ -273,7 +273,8 @@ def _find_parent_frame(doc, graphic):
 class ListImages(ToolBase):
     """List all images/graphic objects in the document."""
 
-    name = "list_images"
+    name = "image_list"
+    aliases = ["list_images"]
     intent = "media"
     description = (
         "List all images/graphic objects in the document with name, "
@@ -338,7 +339,8 @@ class ListImages(ToolBase):
 class GetImageInfo(ToolBase):
     """Get detailed info about a specific image."""
 
-    name = "get_image_info"
+    name = "image_info"
+    aliases = ["get_image_info"]
     intent = "media"
     description = (
         "Get detailed info about a specific image: URL, dimensions, "
@@ -351,11 +353,11 @@ class GetImageInfo(ToolBase):
         "properties": {
             "image_name": {
                 "type": "string",
-                "description": "Name of the image (from list_images). Required for Writer.",
+                "description": "Name of the image (from image_list). Required for Writer.",
             },
             "shape_index": {
                 "type": "integer",
-                "description": "Shape index on the page (from list_images). For Calc/Draw/Impress only.",
+                "description": "Shape index on the page (from image_list). For Calc/Draw/Impress only.",
             },
             "draw": {
                 "type": "object",
@@ -513,7 +515,8 @@ class GetImageInfo(ToolBase):
 class SetImageProperties(ToolBase):
     """Resize, reposition, crop, or update caption/alt-text for an image."""
 
-    name = "set_image_properties"
+    name = "image_set"
+    aliases = ["set_image_properties"]
     intent = "media"
     description = (
         "Resize, reposition, crop, or update caption/alt-text for a Writer image. "
@@ -524,7 +527,7 @@ class SetImageProperties(ToolBase):
         "properties": {
             "image_name": {
                 "type": "string",
-                "description": "Name of the image (from list_images).",
+                "description": "Name of the image (from image_list).",
             },
             "width_mm": {
                 "type": "number",
@@ -562,7 +565,7 @@ class SetImageProperties(ToolBase):
                 "description": (
                     "Rotation in degrees clockwise (0-359). "
                     "Rotates the image content in place; does not change the frame. "
-                    "Use fit_image afterwards if the frame should follow the new shape."
+                    "Use image_fit afterwards if the frame should follow the new shape."
                 ),
             },
         },
@@ -660,11 +663,12 @@ class SetImageProperties(ToolBase):
 class DownloadImage(ToolBase):
     """Download an image from URL to local cache."""
 
-    name = "download_image"
+    name = "image_download"
+    aliases = ["download_image"]
     intent = "media"
     description = (
         "Download an image from URL to local cache. Returns local path "
-        "for insert_image/replace_image."
+        "for image_insert/image_replace."
     )
     parameters = {
         "type": "object",
@@ -712,7 +716,8 @@ class DownloadImage(ToolBase):
 class InsertImage(ToolBase):
     """Insert an image from local path or URL into any document type."""
 
-    name = "insert_image"
+    name = "image_insert"
+    aliases = ["insert_image"]
     intent = "media"
     description = (
         "Insert an image from local path or URL into the document. "
@@ -1142,7 +1147,8 @@ class InsertImage(ToolBase):
 class DeleteImage(ToolBase):
     """Delete an image from the document."""
 
-    name = "delete_image"
+    name = "image_delete"
+    aliases = ["delete_image"]
     intent = "media"
     description = (
         "Delete an image from the document. "
@@ -1158,7 +1164,7 @@ class DeleteImage(ToolBase):
             },
             "shape_index": {
                 "type": "integer",
-                "description": "Shape index on the page (from list_images). For Calc/Draw/Impress only.",
+                "description": "Shape index on the page (from image_list). For Calc/Draw/Impress only.",
             },
             "draw": {
                 "type": "object",
@@ -1238,7 +1244,8 @@ class DeleteImage(ToolBase):
 class ReplaceImage(ToolBase):
     """Replace an image's source file keeping position and frame."""
 
-    name = "replace_image"
+    name = "image_replace"
+    aliases = ["replace_image"]
     intent = "media"
     description = (
         "Replace a Writer image's source file, keeping its position and anchor. "
@@ -1251,7 +1258,7 @@ class ReplaceImage(ToolBase):
         "properties": {
             "image_name": {
                 "type": "string",
-                "description": "Name of the image to replace (from list_images).",
+                "description": "Name of the image to replace (from image_list).",
             },
             "new_image_path": {
                 "type": "string",
@@ -1370,7 +1377,8 @@ class ReplaceImage(ToolBase):
 class FitImage(ToolBase):
     """Resize an image to its real aspect ratio, or fit it to its frame."""
 
-    name = "fit_image"
+    name = "image_fit"
+    aliases = ["fit_image"]
     intent = "media"
     description = (
         "Auto-fit a Writer image using its real content aspect ratio (read "
@@ -1380,14 +1388,14 @@ class FitImage(ToolBase):
         "fit='height' keeps the current height and recomputes the width; "
         "fit='frame' fits the image to its parent text frame's inner width and "
         "resizes the frame height to match (preserving caption space). "
-        "Use after replace_image, a manual rotation, or any resize that broke the ratio."
+        "Use after image_replace, a manual rotation, or any resize that broke the ratio."
     )
     parameters = {
         "type": "object",
         "properties": {
             "image_name": {
                 "type": "string",
-                "description": "Name of the image (from list_images).",
+                "description": "Name of the image (from image_list).",
             },
             "fit": {
                 "type": "string",
@@ -1490,11 +1498,12 @@ class FitImage(ToolBase):
 class WrapImageInFrame(ToolBase):
     """Wrap an existing frameless image into a captioned text frame."""
 
-    name = "wrap_image_in_frame"
+    name = "image_wrap"
+    aliases = ["wrap_image_in_frame"]
     intent = "media"
     description = (
         "Wrap an existing frameless Writer image into a text frame with a caption "
-        "below it (the same layout insert_image produces). Preserves the image's "
+        "below it (the same layout image_insert produces). Preserves the image's "
         "size, rotation and anchor position. Works even when the source file path "
         "is unknown, because it reuses the embedded image data directly. "
         "Returns the new frame name. Writer-only."
@@ -1504,7 +1513,7 @@ class WrapImageInFrame(ToolBase):
         "properties": {
             "image_name": {
                 "type": "string",
-                "description": "Name of the image to wrap (from list_images).",
+                "description": "Name of the image to wrap (from image_list).",
             },
             "caption": {
                 "type": "string",
@@ -1675,10 +1684,10 @@ def _download_image_to_cache(url, verify_ssl=False, force=False):
     local_path = os.path.join(_IMAGE_CACHE_DIR, url_hash + ext)
 
     if not force and os.path.isfile(local_path):
-        log.debug("download_image: cache hit %s -> %s", url, local_path)
+        log.debug("image_download: cache hit %s -> %s", url, local_path)
         return local_path
 
-    log.info("download_image: downloading %s -> %s", url, local_path)
+    log.info("image_download: downloading %s -> %s", url, local_path)
 
     if verify_ssl:
         context = None
