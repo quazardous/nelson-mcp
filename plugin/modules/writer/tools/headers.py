@@ -99,7 +99,8 @@ def _read_region(style, region):
 class GetHeaderFooter(ToolBase):
     """Read the header/footer text of a Writer page style."""
 
-    name = "get_header_footer"
+    name = "header_footer_get"
+    aliases = ["get_header_footer"]
     intent = "read"
     description = (
         "Read the page header and/or footer text of a Writer page style. "
@@ -140,14 +141,15 @@ class GetHeaderFooter(ToolBase):
                 **result,
             }
         except Exception as e:
-            log.exception("get_header_footer failed")
+            log.exception("header_footer_get failed")
             return {"status": "error", "error": str(e)}
 
 
 class SetHeaderFooter(ToolBase):
     """Write the header/footer text of a Writer page style."""
 
-    name = "set_header_footer"
+    name = "header_footer_set"
+    aliases = ["set_header_footer"]
     intent = "edit"
     description = (
         "Set (or append to) the page header or footer text of a Writer "
@@ -260,5 +262,5 @@ class SetHeaderFooter(ToolBase):
                 result["auto_height"] = bool(auto_height)
             return result
         except Exception as e:
-            log.exception("set_header_footer failed")
+            log.exception("header_footer_set failed")
             return {"status": "error", "error": str(e)}
