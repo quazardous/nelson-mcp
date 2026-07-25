@@ -19,7 +19,8 @@ log = logging.getLogger("nelson.writer")
 class ListTextFrames(ToolBase):
     """List all text frames in the document."""
 
-    name = "list_text_frames"
+    name = "frame_list"
+    aliases = ["list_text_frames"]
     intent = "edit"
     description = "List all text frames in the document."
     parameters = {
@@ -65,7 +66,7 @@ class ListTextFrames(ToolBase):
                     "content_preview": content_preview,
                 })
             except Exception as e:
-                log.debug("list_text_frames: skip '%s': %s", name, e)
+                log.debug("frame_list: skip '%s': %s", name, e)
 
         return {"status": "ok", "frames": frames, "count": len(frames)}
 
@@ -77,7 +78,8 @@ class ListTextFrames(ToolBase):
 class GetTextFrameInfo(ToolBase):
     """Get detailed info about a text frame."""
 
-    name = "get_text_frame_info"
+    name = "frame_info"
+    aliases = ["get_text_frame_info"]
     intent = "edit"
     description = "Get detailed info about a text frame."
     parameters = {
@@ -85,7 +87,7 @@ class GetTextFrameInfo(ToolBase):
         "properties": {
             "frame_name": {
                 "type": "string",
-                "description": "Name of the text frame (from list_text_frames).",
+                "description": "Name of the text frame (from frame_list).",
             },
         },
         "required": ["frame_name"],
@@ -178,7 +180,8 @@ class GetTextFrameInfo(ToolBase):
 class SetTextFrameProperties(ToolBase):
     """Resize or reposition a text frame."""
 
-    name = "set_text_frame_properties"
+    name = "frame_set"
+    aliases = ["set_text_frame_properties"]
     intent = "edit"
     description = "Resize or reposition a text frame."
     parameters = {
@@ -186,7 +189,7 @@ class SetTextFrameProperties(ToolBase):
         "properties": {
             "frame_name": {
                 "type": "string",
-                "description": "Name of the text frame (from list_text_frames).",
+                "description": "Name of the text frame (from frame_list).",
             },
             "width_mm": {
                 "type": "number",
