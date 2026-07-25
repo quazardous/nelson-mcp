@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""docs_gallery_update — update document metadata in a gallery provider."""
+"""docgallery_update — update document metadata in a gallery provider."""
 
 from plugin.framework.tool_base import ToolBase
 
@@ -16,7 +16,8 @@ class UpdateDocMetadata(ToolBase):
     Requires the provider to have 'Allow Editing Metadata' enabled.
     """
 
-    name = "docs_gallery_update"
+    name = "docgallery_update"
+    aliases = ["docs_gallery_update"]
     requires_service = "documents"
     description = (
         "Update document metadata (title, description, subject, keywords) "

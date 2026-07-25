@@ -44,8 +44,8 @@ Returns the user's recently opened documents (from LibreOffice history). Useful 
 If document or image gallery tools are available, explore what the user has indexed:
 
 ```
-docs_gallery_list           → browse indexed document folders
-docs_gallery_search("report")  → search documents by content/metadata
+docgallery_list           → browse indexed document folders
+docgallery_search("report")  → search documents by content/metadata
 gallery_providers           → list configured image galleries
 gallery_list                → browse images in a gallery
 gallery_search("safari")    → search images by keywords
@@ -73,7 +73,7 @@ Connected
  │   ├─ Documents open → doc_info / nav_outline
  │   └─ Nothing open
  │       ├─ User names a doc → doc_recent → doc_open
- │       ├─ User wants to find a doc → docs_gallery_search
+ │       ├─ User wants to find a doc → docgallery_search
  │       └─ User wants a new doc → doc_create
  └─ User mentions images → gallery_search / gallery_list
 ```
@@ -176,7 +176,7 @@ table_write_row             → write a full row
 
 ## Batch Operations
 
-Use `execute_batch` to run multiple tools in one call. Supports variable chaining:
+Use `batch_execute` to run multiple tools in one call. Supports variable chaining:
 
 ```json
 {
@@ -249,5 +249,5 @@ If you're on a custom endpoint, use `tools/list` to see which tools are availabl
 
 - **Bookmarks over indices** — paragraph indices shift when content is added/deleted. Use heading bookmarks or `nav_resolve` for stable references.
 - **Check doc_type** — tools are filtered by document type. A Writer tool won't appear on a Calc document.
-- **Batch when possible** — `execute_batch` reduces round-trips and runs faster.
+- **Batch when possible** — `batch_execute` reduces round-trips and runs faster.
 - **Read before writing** — always read the current state before making edits to avoid overwriting content.

@@ -5,7 +5,7 @@ You are working with a LibreOffice document through **Nelson MCP**.
 1. Call `doc_info` to know the document type (writer, calc, draw).
 2. For **Writer** documents, call `nav_tree` (depth=0) to see the full heading structure. Use the returned `_mcp_` bookmarks for stable addressing — prefer `bookmark:_mcp_xxx` locators over paragraph indices.
 3. Drill into sections with `nav_heading_children` or `text_read`.
-4. Use `search_fulltext` for boolean queries (AND, OR, NOT, NEAR/N).
+4. Use `text_search_fulltext` for boolean queries (AND, OR, NOT, NEAR/N).
 
 ## Document management
 
@@ -27,7 +27,7 @@ For large documents, use a top-down approach to avoid reading too much content a
 1. `nav_tree(depth=1)` — Get top-level headings only (with `_mcp_` bookmarks).
 2. `nav_heading_children(locator="bookmark:_mcp_xxx")` — Drill into a specific section.
 3. `nav_heading_content(heading_path="2.3")` — Read content under a heading by path (e.g., 3rd child of 2nd heading).
-4. `search_fulltext(query="...")` — Search across the entire document without reading it all.
+4. `text_search_fulltext(query="...")` — Search across the entire document without reading it all.
 5. `doc_stats` — Check document size (word count, page count) before deciding how to read.
 
 This lets you navigate documents of any size efficiently without hitting context limits.
@@ -37,7 +37,7 @@ This lets you navigate documents of any size efficiently without hitting context
 - **Locators** — Most tools accept a `locator` parameter. Prefer stable forms: `bookmark:_mcp_xxx` or `heading_text:Title`. Use `paragraph:N` only as a fallback.
 - **Tool tiers** — Core tools are always available. Extended tools require activation: call `list_available_tools` then `request_tools(intent="edit")` to unlock editing tools.
 - **Intent groups** — `navigate`, `edit`, `review`, `media`. Request the group you need.
-- **Batch operations** — Use `execute_batch` to chain multiple edits efficiently. Use `$last` to reference the previous step's paragraph index.
+- **Batch operations** — Use `batch_execute` to chain multiple edits efficiently. Use `$last` to reference the previous step's paragraph index.
 
 ## Common patterns
 

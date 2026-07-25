@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""docs_folder_rescan — trigger a rescan of folder document providers."""
+"""docgallery_rescan — trigger a rescan of folder document providers."""
 
 import logging
 
@@ -15,7 +15,8 @@ log = logging.getLogger("nelson.documents.folder")
 class RescanDocFolder(ToolBase):
     """Rescan folder document providers to pick up new/changed documents."""
 
-    name = "docs_folder_rescan"
+    name = "docgallery_rescan"
+    aliases = ["docs_folder_rescan"]
     requires_service = "documents"
     description = (
         "Rescan document gallery folders to discover new, changed or "

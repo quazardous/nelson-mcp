@@ -11,7 +11,8 @@ from plugin.framework.tool_base import ToolBase
 class GetJob(ToolBase):
     """Get the status and result of a background job."""
 
-    name = "get_job"
+    name = "job_get"
+    aliases = ["get_job"]
     description = "Get the status and result of a background job by its ID."
     tier = "core"
     parameters = {

@@ -31,7 +31,7 @@ PRESETS = {
         "text_set_style", "text_delete", "text_duplicate",
         "image_insert", "link_insert",
         "table_create", "table_write_cell",
-        "execute_batch", "doc_undo", "doc_redo",
+        "batch_execute", "doc_undo", "doc_redo",
         "nav_resolve", "doc_stats",
     ],
     "writer-read": [
@@ -46,13 +46,13 @@ PRESETS = {
         "doc_open", "doc_create", "doc_save",
         "table_read", "table_write_cell", "table_write_row",
         "create_chart", "table_list",
-        "execute_batch", "doc_undo", "doc_redo",
+        "batch_execute", "doc_undo", "doc_redo",
     ],
     "gallery": [
         "gallery_list", "gallery_search", "gallery_get",
         "gallery_providers", "gallery_update",
         "image_insert", "image_list", "image_download",
-        "docs_gallery_list", "docs_gallery_search",
+        "docgallery_list", "docgallery_search",
     ],
     "minimal": [
         "doc_list_open", "doc_info",

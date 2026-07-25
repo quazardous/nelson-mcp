@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""images_folder_rescan — trigger a rescan of folder gallery providers."""
+"""gallery_rescan — trigger a rescan of folder gallery providers."""
 
 import logging
 
@@ -15,7 +15,8 @@ log = logging.getLogger("nelson.images.folder")
 class RescanImageFolder(ToolBase):
     """Rescan folder gallery providers to pick up new/changed images."""
 
-    name = "images_folder_rescan"
+    name = "gallery_rescan"
+    aliases = ["images_folder_rescan"]
     requires_service = "images"
     description = (
         "Rescan image gallery folders to discover new, changed or deleted "

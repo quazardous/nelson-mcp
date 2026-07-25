@@ -82,16 +82,16 @@ table_write_cell(table_index=0, cell="A1", value="Hello")  # write to cell
 
 ```
 text_search(query="word")                # simple text search
-search_fulltext(query="budget AND 2024")        # advanced search with AND, OR, NOT
+text_search_fulltext(query="budget AND 2024")        # advanced search with AND, OR, NOT
 text_find(search_string="exact phrase")         # find exact text with position
 ```
 
 ## Batch edits
 
-To make multiple changes at once, use `execute_batch`:
+To make multiple changes at once, use `batch_execute`:
 
 ```
-execute_batch(operations=[
+batch_execute(operations=[
   {"tool": "text_set", "args": {"index": 0, "text": "Title"}},
   {"tool": "text_set", "args": {"index": 1, "text": "Subtitle"}},
   {"tool": "text_insert", "args": {"index": 2, "text": "New paragraph"}}

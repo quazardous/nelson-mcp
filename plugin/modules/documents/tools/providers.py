@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""docs_gallery_providers — list available document gallery providers."""
+"""docgallery_providers — list available document gallery providers."""
 
 from plugin.framework.tool_base import ToolBase
 
@@ -11,7 +11,8 @@ from plugin.framework.tool_base import ToolBase
 class ListDocProviders(ToolBase):
     """List all registered document gallery provider instances."""
 
-    name = "docs_gallery_providers"
+    name = "docgallery_providers"
+    aliases = ["docs_gallery_providers"]
     requires_service = "documents"
     description = (
         "List all available document gallery providers with their instance "

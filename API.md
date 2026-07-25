@@ -71,7 +71,7 @@ Debug endpoint with multiple actions:
 |---|---|---|
 | `eval` | Evaluate Python expression | `{"action": "eval", "code": "1+1"}` |
 | `exec` | Execute Python code | `{"action": "exec", "code": "_result = 'hello'"}` |
-| `call_tool` | Call a registered MCP tool | `{"action": "call_tool", "tool": "list_jobs", "args": {}}` |
+| `call_tool` | Call a registered MCP tool | `{"action": "call_tool", "tool": "job_list", "args": {}}` |
 | `trigger` | Simulate a menu action | `{"action": "trigger", "command": "ai_images.ai_index_toggle"}` |
 | `services` | List registered services | `{"action": "services"}` |
 | `config` | Get/set a config value | `{"action": "config", "key": "mcp.port"}` |
@@ -80,7 +80,7 @@ Debug endpoint with multiple actions:
 # List jobs via debug
 curl -X POST http://localhost:8766/api/debug \
   -H "Content-Type: application/json" \
-  -d '{"action": "call_tool", "tool": "list_jobs", "args": {"limit": 5}}'
+  -d '{"action": "call_tool", "tool": "job_list", "args": {"limit": 5}}'
 
 # Trigger menu action
 curl -X POST http://localhost:8766/api/debug \

@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Batch execution tool: execute_batch."""
+"""Batch execution tool: batch_execute."""
 
 import logging
 import time
@@ -57,7 +57,8 @@ def _follow_result(ctx, result):
 
 
 class ExecuteBatch(ToolBase):
-    name = "execute_batch"
+    name = "batch_execute"
+    aliases = ["execute_batch"]
     description = (
         "Execute multiple tool calls in a single request. "
         "Operations run sequentially with batch mode "
@@ -70,7 +71,7 @@ class ExecuteBatch(ToolBase):
         "$step.N.bookmark = bookmark from step N. "
         "Variables resolve to integers in numeric fields, "
         "strings in text fields (e.g. locator: 'paragraph:$last+1'). "
-        "Cannot call execute_batch recursively."
+        "Cannot call batch_execute recursively."
     )
     parameters = {
         "type": "object",
@@ -247,9 +248,9 @@ class ExecuteBatch(ToolBase):
 
                 # Check stop conditions between operations
                 if (check_conditions and i < len(operations) - 1
-                        and tool_reg.get("check_stop_conditions")):
+                        and tool_reg.get("workflow_check")):
                     cond = tool_reg.execute(
-                        "check_stop_conditions", ctx)
+                        "workflow_check", ctx)
                     if (isinstance(cond, dict)
                             and cond.get("should_stop")):
                         stopped = True

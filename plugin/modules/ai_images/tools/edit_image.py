@@ -72,7 +72,7 @@ class EditImage(ToolBase):
         return {
             "status": "ok",
             "job_id": job.job_id,
-            "message": "Image editing started. Use get_job to poll.",
+            "message": "Image editing started. Use job_get to poll.",
         }
 
 

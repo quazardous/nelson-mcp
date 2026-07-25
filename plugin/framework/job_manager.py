@@ -6,7 +6,7 @@
 """Generic background job manager.
 
 Any module can submit a callable to run in a background thread.
-MCP clients poll for results with get_job / list_jobs tools.
+MCP clients poll for results with job_get / job_list tools.
 
 Includes endpoint locking to prevent concurrent access to the same
 local server (e.g. Forge) from generation and interrogation jobs.

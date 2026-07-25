@@ -3,13 +3,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""AI annotation tools: add_ai_summary, get_ai_summaries, remove_ai_summary."""
+"""AI annotation tools: summary_add, summary_list, summary_remove."""
 
 from plugin.framework.tool_base import ToolBase
 
 
 class AddAiSummary(ToolBase):
-    name = "add_ai_summary"
+    name = "summary_add"
+    aliases = ["add_ai_summary"]
     intent = "review"
     description = (
         "Add an AI-generated summary as a comment (MCP-AI author) "
@@ -57,11 +58,13 @@ class AddAiSummary(ToolBase):
 
 
 class GetAiSummaries(ToolBase):
-    name = "get_ai_summaries"
+    name = "summary_list"
+    aliases = ["get_ai_summaries"]
     intent = "review"
     description = "List all MCP-AI summary annotations in the document."
     parameters = {"type": "object", "properties": {}, "required": []}
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         tree_svc = ctx.services.writer_tree
@@ -70,7 +73,8 @@ class GetAiSummaries(ToolBase):
 
 
 class RemoveAiSummary(ToolBase):
-    name = "remove_ai_summary"
+    name = "summary_remove"
+    aliases = ["remove_ai_summary"]
     intent = "review"
     description = "Remove an MCP-AI summary annotation at a paragraph."
     parameters = {

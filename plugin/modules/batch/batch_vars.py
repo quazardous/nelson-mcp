@@ -5,7 +5,7 @@
 
 """Batch variable resolution: $last, $step.N, $last.bookmark, $step.N.bookmark.
 
-Used by execute_batch to chain tool results. Paragraph indices and bookmark
+Used by batch_execute to chain tool results. Paragraph indices and bookmark
 names extracted from tool results flow into subsequent steps.
 """
 

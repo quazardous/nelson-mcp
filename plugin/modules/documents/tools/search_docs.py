@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""docs_gallery_search — search documents in gallery providers."""
+"""docgallery_search — search documents in gallery providers."""
 
 from plugin.framework.tool_base import ToolBase
 
@@ -11,7 +11,8 @@ from plugin.framework.tool_base import ToolBase
 class SearchDocs(ToolBase):
     """Search for documents in gallery providers."""
 
-    name = "docs_gallery_search"
+    name = "docgallery_search"
+    aliases = ["docs_gallery_search"]
     requires_service = "documents"
     description = (
         "Search for documents in the document gallery. "

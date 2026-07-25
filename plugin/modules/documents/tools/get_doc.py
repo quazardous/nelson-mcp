@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""docs_gallery_get — get metadata for a specific document."""
+"""docgallery_get — get metadata for a specific document."""
 
 from plugin.framework.tool_base import ToolBase
 
@@ -11,7 +11,8 @@ from plugin.framework.tool_base import ToolBase
 class GetDocInfo(ToolBase):
     """Get detailed metadata for a specific document in the gallery."""
 
-    name = "docs_gallery_get"
+    name = "docgallery_get"
+    aliases = ["docs_gallery_get"]
     requires_service = "documents"
     description = (
         "Get detailed metadata for a specific document in the gallery, "

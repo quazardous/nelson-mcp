@@ -11,7 +11,8 @@ from plugin.framework.tool_base import ToolBase
 class ListJobs(ToolBase):
     """List recent background jobs with their status."""
 
-    name = "list_jobs"
+    name = "job_list"
+    aliases = ["list_jobs"]
     description = "List recent background jobs with their status."
     tier = "core"
     parameters = {

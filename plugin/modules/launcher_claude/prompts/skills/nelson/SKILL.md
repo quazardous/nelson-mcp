@@ -21,7 +21,7 @@ request_tools(intent=...)  → activate: navigate, edit, review, media
 nav_heading_children       → body + sub-headings under a heading
 nav_heading           → next, previous, parent, first_child, next_sibling
 text_read            → read N paragraphs from a position
-search_fulltext            → boolean search: "energy AND renewable", "ocean NEAR/3 warming"
+text_search_fulltext            → boolean search: "energy AND renewable", "ocean NEAR/3 warming"
 nav_surroundings           → nearby paragraphs, images, tables around a locator
 ```
 
@@ -53,12 +53,12 @@ image_replace / image_set / image_delete
 comment_list / comment_add / comment_resolve
 change_set(enabled=true/false)
 change_list / change_accept_all / change_reject_all
-scan_tasks → find TODO-AI, FIX, QUESTION in comments
+task_scan → find TODO-AI, FIX, QUESTION in comments
 ```
 
 ### 7. Batch
 ```
-execute_batch(operations=[...])
+batch_execute(operations=[...])
   → Use $last for previous paragraph_index
   → Use $step.N for step N's result
 ```

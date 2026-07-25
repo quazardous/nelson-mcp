@@ -333,7 +333,8 @@ class ResolveComment(ToolBase):
 class ScanTasks(ToolBase):
     """Scan comments for actionable task prefixes."""
 
-    name = "scan_tasks"
+    name = "task_scan"
+    aliases = ["scan_tasks"]
     intent = "review"
     description = (
         "Scan comments for actionable task prefixes: TODO-AI, FIX, "
@@ -355,6 +356,7 @@ class ScanTasks(ToolBase):
         "required": [],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     _TASK_PREFIXES = ("TODO-AI", "FIX", "QUESTION", "VALIDATION", "NOTE")
 
@@ -412,7 +414,8 @@ class ScanTasks(ToolBase):
 class GetWorkflowStatus(ToolBase):
     """Read the master workflow dashboard comment."""
 
-    name = "get_workflow_status"
+    name = "workflow_get"
+    aliases = ["get_workflow_status"]
     intent = "review"
     description = (
         "Read the master workflow dashboard comment "
@@ -424,6 +427,7 @@ class GetWorkflowStatus(ToolBase):
         "required": [],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
@@ -462,7 +466,8 @@ class GetWorkflowStatus(ToolBase):
 class SetWorkflowStatus(ToolBase):
     """Create or update the master workflow dashboard comment."""
 
-    name = "set_workflow_status"
+    name = "workflow_set"
+    aliases = ["set_workflow_status"]
     intent = "review"
     description = (
         "Create or update the master workflow dashboard comment. "
@@ -524,7 +529,8 @@ class SetWorkflowStatus(ToolBase):
 class CheckStopConditions(ToolBase):
     """Check for stop/cancel signals in comments."""
 
-    name = "check_stop_conditions"
+    name = "workflow_check"
+    aliases = ["check_stop_conditions"]
     intent = "review"
     description = (
         "Check for stop signals: unresolved comments starting with "
@@ -533,6 +539,7 @@ class CheckStopConditions(ToolBase):
     )
     parameters = {"type": "object", "properties": {}, "required": []}
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc

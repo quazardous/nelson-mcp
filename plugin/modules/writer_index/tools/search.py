@@ -3,13 +3,14 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Full-text search tools: search_fulltext, get_index_stats."""
+"""Full-text search tools: text_search_fulltext, text_index_stats."""
 
 from plugin.framework.tool_base import ToolBase
 
 
 class SearchFulltext(ToolBase):
-    name = "search_fulltext"
+    name = "text_search_fulltext"
+    aliases = ["search_fulltext"]
     intent = "navigate"
     description = (
         "Full-text search with Snowball stemming. Supports boolean queries: "
@@ -64,6 +65,7 @@ class SearchFulltext(ToolBase):
         "required": ["query"],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         idx_svc = ctx.services.writer_index
@@ -152,7 +154,8 @@ def _build_page_map(doc):
 
 
 class GetIndexStats(ToolBase):
-    name = "get_index_stats"
+    name = "text_index_stats"
+    aliases = ["get_index_stats"]
     intent = "navigate"
     description = (
         "Get search index statistics: paragraph count, unique stems, "
@@ -160,6 +163,7 @@ class GetIndexStats(ToolBase):
     )
     parameters = {"type": "object", "properties": {}, "required": []}
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         idx_svc = ctx.services.writer_index

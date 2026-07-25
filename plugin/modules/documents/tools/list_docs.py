@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""docs_gallery_list — browse documents in a gallery provider."""
+"""docgallery_list — browse documents in a gallery provider."""
 
 from plugin.framework.tool_base import ToolBase
 
@@ -11,7 +11,8 @@ from plugin.framework.tool_base import ToolBase
 class ListDocs(ToolBase):
     """List documents from a gallery provider with pagination."""
 
-    name = "docs_gallery_list"
+    name = "docgallery_list"
+    aliases = ["docs_gallery_list"]
     requires_service = "documents"
     description = (
         "List documents from the document gallery with optional path and "

@@ -58,7 +58,7 @@ class GenerateImage(ToolBase):
         return {
             "status": "ok",
             "job_id": job.job_id,
-            "message": "Image generation started. Use get_job to poll.",
+            "message": "Image generation started. Use job_get to poll.",
         }
 
 
