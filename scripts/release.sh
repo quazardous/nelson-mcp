@@ -20,6 +20,7 @@
 #   scripts/release.sh              # interactive: builds, verifies, asks before publishing
 #   scripts/release.sh --dry-run    # everything except tag/push/publish
 #   scripts/release.sh --yes        # skip the final confirmation prompt
+#   scripts/release.sh --skip-smoke # skip the live LibreOffice check
 #
 # The version is read from plugin/version.py — bump it and update CHANGELOG.md
 # BEFORE running this.
@@ -32,10 +33,12 @@ ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$ROOT"
 
 DRY_RUN=0
+SKIP_SMOKE=0
 ASSUME_YES=0
 for arg in "$@"; do
     case "$arg" in
         --dry-run) DRY_RUN=1 ;;
+        --skip-smoke) SKIP_SMOKE=1 ;;
         --yes|-y)  ASSUME_YES=1 ;;
         *) echo "Unknown argument: $arg" >&2; exit 2 ;;
     esac
@@ -141,6 +144,22 @@ fi
 echo "$LISTING" | grep -q 'plugin/lib/pysqlite3/' \
     || die "Asset is missing plugin/lib/pysqlite3/ — a Linux build without the sqlite payload would break on Windows. Aborting."
 ok "pysqlite3 payload present in the .oxt"
+
+# ── Live check: the asset actually works in a real LibreOffice ───────────────
+# Everything above proves the file is well-formed. This proves it runs. Skip
+# only when LibreOffice is unavailable, and say so out loud when you do.
+if [ "$SKIP_SMOKE" = 1 ]; then
+    warn "SKIPPING the live smoke test (--skip-smoke) — the asset has not been run"
+else
+    step "Smoke-testing the built extension in a headless LibreOffice"
+    if "$PYTHON" scripts/smoke_test.py; then
+        ok "smoke test passed"
+    else
+        die "Smoke test failed — the built .oxt does not work. Aborting.
+     Re-run scripts/smoke_test.py --keep to inspect the profile and log,
+     or pass --skip-smoke if LibreOffice is genuinely unavailable here."
+    fi
+fi
 
 # ── Summary before the point of no return ────────────────────────────────────
 step "Ready to publish"

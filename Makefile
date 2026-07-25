@@ -83,14 +83,14 @@ OXT_NAME = $(EXTENSION_NAME)-$(EXTENSION_VERSION)$(BUILD_TAG)
 
 # ── Phony targets ────────────────────────────────────────────────────────────
 
-.PHONY: help build rebuild repack repack-deploy xcu clean dev-up dev-down \
+.PHONY: help build rebuild repack repack-deploy xcu clean dev-up dev-down smoke \
         install install-force uninstall cache \
         dev-deploy dev-deploy-remove \
         lo-start lo-start-full lo-kill lo-restart \
         clean-cache nuke-cache nuke-cache-force unbundle \
         log log-tail lo-log test check-ext check-setup deploy \
         set-config vendor docker-build rdb icons sqlite3 \
-        release release-dry
+        release release-dry smoke
 
 # ── Help ─────────────────────────────────────────────────────────────────────
 
@@ -103,6 +103,10 @@ help:
 	@echo "  make build                  Build .oxt (all modules)"
 	@echo "  make xcu                    Generate XCS/XCU from config schemas"
 	@echo "  make clean                  Remove build artifacts"
+	@echo ""
+	@echo "Checks:"
+	@echo "  make test                   Unit tests (fast, never starts LibreOffice)"
+	@echo "  make smoke                  Live check: headless LO + real MCP calls"
 	@echo ""
 	@echo "Release:"
 	@echo "  make release                Tag + build + publish GitHub release (gated)"
@@ -407,6 +411,12 @@ check-ext:
 
 test:
 	uv run --extra dev pytest
+
+# Live check: installs the built .oxt into a throwaway profile, runs
+# LibreOffice headless and drives it over MCP. Unlike `test`, this can see
+# UNO behaviour — which is where the bugs that reached releases all were.
+smoke: build
+	python3 $(SCRIPTS)/smoke_test.py
 
 # ── POC extension ───────────────────────────────────────────────────────────
 
