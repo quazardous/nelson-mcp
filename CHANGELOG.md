@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- **`text_search_fulltext` missed text frames and table cells** (#28) — the index covered body paragraphs only, so a caption inside a text frame was found by `text_search` and returned *nothing* by the index-backed search: two backends, one document, opposite answers, and the failure was silent rather than saying the container was not covered. Frames and table cells are now indexed too (table cells were previously stored as the literal string `[Table]`). Results carry `source: "body" | "frame" | "table"` with the frame or table name, and the response reports what was and was not searched, so an empty result can be told apart from a gap in coverage. Headers and footers remain uncovered and now say so
+- **`text_insert` crashed on a table** — inserting at a paragraph index occupied by a table raised `AttributeError: getStart` instead of reporting the problem. It now returns a clear error pointing at `table_write_cell`
+
 ## [0.11.0] — 2026-07-25
 
 Change recording is no longer switched on for you. If you relied on MCP edits

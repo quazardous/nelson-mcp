@@ -450,6 +450,20 @@ class InsertAtParagraph(ToolBase):
             }
 
         target_para = para_ranges[para_index]
+        # A table occupies a slot in the paragraph enumeration but is not a
+        # text range, so asking it for a cursor position raises
+        # AttributeError. Say so instead of crashing.
+        if not hasattr(target_para, "getStart"):
+            return {
+                "status": "error",
+                "code": "not_a_paragraph",
+                "message": ("Paragraph %d is a table, not text — nothing can "
+                            "be inserted at it." % para_index),
+                "hint": ("Insert before or after the table by using an "
+                         "adjacent paragraph index, or write into the table "
+                         "with table_write_cell."),
+                "retryable": False,
+            }
         text = ctx.doc.getText()
         cursor = text.createTextCursorByRange(target_para.getStart())
 

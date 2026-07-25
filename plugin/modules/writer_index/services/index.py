@@ -99,7 +99,7 @@ class _DocIndex:
     __slots__ = ('terms', 'para_texts', 'para_count',
                  'build_ms', 'language',
                  'para_lengths', 'avg_para_length', 'para_term_freq',
-                 'heading_paras')
+                 'heading_paras', 'sources', 'body_count')
 
     def __init__(self):
         self.terms = {}        # stem -> set[int]
@@ -112,6 +112,11 @@ class _DocIndex:
         self.avg_para_length = 0.0
         self.para_term_freq = {}   # (para_index, stem) -> count
         self.heading_paras = set() # para indices that are headings
+        # Units that are not body paragraphs (text frames, table cells).
+        # key -> {"source": "frame"|"table", "name": str, ...}. Body
+        # paragraphs are absent from this map (#28).
+        self.sources = {}
+        self.body_count = 0    # body paragraphs only, for context slicing
 
     def bm25_score(self, para_index, query_stems, k1=1.2, b=0.75):
         """Compute BM25 relevance score for a paragraph against query stems."""
@@ -259,6 +264,83 @@ class IndexService:
 
     # ── Index build ───────────────────────────────────────────────
 
+    def _index_text(self, idx, key, text, stemmer, stop_words):
+        """Add one unit of text to the index under *key*.
+
+        Used for body paragraphs, text frames and table cells alike, so a
+        new container only has to supply its text and a key (#28).
+        Returns the number of indexed tokens.
+        """
+        idx.para_texts[key] = text
+        raw = _raw_tokens(text)
+        if stemmer:
+            stems = self._stem(stemmer, raw, stop_words)
+        else:
+            stems = [t for t in raw if t not in stop_words]
+        idx.para_lengths[key] = len(stems)
+        freq = {}
+        for stem in stems:
+            freq[stem] = freq.get(stem, 0) + 1
+            bucket = idx.terms.get(stem)
+            if bucket is None:
+                bucket = set()
+                idx.terms[stem] = bucket
+            bucket.add(key)
+        for stem, count in freq.items():
+            idx.para_term_freq[(key, stem)] = count
+        return len(stems)
+
+    def _index_frames(self, doc, idx, next_key, stemmer, stop_words):
+        """Index text frames, which the body enumeration never reaches.
+
+        A caption sits in a frame, so before this the index could not find
+        text that `text_search` returned happily — the two backends gave
+        opposite answers for the same document (#28).
+        """
+        tokens = 0
+        try:
+            frames = doc.getTextFrames()
+        except Exception:
+            return next_key, tokens
+        for name in frames.getElementNames():
+            try:
+                text = frames.getByName(name).getString()
+            except Exception:
+                continue
+            if not text.strip():
+                continue
+            tokens += self._index_text(idx, next_key, text, stemmer, stop_words)
+            idx.sources[next_key] = {"source": "frame", "name": name}
+            next_key += 1
+        return next_key, tokens
+
+    def _index_tables(self, doc, idx, next_key, stemmer, stop_words):
+        """Index table cell text, previously stored as the literal '[Table]'."""
+        tokens = 0
+        try:
+            tables = doc.getTextTables()
+        except Exception:
+            return next_key, tokens
+        for name in tables.getElementNames():
+            try:
+                table = tables.getByName(name)
+                cell_names = table.getCellNames()
+            except Exception:
+                continue
+            for cell_name in cell_names:
+                try:
+                    text = table.getCellByName(cell_name).getString()
+                except Exception:
+                    continue
+                if not text.strip():
+                    continue
+                tokens += self._index_text(
+                    idx, next_key, text, stemmer, stop_words)
+                idx.sources[next_key] = {
+                    "source": "table", "name": name, "cell": cell_name}
+                next_key += 1
+        return next_key, tokens
+
     def _get_index(self, doc):
         """Get or build the inverted index. Returns (index, was_cached)."""
         key = self._doc_svc.doc_key(doc)
@@ -281,26 +363,8 @@ class IndexService:
         while enum.hasMoreElements():
             el = enum.nextElement()
             if el.supportsService("com.sun.star.text.Paragraph"):
-                text = el.getString()
-                idx.para_texts[para_i] = text
-                raw = _raw_tokens(text)
-                if stemmer:
-                    stems = self._stem(stemmer, raw, stop_words)
-                else:
-                    stems = [t for t in raw if t not in stop_words]
-                # BM25: store token count and term frequencies
-                idx.para_lengths[para_i] = len(stems)
-                total_tokens += len(stems)
-                freq = {}
-                for stem in stems:
-                    freq[stem] = freq.get(stem, 0) + 1
-                    s = idx.terms.get(stem)
-                    if s is None:
-                        s = set()
-                        idx.terms[stem] = s
-                    s.add(para_i)
-                for stem, count in freq.items():
-                    idx.para_term_freq[(para_i, stem)] = count
+                total_tokens += self._index_text(
+                    idx, para_i, el.getString(), stemmer, stop_words)
                 # Detect headings
                 try:
                     if el.getPropertyValue("OutlineLevel") > 0:
@@ -308,16 +372,28 @@ class IndexService:
                 except Exception:
                     pass
             else:
+                # A table anchor in the body flow; its cells are indexed
+                # separately below, with their own keys.
                 idx.para_texts[para_i] = "[Table]"
             para_i += 1
 
-        idx.para_count = para_i
+        idx.body_count = para_i
+
+        # Containers the body enumeration never yields (#28).
+        next_key, frame_tokens = self._index_frames(
+            doc, idx, para_i, stemmer, stop_words)
+        next_key, table_tokens = self._index_tables(
+            doc, idx, next_key, stemmer, stop_words)
+        total_tokens += frame_tokens + table_tokens
+
+        idx.para_count = next_key
         idx.avg_para_length = (
-            total_tokens / para_i if para_i > 0 else 0.0)
+            total_tokens / next_key if next_key > 0 else 0.0)
         idx.build_ms = round((time.perf_counter() - t0) * 1000, 1)
         self._cache[key] = idx
-        log.info("Index built [%s]: %d paras, %d stems, %.1fms",
-                 lang, para_i, len(idx.terms), idx.build_ms)
+        log.info("Index built [%s]: %d paras + %d frames/cells, %d stems, "
+                 "%.1fms", lang, idx.body_count,
+                 next_key - idx.body_count, len(idx.terms), idx.build_ms)
         return idx, False
 
     # ── Query parsing ─────────────────────────────────────────────
@@ -442,28 +518,45 @@ class IndexService:
         selected = scored[:max_results]
 
         results = []
+        frame_hits = []
         for para_i, score in selected:
+            matched = [s for s in all_positive
+                       if para_i in idx.terms.get(s, set())]
+            origin = idx.sources.get(para_i)
+
+            if origin is not None:
+                # A frame or table cell: it has no body paragraph index, so
+                # do not invent one — surrounding paragraphs would belong to
+                # a different part of the document entirely.
+                entry = dict(origin)
+                entry.update({
+                    "text": idx.para_texts.get(para_i, ""),
+                    "score": round(score, 3),
+                    "matched_stems": matched,
+                })
+                frame_hits.append(entry)
+                continue
+
             ctx_lo = max(0, para_i - context_paragraphs)
-            ctx_hi = min(idx.para_count, para_i + context_paragraphs + 1)
+            ctx_hi = min(idx.body_count, para_i + context_paragraphs + 1)
             context = [
                 {"index": j, "text": idx.para_texts.get(j, "")}
                 for j in range(ctx_lo, ctx_hi)
             ]
-
-            matched = [s for s in all_positive
-                       if para_i in idx.terms.get(s, set())]
-
-            entry = {
+            results.append({
+                "source": "body",
                 "paragraph_index": para_i,
                 "text": idx.para_texts.get(para_i, ""),
                 "score": round(score, 3),
                 "matched_stems": matched,
                 "context": context,
-            }
-            results.append(entry)
+            })
 
-        # Enrich all results with heading context in one batch
+        # Heading context only applies to body hits (it resolves paragraph
+        # indices); appending the others afterwards keeps them out of it.
         self._tree_svc.enrich_search_results(doc, results)
+        results.extend(frame_hits)
+        results.sort(key=lambda r: r["score"], reverse=True)
 
         resp = {
             "query": query,
@@ -473,7 +566,12 @@ class IndexService:
             "returned": len(results),
             "matches": results,
             "index": {
-                "paragraphs": idx.para_count,
+                "paragraphs": idx.body_count,
+                "frames_and_cells": idx.para_count - idx.body_count,
+                # Say what was actually searched, so an empty result is
+                # distinguishable from "that container is not covered" (#28).
+                "searched": ["body", "text_frames", "table_cells"],
+                "not_searched": ["headers", "footers"],
                 "unique_stems": len(idx.terms),
                 "build_ms": idx.build_ms,
                 "cached": was_cached,
@@ -496,7 +594,11 @@ class IndexService:
 
         return {
             "language": idx.language,
-            "paragraphs": idx.para_count,
+            "paragraphs": idx.body_count,
+            "frames_and_cells": idx.para_count - idx.body_count,
+            "indexed_units": idx.para_count,
+            "searched": ["body", "text_frames", "table_cells"],
+            "not_searched": ["headers", "footers"],
             "unique_stems": len(idx.terms),
             "build_ms": idx.build_ms,
             "cached": was_cached,

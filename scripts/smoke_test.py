@@ -153,6 +153,26 @@ class Harness:
             raise Fail("%s returned no content" % tool)
         return json.loads(content[0]["text"])
 
+    def reset(self):
+        """Close every open document.
+
+        Checks must not inherit each other's documents: `doc_create` returns
+        before the new document is necessarily the active one, so a leftover
+        document from an earlier check can absorb the next call and make the
+        run non-deterministic. A flaky check is worse than no check.
+        """
+        for _ in range(25):
+            try:
+                docs = self.call("doc_list_open").get("documents") or []
+            except Fail:
+                return
+            if not docs:
+                return
+            try:
+                self.call("doc_close", save=False)
+            except Fail:
+                return
+
     def tool_names(self):
         return {t["name"] for t in self.rpc("tools/list")["tools"]}
 
@@ -247,6 +267,7 @@ def check_tools_listed(h):
 
 def check_doc_type_filtering(h):
     """The tool list narrows to the active document."""
+    h.reset()
     h.call("doc_create", doc_type="writer")
     writer = h.tool_names()
     h.call("doc_create", doc_type="calc")
@@ -262,6 +283,7 @@ def check_doc_type_filtering(h):
 
 def check_alias_still_resolves(h):
     """Renamed tools keep their former names callable but unadvertised (#11)."""
+    h.reset()
     h.call("doc_create", doc_type="writer")
     names = h.tool_names()
     if "read_paragraphs" in names:
@@ -282,6 +304,7 @@ def check_mutation_classification(h):
     older builds — switched change recording on. It is invisible unless you
     look for the action id, which is how it survived a release.
     """
+    h.reset()
     h.call("doc_create", doc_type="writer")
     h.call("text_insert", paragraph_index=0, text="mutation check")
     offenders = []
@@ -303,6 +326,7 @@ def check_mutation_classification(h):
 def check_round_trip(h):
     """Write, save, reopen, read back — checked against the file itself."""
     path = h.doc("round_trip.odt")
+    h.reset()
     h.call("doc_create", doc_type="writer")
     h.call("text_insert", paragraph_index=0, text="ROUND TRIP MARKER")
     h.call("doc_save", path=path)
@@ -324,6 +348,7 @@ def check_round_trip(h):
 def check_save_as_keeps_original(h):
     """save_document_as must not write through to the source file (#19)."""
     a, b = h.doc("original.odt"), h.doc("saved_as.odt")
+    h.reset()
     h.call("doc_create", doc_type="writer")
     h.call("text_insert", paragraph_index=0, text="ORIGINAL")
     h.call("doc_save", path=a)
@@ -344,6 +369,7 @@ def check_save_as_keeps_original(h):
 def check_doc_ids_distinct(h):
     """A copied file must not keep the original's doc_id (#20)."""
     a, b = h.doc("id_a.odt"), h.doc("id_b.odt")
+    h.reset()
     h.call("doc_create", doc_type="writer")
     h.call("text_insert", paragraph_index=0, text="id test")
     h.call("doc_save", path=a)
@@ -360,6 +386,7 @@ def check_doc_ids_distinct(h):
 
 def check_recording_not_forced(h):
     """An MCP edit must not switch change recording on (#22)."""
+    h.reset()
     h.call("doc_create", doc_type="calc")
     h.call("calc_write_range", start_cell="A1", values=[["recording check"]])
     state = h.uno_record_changes()
@@ -370,6 +397,43 @@ def check_recording_not_forced(h):
         raise Fail("change recording was switched on by an MCP edit (#22): %s"
                    % ", ".join(on))
     return "checked %d documents via UNO, none forced into recording" % len(state)
+
+
+def check_search_backends_agree(h):
+    """Both search backends must see the same document (#28).
+
+    The index used to cover body paragraphs only, so a caption inside a
+    text frame was found by the direct scan and missed entirely by the
+    index-backed search — which answered "nothing found" rather than
+    "not covered".
+    """
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_insert", paragraph_index=0, text="body mentions Kilimanjaro")
+    h.call("table_create", rows=2, cols=2, paragraph_index=0)
+    tables = h.call("table_list").get("tables") or []
+    if tables:
+        h.call("table_write_cell", table_name=tables[0]["name"],
+               cell="B2", value="Zanzibar")
+
+    direct = h.call("text_search", pattern="Kilimanjaro", backend="direct")
+    if not direct.get("count"):
+        raise Fail("the direct backend cannot find body text")
+
+    idx = h.call("text_search_fulltext", query="Kilimanjaro")
+    if not idx.get("total_found"):
+        raise Fail("the index backend missed body text the direct one found")
+
+    if tables:
+        cell = h.call("text_search_fulltext", query="Zanzibar")
+        if not cell.get("total_found"):
+            raise Fail("table cell text is not indexed (#28)")
+
+    coverage = (idx.get("index") or {}).get("searched")
+    if not coverage:
+        raise Fail("the index no longer reports what it searched — an empty "
+                   "result must be distinguishable from 'not covered'")
+    return "both backends agree; index covers %s" % ", ".join(coverage)
 
 
 def check_log_clean(h):
@@ -390,6 +454,7 @@ CHECKS = [
     ("save-as keeps original", check_save_as_keeps_original),
     ("doc_id uniqueness", check_doc_ids_distinct),
     ("recording not forced", check_recording_not_forced),
+    ("search backends agree", check_search_backends_agree),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 
