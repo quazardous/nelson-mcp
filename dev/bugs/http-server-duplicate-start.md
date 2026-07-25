@@ -1,6 +1,16 @@
-# HTTP server failed to bind on restart (fixed)
+# HTTP server failed to bind on restart (improved, still intermittent)
 
-**Status:** fixed — found while working on #11.
+**Status:** partially fixed — the common case is clean, but it still recurs.
+
+**Update 2026-07-25, later the same day:** claiming this "fixed" was too
+strong. Several launches after the fix logged `HTTP server ready` with zero
+errors, but a later one logged five bind retries and then
+`HTTP server not started: [Errno 98]` — while the very same process went on
+to serve requests correctly on that port. So a bind is succeeding somewhere
+that never logs `HTTP server ready`, which the current model does not
+explain. Reproduces intermittently on kill -> deploy -> launch. Worth
+instrumenting `_start_server` with the caller and the instance id before
+believing any further diagnosis.
 
 ## Symptom
 

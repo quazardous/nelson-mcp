@@ -39,6 +39,38 @@ def _parse_cell_ref(cell_ref):
     return col, row
 
 
+def _annotation_text(sheet, col, row):
+    """Read a cell note's text, working around lazy captions on .xlsx.
+
+    A workbook loaded from .xlsx has no caption object for its notes until
+    something asks for one, and until then every XSheetAnnotation read path
+    returns an empty string — while the text is plainly there in
+    xl/comments*.xml. Reported by @braklo on #21.
+
+    ``getAnnotationShape()`` resolves it: LibreOffice implements it as
+    ``GetOrCreateCaption()`` (sc/source/ui/unoobj/notesuno.cxx), so the
+    caption is materialised on demand and the shape's text is readable.
+    Unlike forcing ``setIsVisible(True)``, this does not route through
+    ShowNote, so it neither changes what the user sees nor pushes an undo
+    action.
+    """
+    cell_ann = sheet.getCellByPosition(col, row).getAnnotation()
+    text = ""
+    try:
+        text = cell_ann.getString()
+    except Exception:
+        pass
+    if text:
+        return cell_ann, text
+    try:
+        shape = cell_ann.getAnnotationShape()
+        if shape is not None:
+            text = shape.getString() or ""
+    except Exception:
+        pass  # optional interface — older builds may not offer it
+    return cell_ann, text
+
+
 class CalcComment(ToolBase):
     """List, add or delete Calc cell comments (annotations)."""
 
@@ -121,13 +153,16 @@ class CalcComment(ToolBase):
                 # (as the write path does), not the XSheetAnnotations
                 # collection item, whose getString()/getDate() come back
                 # empty in current LibreOffice (#21).
-                cell_ann = sheet.getCellByPosition(
-                    pos.Column, pos.Row).getAnnotation()
+                cell_ann, text = _annotation_text(
+                    sheet, pos.Column, pos.Row)
                 comments.append({
                     "cell": _cell_label(pos.Column, pos.Row),
                     "author": ann.getAuthor(),
+                    # .xlsx has no date field on a comment at all
+                    # (<comment ref=".." authorId=".."/>), so an empty
+                    # date there is the format, not a failure.
                     "date": cell_ann.getDate(),
-                    "text": cell_ann.getString(),
+                    "text": text,
                     "is_visible": ann.getIsVisible(),
                 })
             return {
