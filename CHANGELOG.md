@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Page header/footer read & write** (#18) — new `get_header_footer` and `set_header_footer` tools reach the page header/footer text that was previously unreachable (only `get_document_content` could *read* it, with no write path). `set_header_footer` writes or appends text to a page style's header/footer, turning the region on automatically; tab characters split the left/centre/right portions (`"ACME Corp\tJoint Letter\t2026-07-25"`). `insert_image` gains a Writer `target: "header" | "footer"` option (with optional `page_style`), so a letterhead logo can be inserted straight into the header — the use case that previously forced editing the DOCX outside LibreOffice. Both default to the page style under the cursor
 - **`rename_sheet` and `delete_sheet`** (#23) — completes the Calc sheet lifecycle alongside `create_sheet`/`list_sheets`/`switch_sheet`. `rename_sheet` is a thin wrapper over `XNamed::setName()`, so LibreOffice rewrites every reference to the sheet automatically (formulas, cross-sheet references, named ranges, chart data ranges) — a rename that can't be done by editing the saved file externally without silently breaking the workbook. `delete_sheet` removes a sheet by name and refuses to delete the last remaining one (a workbook must keep at least one sheet)
 
 ## [0.9.3] — 2026-07-25

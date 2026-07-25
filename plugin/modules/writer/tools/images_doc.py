@@ -773,6 +773,23 @@ class InsertImage(ToolBase):
                         "type": "integer",
                         "description": "Paragraph index for insertion point.",
                     },
+                    "target": {
+                        "type": "string",
+                        "enum": ["body", "header", "footer"],
+                        "description": (
+                            "Where to insert (default 'body'). 'header'/"
+                            "'footer' insert into the page header/footer "
+                            "(e.g. a letterhead logo); locator/"
+                            "paragraph_index are ignored for those."
+                        ),
+                    },
+                    "page_style": {
+                        "type": "string",
+                        "description": (
+                            "Page style for a header/footer target "
+                            "(default: page style under the cursor)."
+                        ),
+                    },
                 },
             },
             "draw": {
@@ -868,6 +885,13 @@ class InsertImage(ToolBase):
         doc_text = doc.getText()
         doc_svc = ctx.services.document
 
+        # Page header / footer target — insert into the page style's
+        # HeaderText/FooterText XText instead of the document body.
+        target = kwargs.get("target", "body")
+        if target in ("header", "footer"):
+            return self._insert_into_header_footer(
+                doc, target, file_url, width, height, title, desc, **kwargs)
+
         # Resolve insertion point
         locator = kwargs.get("locator")
         paragraph_index = kwargs.get("paragraph_index")
@@ -906,6 +930,38 @@ class InsertImage(ToolBase):
 
         if paragraph_index is not None:
             result["paragraph_index"] = paragraph_index
+        return result
+
+    def _insert_into_header_footer(self, doc, region, file_url,
+                                   width, height, title, desc, **kwargs):
+        """Insert an image into the page header or footer XText.
+
+        Reuses the standalone/framed insertion helpers, but targets the
+        page style's HeaderText/FooterText instead of the body. Defaults
+        to no caption (a letterhead logo rarely wants one).
+        """
+        from plugin.modules.writer.tools.headers import (
+            _resolve_page_style, _REGION_PROPS)
+
+        style, resolved = _resolve_page_style(doc, kwargs.get("page_style"))
+        is_on_prop, text_prop = _REGION_PROPS[region]
+        if not style.getPropertyValue(is_on_prop):
+            style.setPropertyValue(is_on_prop, True)
+        region_text = style.getPropertyValue(text_prop)
+        cursor = region_text.createTextCursorByRange(region_text.getEnd())
+
+        add_caption = kwargs.get("caption", False)
+        caption_text = desc or title or _basename_from_url(file_url)
+        if add_caption and caption_text:
+            result = self._insert_with_frame(
+                doc, region_text, cursor, file_url, width, height,
+                title, desc, caption_text)
+        else:
+            result = self._insert_standalone(
+                doc, region_text, cursor, file_url, width, height,
+                title, desc)
+        result["target"] = region
+        result["page_style"] = resolved
         return result
 
     def _insert_with_frame(self, doc, doc_text, cursor,
