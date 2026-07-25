@@ -309,6 +309,7 @@ class ListImages(ToolBase):
         "required": [],
     }
     doc_types = None  # all document types
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         from plugin.framework.graphic_query import (
@@ -383,6 +384,7 @@ class GetImageInfo(ToolBase):
         "required": [],
     }
     doc_types = None  # all document types
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         image_name = kwargs.get("image_name", "")

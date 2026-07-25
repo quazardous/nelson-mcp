@@ -72,6 +72,7 @@ class SearchInDocument(ToolBase):
     }
     doc_types = ["writer"]
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         pattern = kwargs.get("pattern", "")

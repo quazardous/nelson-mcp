@@ -28,6 +28,7 @@ class ListTables(ToolBase):
         "required": [],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
@@ -64,6 +65,7 @@ class ReadTable(ToolBase):
         "required": ["table_name"],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         table_name = kwargs.get("table_name", "")

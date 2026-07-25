@@ -29,6 +29,7 @@ class ListTextFrames(ToolBase):
         "required": [],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
@@ -93,6 +94,7 @@ class GetTextFrameInfo(ToolBase):
         "required": ["frame_name"],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         frame_name = kwargs.get("frame_name", "")

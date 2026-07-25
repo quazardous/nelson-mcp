@@ -38,6 +38,7 @@ class ListComments(ToolBase):
         "required": [],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         author_filter = kwargs.get("author_filter")

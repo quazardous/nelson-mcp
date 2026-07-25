@@ -16,6 +16,7 @@ class ListSections(ToolBase):
     description = "List all named sections in the document."
     parameters = {"type": "object", "properties": {}, "required": []}
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
@@ -61,6 +62,7 @@ class GotoPage(ToolBase):
         "required": ["page"],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -104,6 +106,7 @@ class GetPageObjects(ToolBase):
         "required": [],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
@@ -245,6 +248,7 @@ class ReadSection(ToolBase):
         "required": ["section_name"],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         section_name = kwargs.get("section_name", "")
@@ -312,6 +316,7 @@ class ResolveBookmark(ToolBase):
         "required": ["bookmark_name"],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         bookmark_name = kwargs.get("bookmark_name", "")
@@ -404,6 +409,7 @@ class ResolveLocator(ToolBase):
         "required": ["locator"],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         locator = kwargs.get("locator", "")

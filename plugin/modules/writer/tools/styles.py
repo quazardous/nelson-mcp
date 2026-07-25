@@ -53,6 +53,7 @@ class ListStyles(ToolBase):
         "required": [],
     }
     doc_types = None  # all document types
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         family = kwargs.get("family")
@@ -128,6 +129,7 @@ class GetStyleInfo(ToolBase):
         "required": ["style_name"],
     }
     doc_types = None  # all document types
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         style_name = kwargs.get("style_name", "")

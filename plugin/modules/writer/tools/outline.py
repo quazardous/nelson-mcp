@@ -30,6 +30,7 @@ class GetDocumentOutline(ToolBase):
     }
     doc_types = ["writer"]
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc_svc = ctx.services.document
@@ -65,6 +66,7 @@ class GetHeadingContent(ToolBase):
         "required": ["heading_path"],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         heading_path = kwargs["heading_path"]

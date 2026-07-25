@@ -18,6 +18,7 @@ class ListBookmarks(ToolBase):
     )
     parameters = {"type": "object", "properties": {}, "required": []}
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc

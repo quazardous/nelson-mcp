@@ -56,6 +56,7 @@ class GetDocumentContent(ToolBase):
     }
     doc_types = ["writer"]
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         scope = kwargs.get("scope", "full")
@@ -299,6 +300,7 @@ class FindText(ToolBase):
     }
     doc_types = ["writer"]
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         search = kwargs.get("search")
@@ -352,6 +354,7 @@ class ReadParagraphs(ToolBase):
     }
     doc_types = ["writer"]
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         start = kwargs.get("start_index", 0)

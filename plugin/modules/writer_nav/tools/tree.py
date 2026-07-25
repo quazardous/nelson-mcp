@@ -35,6 +35,7 @@ class GetDocumentTree(ToolBase):
         "required": [],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         tree_svc = ctx.services.writer_tree
@@ -83,6 +84,7 @@ class GetHeadingChildren(ToolBase):
         "required": [],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         tree_svc = ctx.services.writer_tree
