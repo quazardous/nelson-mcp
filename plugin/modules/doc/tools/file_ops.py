@@ -101,6 +101,32 @@ def _save_to_path(doc, path):
     return file_url, None
 
 
+def _recording_state(doc):
+    """Report change recording, so a saved file's audit trail is not a surprise.
+
+    A document saved while recording is on keeps superseded content inside
+    the file — `xl/revisions/` for .xlsx, `<w:del>` for .docx — which an
+    agent-driven workflow may never see, because nobody opens the file.
+    Reported on save and export so it is at least visible (#22).
+    """
+    try:
+        if not doc.getPropertyValue("RecordChanges"):
+            return None
+    except Exception:
+        return None  # document type without the property
+    state = {"record_changes": True}
+    try:
+        state["tracked_changes"] = len(doc.getRedlines())
+    except Exception:
+        pass  # Calc has no UNO surface for its change track
+    state["note"] = (
+        "Change recording is on: this file keeps superseded content "
+        "(previous cell values or deleted text) alongside the visible "
+        "version."
+    )
+    return state
+
+
 class SaveDocument(ToolBase):
     """Save the current document to its existing location."""
 
@@ -137,7 +163,11 @@ class SaveDocument(ToolBase):
 
         if url:
             doc.store()
-            return {"status": "ok", "file_url": url}
+            result = {"status": "ok", "file_url": url}
+            rec = _recording_state(doc)
+            if rec:
+                result["change_recording"] = rec
+            return result
 
         # Unsaved document — need a path
         path = kwargs.get("path")
@@ -169,7 +199,11 @@ class SaveDocument(ToolBase):
         if err:
             return err
 
-        return {"status": "ok", "file_url": file_url, "first_save": True}
+        result = {"status": "ok", "file_url": file_url, "first_save": True}
+        rec = _recording_state(doc)
+        if rec:
+            result["change_recording"] = rec
+        return result
 
 
 class ExportPdf(ToolBase):
@@ -222,7 +256,13 @@ class ExportPdf(ToolBase):
             log.exception("PDF export failed: %s", exc)
             return {"status": "error", "error": str(exc)}
 
-        return {"status": "ok", "file_url": url, "filter": filter_name}
+        result = {"status": "ok", "file_url": url, "filter": filter_name}
+        rec = _recording_state(ctx.doc)
+        if rec:
+            # The PDF itself carries no revisions, but the source document
+            # does — worth saying, since an export often precedes sharing.
+            result["change_recording"] = rec
+        return result
 
 
 class SaveDocumentAs(ToolBase):

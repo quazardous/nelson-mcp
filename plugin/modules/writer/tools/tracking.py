@@ -18,7 +18,13 @@ class SetTrackChanges(ToolBase):
     name = "change_set"
     aliases = ["set_track_changes"]
     intent = "review"
-    description = "Enable or disable track changes (change recording) in the document."
+    description = (
+        "Enable or disable change recording (track changes). Works on "
+        "Writer and Calc. Disabling can be refused: when the option "
+        "'Prevent MCP from disabling change recording' is on, the "
+        "recording is treated as an audit trail an agent may not switch "
+        "off - turn it off in LibreOffice, or clear that option."
+    )
     parameters = {
         "type": "object",
         "properties": {
@@ -29,15 +35,45 @@ class SetTrackChanges(ToolBase):
         },
         "required": ["enabled"],
     }
-    doc_types = ["writer"]
+    # Calc keeps superseded cell values in xl/revisions/, so a spreadsheet
+    # needs the off switch just as much as a Writer file (#22).
+    doc_types = ["writer", "calc"]
     is_mutation = True
 
     def execute(self, ctx, **kwargs):
         enabled = kwargs.get("enabled", True)
         if isinstance(enabled, str):
             enabled = enabled.lower() not in ("false", "0", "no")
-        ctx.doc.setPropertyValue("RecordChanges", bool(enabled))
-        return {"status": "ok", "record_changes": bool(enabled)}
+        enabled = bool(enabled)
+
+        if not enabled and ctx.caller == "mcp" and self._locked(ctx):
+            return {
+                "status": "error",
+                "code": "track_changes_locked",
+                "message": ("Change recording is on and MCP calls are not "
+                            "allowed to turn it off."),
+                "hint": ("This guards the audit trail against the agent "
+                         "disabling it. Turn recording off in LibreOffice "
+                         "(Edit > Track Changes > Record), or clear "
+                         "'Prevent MCP from disabling change recording' in "
+                         "Nelson options."),
+                "retryable": False,
+            }
+
+        ctx.doc.setPropertyValue("RecordChanges", enabled)
+        return {"status": "ok", "record_changes": enabled}
+
+    def _locked(self, ctx):
+        """True when recording is on and the option forbids turning it off."""
+        try:
+            if not ctx.doc.getPropertyValue("RecordChanges"):
+                return False  # already off - nothing to protect
+            cfg = ctx.services.get("config")
+            if cfg is None:
+                return False
+            return bool(cfg.proxy_for("core").get("force_track_changes"))
+        except Exception:
+            return False
 
 
 class GetTrackedChanges(ToolBase):
@@ -48,7 +84,11 @@ class GetTrackedChanges(ToolBase):
     intent = "review"
     description = (
         "List all tracked changes (redlines) in the document, "
-        "including type, author, date, and comment."
+        "including type, author, date, and comment. "
+        "Writer only: the Calc change track has no UNO API, and the "
+        "Calc accept/reject commands open a dialog instead of running "
+        "headless, so spreadsheet revisions cannot be listed or "
+        "cleared through MCP."
     )
     parameters = {
         "type": "object",
@@ -112,7 +152,13 @@ class AcceptAllChanges(ToolBase):
     name = "change_accept_all"
     aliases = ["accept_all_changes"]
     intent = "review"
-    description = "Accept all tracked changes in the document."
+    description = (
+        "Accept all tracked changes in the document. "
+        "Writer only: the Calc change track has no UNO API, and the "
+        "Calc accept/reject commands open a dialog instead of running "
+        "headless, so spreadsheet revisions cannot be listed or "
+        "cleared through MCP."
+    )
     parameters = {
         "type": "object",
         "properties": {},
@@ -140,7 +186,13 @@ class RejectAllChanges(ToolBase):
     name = "change_reject_all"
     aliases = ["reject_all_changes"]
     intent = "review"
-    description = "Reject all tracked changes in the document."
+    description = (
+        "Reject all tracked changes in the document. "
+        "Writer only: the Calc change track has no UNO API, and the "
+        "Calc accept/reject commands open a dialog instead of running "
+        "headless, so spreadsheet revisions cannot be listed or "
+        "cleared through MCP."
+    )
     parameters = {
         "type": "object",
         "properties": {},

@@ -330,20 +330,33 @@ class ToolRegistry:
         return result
 
     def _ensure_track_changes(self, doc):
-        """Enable RecordChanges if force_track_changes config is on."""
+        """Turn change recording on, only if explicitly asked to (#22).
+
+        This used to run on every MCP mutation, which meant the first edit
+        flipped a document-wide, sticky flag that nobody had chosen: from
+        then on everything was recorded, including the user's own manual
+        typing, with superseded values kept inside the saved file. A
+        document that arrives without change recording is now left alone —
+        Nelson has no mandate to override that.
+
+        Turning it on is opt-in via ``core.auto_enable_track_changes``.
+        Keeping an agent from switching it *off* is a separate setting,
+        ``core.force_track_changes``, enforced in the tracking tool.
+        """
         try:
             cfg_svc = self._services.get("config")
             if cfg_svc is None:
                 return
-            if not cfg_svc.proxy_for("core").get("force_track_changes"):
+            if not cfg_svc.proxy_for("core").get("auto_enable_track_changes"):
                 return
             if not hasattr(doc, "getPropertyValue"):
                 return
             if not doc.getPropertyValue("RecordChanges"):
                 doc.setPropertyValue("RecordChanges", True)
-                log.info("Track changes auto-enabled (force_track_changes)")
+                log.info("Change recording turned on "
+                         "(core.auto_enable_track_changes)")
         except Exception:
-            pass  # non-writer docs or missing property
+            pass  # document type without the property
 
     @property
     def tool_names(self):

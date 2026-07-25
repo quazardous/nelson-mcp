@@ -24,11 +24,23 @@ config:
     type: boolean
     default: true
     widget: checkbox
-    label: Force track changes on MCP mutations
+    label: Prevent MCP from disabling change recording
     description: >
-      Automatically enable track changes (change recording) before any
-      mutation tool called via MCP. This ensures all AI edits are visible
-      and reversible.
+      When change recording is on, refuse any MCP call that tries to turn
+      it off. This keeps an AI agent from quietly disabling its own audit
+      trail. It never overrides a choice you made yourself: if recording
+      is off, Nelson leaves it off.
+  auto_enable_track_changes:
+    type: boolean
+    default: false
+    widget: checkbox
+    label: Turn change recording on for MCP edits (not recommended)
+    description: >
+      Switch change recording on before the first MCP edit, even on a
+      document that does not have it. Off by default because the flag is
+      document-wide and sticky: everything typed afterwards is recorded
+      too, including your own edits, and superseded values are kept
+      inside the saved file.
   sqlite3_status:
     widget: check
     label: SQLite3 Status

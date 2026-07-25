@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+
+- **Nelson no longer switches change recording on by itself** (#22) — reported and measured by @braklo. Every MCP edit used to force `RecordChanges` on, and the flag is document-wide and sticky: the first agent edit put the document into recording mode permanently, so *everything typed afterwards was recorded too, including the user's own manual edits*, with superseded content kept inside the saved file (`xl/revisions/` for `.xlsx`, `<w:del>` for `.docx`). A document that arrives without change recording is now left alone. The old behaviour is still available, opt-in and off by default, as **Turn change recording on for MCP edits**
+- **`force_track_changes` is now a lock, not a switch** (#22) — it used to override the person at the keyboard while exempting the agent, which is backwards: the agent was the one party that could turn recording off. It now does the opposite. While recording is on, an MCP call that tries to disable it is refused with `track_changes_locked`; a human turning it off in LibreOffice is always honoured
+
+### Added
+
+- **`change_set` works on Calc** (#22) — Calc keeps superseded cell values in `xl/revisions/`, so a spreadsheet needs the off switch as much as a Writer file. `change_list`, `change_accept_all` and `change_reject_all` stay Writer-only, and now say why: the Calc change track has no UNO API, and the Calc accept/reject commands open a dialog rather than running headless
+- **`doc_save` and `doc_export_pdf` report change recording** (#22) — when recording is on, the response carries a `change_recording` block warning that the file keeps superseded content. An agent-driven workflow may never open the file to notice
+
 ## [0.10.1] — 2026-07-25
 
 ### Fixed
