@@ -57,6 +57,10 @@ class ToolBase(ABC):
 
     Attributes:
         name:        Unique tool identifier (e.g. "get_document_outline").
+        aliases:     Former names that still resolve to this tool. They are
+                     callable but never advertised in ``tools/list``, so a
+                     rename does not break existing callers (custom
+                     endpoints, agent prompts, scripts).
         description: Human-readable description shown to LLMs.
         parameters:  JSON Schema dict (MCP ``inputSchema`` format).
         doc_types:   List of supported doc types (["writer"], ["calc"],
@@ -78,6 +82,7 @@ class ToolBase(ABC):
     """
 
     name: Optional[str] = None
+    aliases: Optional[List[str]] = None
     description: str = ""
     help: Optional[str] = None  # detailed help (for docs, not MCP schema)
     parameters: Optional[Dict[str, Any]] = None

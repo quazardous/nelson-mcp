@@ -122,7 +122,10 @@ class MCPProtocolHandler:
     def __init__(self, services, tool_filter=None):
         self.services = services
         self.tool_registry = services.tools
-        self.tool_filter = tool_filter  # set of tool names, or None for all
+        # set of tool names, or None for all. Names are normalised through
+        # the alias map so a custom endpoint configured with a tool's
+        # former name keeps working after a rename.
+        self.tool_filter = self._normalise_filter(tool_filter)
         self.event_bus = getattr(services, "events", None)
         self.version = "unknown"
         try:
@@ -130,6 +133,22 @@ class MCPProtocolHandler:
             self.version = EXTENSION_VERSION
         except ImportError:
             pass
+
+    def _normalise_filter(self, tool_filter):
+        """Map any deprecated tool names in a custom endpoint to current ones."""
+        if not tool_filter:
+            return tool_filter
+        resolve = getattr(self.tool_registry, "resolve_alias", None)
+        if resolve is None:
+            return tool_filter
+        out = set()
+        for name in tool_filter:
+            current = resolve(name)
+            if current:
+                log.info("Custom endpoint lists deprecated tool '%s' → '%s'",
+                         name, current)
+            out.add(current or name)
+        return out
 
     # ── Raw handlers (receive GenericRequestHandler) ─────────────────
 
@@ -349,7 +368,11 @@ class MCPProtocolHandler:
         arguments = params.get("arguments", {})
         if not tool_name:
             raise ValueError("Missing 'name' in tools/call params")
-        if self.tool_filter and tool_name not in self.tool_filter:
+        # A caller may still use a tool's former name; compare against the
+        # current one so aliases work on filtered endpoints too.
+        resolve = getattr(self.tool_registry, "resolve_alias", None)
+        canonical = (resolve(tool_name) if resolve else None) or tool_name
+        if self.tool_filter and canonical not in self.tool_filter:
             raise ValueError(
                 "Tool '%s' not available on this endpoint" % tool_name)
 
@@ -478,8 +501,10 @@ class MCPProtocolHandler:
         except Exception:
             pass
 
-        # Check if tool requires an open document
-        tool = registry._tools.get(tool_name)
+        # Check if tool requires an open document (resolve aliases, else a
+        # tool called by a former name looks unknown and is wrongly treated
+        # as requiring a document).
+        tool = registry.get(tool_name)
         if doc is None and (tool is None or tool.requires_doc):
             return _tool_error(
                 "no_document",

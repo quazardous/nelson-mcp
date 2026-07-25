@@ -51,15 +51,30 @@ class ToolRegistry:
     def __init__(self, services):
         self._services = services
         self._tools = {}  # name -> ToolBase instance
+        self._aliases = {}  # deprecated name -> current name
         self.batch_mode = False  # suppress per-tool cache invalidation
 
     # ── Registration ──────────────────────────────────────────────────
 
     def register(self, tool):
-        """Register a single ToolBase instance."""
+        """Register a single ToolBase instance.
+
+        A tool may declare ``aliases = ["old_name", ...]`` — former names
+        that still resolve to it. Aliases are callable but deliberately
+        absent from ``tools/list``, so a rename never breaks existing
+        callers (custom endpoints, agent prompts, scripts) while the new
+        name is the only one advertised.
+        """
         if tool.name in self._tools:
             log.warning("Tool already registered, replacing: %s", tool.name)
         self._tools[tool.name] = tool
+        for alias in getattr(tool, "aliases", None) or ():
+            if alias in self._tools:
+                log.warning(
+                    "Alias '%s' of tool '%s' collides with a registered "
+                    "tool name; ignoring the alias", alias, tool.name)
+                continue
+            self._aliases[alias] = tool.name
 
     def register_many(self, tools):
         for t in tools:
@@ -108,12 +123,26 @@ class ToolRegistry:
     # ── Lookup ────────────────────────────────────────────────────────
 
     def get(self, name):
-        """Get a tool by name, or None."""
-        return self._tools.get(name)
+        """Get a tool by its current name or a deprecated alias, or None.
+
+        Silent by design — callers may resolve a name several times per
+        request. ``execute`` logs the deprecation once, where it matters.
+        """
+        tool = self._tools.get(name)
+        if tool is not None:
+            return tool
+        current = self._aliases.get(name)
+        if current is None:
+            return None
+        return self._tools.get(current)
 
     def list_tool_names(self):
-        """Return all registered tool names."""
+        """Return all registered tool names (aliases excluded)."""
         return list(self._tools.keys())
+
+    def resolve_alias(self, name):
+        """Return the current name for *name*, or None if it is not an alias."""
+        return self._aliases.get(name)
 
     def _service_available(self, service_name):
         """Check if a service has at least one registered instance."""
@@ -142,7 +171,8 @@ class ToolRegistry:
 
     def get_mcp_schemas(self, doc_type=None):
         """Return list of MCP tools/list schemas."""
-        return [to_mcp_schema(t) for t in self.tools_for_doc_type(doc_type)]
+        return [to_mcp_schema(t, doc_type)
+                for t in self.tools_for_doc_type(doc_type)]
 
     # ── Execution ─────────────────────────────────────────────────────
 
@@ -161,9 +191,12 @@ class ToolRegistry:
             KeyError:     Tool not found.
             ValueError:   Validation failed or doc_type incompatible.
         """
-        tool = self._tools.get(tool_name)
+        tool = self.get(tool_name)  # resolves deprecated aliases too
         if tool is None:
             raise KeyError(f"Unknown tool: {tool_name}")
+        if tool.name != tool_name:
+            log.info("Tool '%s' is a deprecated alias for '%s'",
+                     tool_name, tool.name)
 
         bus = self._services.get("events")
 
