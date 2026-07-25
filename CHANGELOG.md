@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.10.0] — 2026-07-25
+
+This release reworks the tool surface. **No existing caller breaks**: every
+former tool name stays callable as an alias, it is simply no longer
+advertised in `tools/list`. Custom endpoints and agent prompts configured
+with old names keep working.
 
 ### Changed
 
@@ -18,6 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **`make test` is a usable gate again** — the suite aborted during collection, so nothing was actually gated on it. `tests/legacy/` (13 files) imported `core.*` and `chatbot`, packages removed in the framework rewrite; the two that did import contained no assertion at all. They are gone (git history keeps them). Five config tests still expected a `nelson.json` that has not existed since config moved to the LibreOffice registry, and three tool-registry tests asserted an error contract replaced by structured MCP errors. 77 tests pass, none fail
+- **Config writes could vanish silently** — `ConfigService` stores values in the LibreOffice configuration registry, and a write with no UNO context returned without storing anything and without a word in the log, so a later read quietly returned the default. It now warns, reports whether the value was stored, and accepts an in-memory store (which is what makes the service testable outside LibreOffice)
 - **A logo inserted into a header no longer overlaps the body text** (#18) — reported by @braklo on 0.9.4. The image was anchored `AT_CHARACTER`, so it floated above the text without contributing to the line height: the header kept its original height and the image spilled over the header text and down into the body. Images inserted into a header or footer are now anchored `AS_CHARACTER` (in the text flow) and the region is set to grow with its content, so it sizes itself to the image with no manual step. `set_header_footer` gains an `auto_height` parameter and `get_header_footer` now reports `auto_height` and `height_mm`; `insert_image` accepts `writer.auto_height: false` to opt out
 - **HTTP server failed to start after a restart** — relaunching LibreOffice raced the previous process releasing the port, so the bind failed with `[Errno 98] Address already in use` and the server never came up (the `HTTP server ready` line was never logged). The socket now sets `allow_reuse_address` and retries the bind briefly before giving up with a plain message naming the port. A failed start also no longer discards the handle to an already-running server, and the server is not started twice
 - **Aliased calls were wrongly rejected when no document was open** (#11) — the `requires_doc` pre-check bypassed alias resolution, so a tool invoked by a former name looked unknown and was treated as requiring an open document
