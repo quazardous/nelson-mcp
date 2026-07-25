@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **A logo inserted into a header no longer overlaps the body text** (#18) — reported by @braklo on 0.9.4. The image was anchored `AT_CHARACTER`, so it floated above the text without contributing to the line height: the header kept its original height and the image spilled over the header text and down into the body. Images inserted into a header or footer are now anchored `AS_CHARACTER` (in the text flow) and the region is set to grow with its content, so it sizes itself to the image with no manual step. `set_header_footer` gains an `auto_height` parameter and `get_header_footer` now reports `auto_height` and `height_mm`; `insert_image` accepts `writer.auto_height: false` to opt out
 - **HTTP server failed to start after a restart** — relaunching LibreOffice raced the previous process releasing the port, so the bind failed with `[Errno 98] Address already in use` and the server never came up (the `HTTP server ready` line was never logged). The socket now sets `allow_reuse_address` and retries the bind briefly before giving up with a plain message naming the port. A failed start also no longer discards the handle to an already-running server, and the server is not started twice
 - **Aliased calls were wrongly rejected when no document was open** (#11) — the `requires_doc` pre-check bypassed alias resolution, so a tool invoked by a former name looked unknown and was treated as requiring an open document
 

@@ -790,6 +790,14 @@ class InsertImage(ToolBase):
                             "(default: page style under the cursor)."
                         ),
                     },
+                    "auto_height": {
+                        "type": "boolean",
+                        "description": (
+                            "For a header/footer target: grow the region "
+                            "to fit the image instead of letting it "
+                            "overlap the body text (default true)."
+                        ),
+                    },
                 },
             },
             "draw": {
@@ -941,12 +949,20 @@ class InsertImage(ToolBase):
         to no caption (a letterhead logo rarely wants one).
         """
         from plugin.modules.writer.tools.headers import (
-            _resolve_page_style, _REGION_PROPS)
+            _resolve_page_style, _set_auto_height, _REGION_PROPS)
 
         style, resolved = _resolve_page_style(doc, kwargs.get("page_style"))
         is_on_prop, text_prop = _REGION_PROPS[region]
         if not style.getPropertyValue(is_on_prop):
             style.setPropertyValue(is_on_prop, True)
+
+        # A header keeps its fixed height by default, so an image taller
+        # than the current one overlaps the text and spills into the body.
+        # Grow the region with its content unless told otherwise.
+        auto_height = kwargs.get("auto_height", True)
+        if auto_height:
+            _set_auto_height(style, region, True)
+
         region_text = style.getPropertyValue(text_prop)
         cursor = region_text.createTextCursorByRange(region_text.getEnd())
 
@@ -959,9 +975,10 @@ class InsertImage(ToolBase):
         else:
             result = self._insert_standalone(
                 doc, region_text, cursor, file_url, width, height,
-                title, desc)
+                title, desc, as_character=True)
         result["target"] = region
         result["page_style"] = resolved
+        result["auto_height"] = bool(auto_height)
         return result
 
     def _insert_with_frame(self, doc, doc_text, cursor,
@@ -1043,14 +1060,22 @@ class InsertImage(ToolBase):
         }
 
     def _insert_standalone(self, doc, doc_text, cursor,
-                           file_url, width, height, title, desc):
-        """Insert a standalone image without frame."""
+                           file_url, width, height, title, desc,
+                           as_character=False):
+        """Insert a standalone image without frame.
+
+        ``as_character`` anchors the image inside the text line instead of
+        floating it. Headers and footers need that: a floating image does
+        not contribute to the line height, so the region never grows and
+        the image overlaps the text and spills into the body.
+        """
         from com.sun.star.awt import Size
 
         graphic = doc.createInstance("com.sun.star.text.TextGraphicObject")
         graphic.setPropertyValue("GraphicURL", file_url)
         graphic.setPropertyValue("Size", Size(width, height))
-        graphic.setPropertyValue("AnchorType", 4)  # AT_CHARACTER
+        # 1 = AS_CHARACTER (in the text flow), 4 = AT_CHARACTER (floating)
+        graphic.setPropertyValue("AnchorType", 1 if as_character else 4)
         if title:
             graphic.setPropertyValue("Title", title)
         if desc:

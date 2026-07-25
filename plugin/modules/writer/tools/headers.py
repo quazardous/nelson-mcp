@@ -27,6 +27,28 @@ _REGION_PROPS = {
 PARAGRAPH_BREAK = 0
 
 
+def _height_props(region):
+    """Return the (dynamic-height, dynamic-spacing, height) property names."""
+    prefix = "Header" if region == "header" else "Footer"
+    return (prefix + "IsDynamicHeight",
+            prefix + "DynamicSpacing",
+            prefix + "Height")
+
+
+def _set_auto_height(style, region, enabled):
+    """Let the region grow with its content (or pin it to a fixed height).
+
+    Without this, a header keeps its fixed height and taller content —
+    a letterhead logo, say — overlaps the text and spills into the body.
+    """
+    dyn_prop, spacing_prop, _ = _height_props(region)
+    style.setPropertyValue(dyn_prop, bool(enabled))
+    try:
+        style.setPropertyValue(spacing_prop, bool(enabled))
+    except Exception:
+        pass  # not offered by every page style
+
+
 def _page_styles(doc):
     return doc.getStyleFamilies().getByName("PageStyles")
 
@@ -57,13 +79,21 @@ def _resolve_page_style(doc, name):
 
 
 def _read_region(style, region):
-    """Return {'enabled': bool, 'text': str} for a header/footer region."""
+    """Return the state of a header/footer region."""
     is_on_prop, text_prop = _REGION_PROPS[region]
     enabled = bool(style.getPropertyValue(is_on_prop))
-    text = ""
-    if enabled:
-        text = style.getPropertyValue(text_prop).getString()
-    return {"enabled": enabled, "text": text}
+    info = {"enabled": enabled, "text": ""}
+    if not enabled:
+        return info
+    info["text"] = style.getPropertyValue(text_prop).getString()
+    dyn_prop, _, height_prop = _height_props(region)
+    try:
+        info["auto_height"] = bool(style.getPropertyValue(dyn_prop))
+        info["height_mm"] = round(
+            style.getPropertyValue(height_prop) / 100.0, 1)
+    except Exception:
+        pass
+    return info
 
 
 class GetHeaderFooter(ToolBase):
@@ -163,6 +193,14 @@ class SetHeaderFooter(ToolBase):
                     "(enabling it to hold the text)."
                 ),
             },
+            "auto_height": {
+                "type": "boolean",
+                "description": (
+                    "Let the region grow with its content, so taller "
+                    "content (e.g. a logo) is not clipped and does not "
+                    "overlap the body. Left unchanged when omitted."
+                ),
+            },
         },
         "required": ["region"],
     }
@@ -196,6 +234,11 @@ class SetHeaderFooter(ToolBase):
             # valid once enabled).
             if not style.getPropertyValue(is_on_prop):
                 style.setPropertyValue(is_on_prop, True)
+
+            auto_height = kwargs.get("auto_height")
+            if auto_height is not None:
+                _set_auto_height(style, region, auto_height)
+
             xtext = style.getPropertyValue(text_prop)
 
             if mode == "append":
@@ -206,13 +249,16 @@ class SetHeaderFooter(ToolBase):
             else:
                 xtext.setString(text)
 
-            return {
+            result = {
                 "status": "ok",
                 "page_style": resolved,
                 "region": region,
                 "enabled": True,
                 "text": xtext.getString(),
             }
+            if auto_height is not None:
+                result["auto_height"] = bool(auto_height)
+            return result
         except Exception as e:
             log.exception("set_header_footer failed")
             return {"status": "error", "error": str(e)}
