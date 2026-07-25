@@ -39,19 +39,41 @@ def _parse_cell_ref(cell_ref):
     return col, row
 
 
-class ListCellComments(ToolBase):
-    """List all cell comments/annotations in a sheet."""
+class CalcComment(ToolBase):
+    """List, add or delete Calc cell comments (annotations)."""
 
-    name = "calc_comment_list"
-    aliases = ["list_cell_comments"]
+    name = "calc_comment"
+    aliases = {
+        "calc_comment_list": {"action": "list"},
+        "calc_comment_add": {"action": "add"},
+        "calc_comment_delete": {"action": "delete"},
+        "list_cell_comments": {"action": "list"},
+        "add_cell_comment": {"action": "add"},
+        "delete_cell_comment": {"action": "delete"},
+    }
     intent = "review"
     description = (
-        "List all cell comments (annotations) in a Calc sheet. "
-        "Returns cell address, author, date, and comment text."
+        "Work with cell comments (annotations) in a Calc sheet. "
+        "action='list' returns every comment with its cell, author, date "
+        "and text; action='add' sets the comment on a cell (replacing any "
+        "existing one); action='delete' removes it."
     )
     parameters = {
         "type": "object",
         "properties": {
+            "action": {
+                "type": "string",
+                "enum": ["list", "add", "delete"],
+                "description": "What to do (default: list).",
+            },
+            "cell": {
+                "type": "string",
+                "description": "Cell address, e.g. 'B3'. Required to add or delete.",
+            },
+            "text": {
+                "type": "string",
+                "description": "Comment text. Required to add.",
+            },
             "sheet_name": {
                 "type": "string",
                 "description": "Sheet name (active sheet if omitted).",
@@ -60,12 +82,36 @@ class ListCellComments(ToolBase):
         "required": [],
     }
     doc_types = ["calc"]
-    is_mutation = False
+
+    def detects_mutation(self, **kwargs):
+        # Listing is a read; adding and deleting are not.
+        return kwargs.get("action", "list") != "list"
 
     def execute(self, ctx, **kwargs):
-        doc = ctx.doc
+        action = kwargs.get("action", "list")
         try:
-            sheet = _resolve_sheet(doc, kwargs.get("sheet_name"))
+            sheet = _resolve_sheet(ctx.doc, kwargs.get("sheet_name"))
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+        if action == "list":
+            return self._list(sheet)
+
+        cell_ref = kwargs.get("cell", "")
+        if not cell_ref:
+            return {"status": "error",
+                    "message": "cell is required to %s a comment." % action}
+        try:
+            col, row = _parse_cell_ref(cell_ref)
+        except Exception as e:
+            return {"status": "error", "error": str(e)}
+
+        if action == "add":
+            return self._add(sheet, cell_ref, col, row, kwargs.get("text", ""))
+        return self._delete(sheet, cell_ref, col, row)
+
+    def _list(self, sheet):
+        try:
             annotations = sheet.getAnnotations()
             comments = []
             for i in range(annotations.getCount()):
@@ -93,64 +139,22 @@ class ListCellComments(ToolBase):
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-
-class AddCellComment(ToolBase):
-    """Add a comment to a cell."""
-
-    name = "calc_comment_add"
-    aliases = ["add_cell_comment"]
-    intent = "review"
-    description = (
-        "Add a comment (annotation) to a specific cell in a Calc sheet."
-    )
-    parameters = {
-        "type": "object",
-        "properties": {
-            "cell": {
-                "type": "string",
-                "description": "Cell address (e.g. 'B3').",
-            },
-            "text": {
-                "type": "string",
-                "description": "Comment text.",
-            },
-            "sheet_name": {
-                "type": "string",
-                "description": "Sheet name (active sheet if omitted).",
-            },
-        },
-        "required": ["cell", "text"],
-    }
-    doc_types = ["calc"]
-    is_mutation = True
-
-    def execute(self, ctx, **kwargs):
-        cell_ref = kwargs.get("cell", "")
-        text = kwargs.get("text", "")
-        if not cell_ref or not text:
-            return {"status": "error", "message": "cell and text are required."}
-
-        doc = ctx.doc
+    def _add(self, sheet, cell_ref, col, row, text):
+        if not text:
+            return {"status": "error", "message": "text is required to add."}
         try:
-            sheet = _resolve_sheet(doc, kwargs.get("sheet_name"))
-            col, row = _parse_cell_ref(cell_ref)
-            cell = sheet.getCellByPosition(col, row)
-
-            # Insert or update annotation
             from com.sun.star.table import CellAddress
             addr = CellAddress()
             addr.Sheet = sheet.getRangeAddress().Sheet
             addr.Column = col
             addr.Row = row
 
-            annotations = sheet.getAnnotations()
-            # Check if annotation already exists
+            cell = sheet.getCellByPosition(col, row)
             ann = cell.getAnnotation()
             if ann and ann.getString():
                 ann.setString(text)
             else:
-                annotations.insertNew(addr, text)
-
+                sheet.getAnnotations().insertNew(addr, text)
             return {
                 "status": "ok",
                 "cell": cell_ref,
@@ -160,57 +164,16 @@ class AddCellComment(ToolBase):
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-
-class DeleteCellComment(ToolBase):
-    """Delete a comment from a cell."""
-
-    name = "calc_comment_delete"
-    aliases = ["delete_cell_comment"]
-    intent = "review"
-    description = "Delete the comment (annotation) from a specific cell."
-    parameters = {
-        "type": "object",
-        "properties": {
-            "cell": {
-                "type": "string",
-                "description": "Cell address (e.g. 'B3').",
-            },
-            "sheet_name": {
-                "type": "string",
-                "description": "Sheet name (active sheet if omitted).",
-            },
-        },
-        "required": ["cell"],
-    }
-    doc_types = ["calc"]
-    is_mutation = True
-
-    def execute(self, ctx, **kwargs):
-        cell_ref = kwargs.get("cell", "")
-        if not cell_ref:
-            return {"status": "error", "message": "cell is required."}
-
-        doc = ctx.doc
+    def _delete(self, sheet, cell_ref, col, row):
         try:
-            sheet = _resolve_sheet(doc, kwargs.get("sheet_name"))
-            col, row = _parse_cell_ref(cell_ref)
-
             annotations = sheet.getAnnotations()
-            # Find and remove the annotation at this position
             for i in range(annotations.getCount()):
-                ann = annotations.getByIndex(i)
-                pos = ann.getPosition()
+                pos = annotations.getByIndex(i).getPosition()
                 if pos.Column == col and pos.Row == row:
                     annotations.removeByIndex(i)
-                    return {
-                        "status": "ok",
-                        "cell": cell_ref,
-                        "message": "Comment deleted.",
-                    }
-
-            return {
-                "status": "error",
-                "message": "No comment found at %s." % cell_ref,
-            }
+                    return {"status": "ok", "cell": cell_ref,
+                            "message": "Comment deleted."}
+            return {"status": "error",
+                    "message": "No comment found at %s." % cell_ref}
         except Exception as e:
             return {"status": "error", "error": str(e)}

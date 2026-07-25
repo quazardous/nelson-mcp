@@ -70,7 +70,10 @@ class ToolBase(ABC):
         intent:      Broker group: "navigate", "edit", "review", or "media".
                      Used by request_tools(intent=...) to load tool groups.
         is_mutation:  Whether the tool mutates the document.  ``None``
-                     means auto-detect from name prefix.
+                     means auto-detect from name prefix.  Tools that
+                     dispatch on an ``action`` argument should override
+                     ``detects_mutation`` instead, so reads inside a
+                     merged tool are not treated as writes.
         long_running: Hint that the tool may take a while (e.g. image gen).
         requires_doc: Whether the tool needs an open document.  Set to
                      False for tools like doc_create, doc_open
@@ -94,8 +97,14 @@ class ToolBase(ABC):
     requires_doc: bool = True
     requires_service: Optional[str] = None
 
-    def detects_mutation(self) -> bool:
-        """Return True if the tool mutates the document."""
+    def detects_mutation(self, **kwargs: Any) -> bool:
+        """Return True if this call mutates the document.
+
+        The call's arguments are passed in so a tool that merges several
+        operations behind one name (``action="list"`` vs
+        ``action="delete"``) can classify per call instead of carrying a
+        single flag for every branch. Most tools ignore them.
+        """
         if self.is_mutation is not None:
             return self.is_mutation
         if self.name:

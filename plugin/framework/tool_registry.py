@@ -268,7 +268,8 @@ class ToolRegistry:
         # own name, not the name it was called by: a call through a
         # deprecated alias would otherwise slip past this guard and
         # re-enable recording underneath the very tool disabling it.
-        if (tool.detects_mutation() and ctx.caller == "mcp"
+        mutates = tool.detects_mutation(**kwargs)
+        if (mutates and ctx.caller == "mcp"
                 and ctx.doc is not None
                 and tool.name != "change_set"):
             self._ensure_track_changes(ctx.doc)
@@ -277,7 +278,7 @@ class ToolRegistry:
         import uuid
         action_id = None
         undo_mgr = None
-        if tool.detects_mutation() and ctx.doc is not None:
+        if mutates and ctx.doc is not None:
             action_id = uuid.uuid4().hex[:8]
             try:
                 undo_mgr = ctx.doc.getUndoManager()
@@ -316,12 +317,12 @@ class ToolRegistry:
 
         if bus:
             bus.emit("tool:completed", name=tool_name, caller=ctx.caller,
-                     result=result, is_mutation=tool.detects_mutation(),
+                     result=result, is_mutation=mutates,
                      doc=ctx.doc)
 
         # Invalidate cache AFTER execution so the tool uses valid data
         # and the next tool gets a fresh scan
-        if tool.detects_mutation() and not self.batch_mode:
+        if mutates and not self.batch_mode:
             doc_svc = self._services.get("document")
             if doc_svc:
                 doc_svc.invalidate_cache(ctx.doc)
