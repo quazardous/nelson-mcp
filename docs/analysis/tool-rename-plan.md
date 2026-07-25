@@ -1,6 +1,8 @@
 # Tool renaming plan (#11 + #2)
 
-**Status:** PAUSED — plan approved, implementation not started.
+**Status:** DONE on `experimental/tool-rename` — 156/163 tools renamed,
+every former name kept as an alias. The 5 `gallery_*` tools already
+followed the convention and were left alone.
 **Goal:** consistent `domain_verb` tool names so LLMs pick the right tool (#2) and the API surface is coherent (#11).
 
 ## Decisions (locked)
@@ -235,3 +237,32 @@ After each domain commit: `kill → deploy → launch → nelson_log` (check 159
 12. draw_
 
 Update `PRESETS` (mcp/__init__.py), launcher prompts, and docs as the relevant names change (do it incrementally or in a final sweep commit). Bump minor version (→ 0.10.0) at the end.
+
+
+## Outcome (implementation notes)
+
+Done in 12 commits, one per domain, each deployed and exercised live.
+
+**What the plan did not anticipate:**
+
+1. **Mutation detection breaks.** `ToolBase.detects_mutation()` falls back
+   to a name PREFIX check (`get_`, `list_`, `read_`…) when `is_mutation`
+   is unset. `domain_verb` moves the verb to the end, so **50 read-only
+   tools silently became "mutations"** — auto-enabling track changes,
+   opening undo entries and burning action IDs on every read. Each domain
+   must re-run the audit and pin `is_mutation` explicitly.
+2. **Renaming must be string-scoped.** A blind global replace corrupts
+   code: `image_utils.insert_image()`, `ImageService.generate_image()` and
+   the vendored `aihordeclient.generate_image()` share names with tools.
+   Only string literals may be rewritten; `plugin/lib/` never.
+3. **Guards keyed on the called name.** The track-changes exemption and
+   the `execute_batch` recursion guard compared the literal name the
+   caller used, so an aliased call walked straight past them. They now
+   compare the resolved tool.
+4. **`shape_` instead of `draw_`.** `create_shape`, `edit_shape`,
+   `delete_shape` and `get_draw_summary` declare `doc_types = None` and
+   already appear in Writer sessions; a `draw_` prefix would misdescribe
+   them.
+
+**Not decided here:** whether to merge tools (the deferred pass), and
+whether to eventually drop the aliases.
