@@ -143,7 +143,8 @@ def _list_placeholders(page):
 class ListPlaceholders(ToolBase):
     """List all text placeholders on a slide."""
 
-    name = "list_placeholders"
+    name = "draw_placeholder_list"
+    aliases = ["list_placeholders"]
     intent = "navigate"
     description = (
         "List all text placeholders on a slide with their role "
@@ -160,6 +161,7 @@ class ListPlaceholders(ToolBase):
         "required": [],
     }
     doc_types = ["draw", "impress"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -178,12 +180,13 @@ class ListPlaceholders(ToolBase):
 class GetPlaceholderText(ToolBase):
     """Get text from a slide placeholder by role or shape index."""
 
-    name = "get_placeholder_text"
+    name = "draw_placeholder_get"
+    aliases = ["get_placeholder_text"]
     intent = "navigate"
     description = (
         "Get text from a slide placeholder. "
         "Specify role ('title', 'subtitle', 'body') or shape_index. "
-        "Use list_placeholders to see available placeholders."
+        "Use draw_placeholder_list to see available placeholders."
     )
     parameters = {
         "type": "object",
@@ -194,7 +197,7 @@ class GetPlaceholderText(ToolBase):
             },
             "shape_index": {
                 "type": "integer",
-                "description": "Shape index (from list_placeholders).",
+                "description": "Shape index (from draw_placeholder_list).",
             },
             "page_index": {
                 "type": "integer",
@@ -204,6 +207,7 @@ class GetPlaceholderText(ToolBase):
         "required": [],
     }
     doc_types = ["draw", "impress"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -242,12 +246,13 @@ class GetPlaceholderText(ToolBase):
 class SetPlaceholderText(ToolBase):
     """Set text on a slide placeholder by role or shape index."""
 
-    name = "set_placeholder_text"
+    name = "draw_placeholder_set"
+    aliases = ["set_placeholder_text"]
     intent = "edit"
     description = (
         "Set text on a slide placeholder. "
         "Specify role ('title', 'subtitle', 'body') or shape_index. "
-        "Use list_placeholders to see available placeholders."
+        "Use draw_placeholder_list to see available placeholders."
     )
     parameters = {
         "type": "object",
@@ -262,7 +267,7 @@ class SetPlaceholderText(ToolBase):
             },
             "shape_index": {
                 "type": "integer",
-                "description": "Shape index (from list_placeholders).",
+                "description": "Shape index (from draw_placeholder_list).",
             },
             "page_index": {
                 "type": "integer",

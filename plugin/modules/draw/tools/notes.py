@@ -24,7 +24,8 @@ def _get_slide(doc, page_index=None):
 class GetSpeakerNotes(ToolBase):
     """Read speaker notes from a slide."""
 
-    name = "get_speaker_notes"
+    name = "draw_notes_get"
+    aliases = ["get_speaker_notes"]
     intent = "navigate"
     description = (
         "Read speaker notes from an Impress slide. "
@@ -41,6 +42,7 @@ class GetSpeakerNotes(ToolBase):
         "required": [],
     }
     doc_types = ["impress"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -62,7 +64,8 @@ class GetSpeakerNotes(ToolBase):
 class SetSpeakerNotes(ToolBase):
     """Set speaker notes on a slide."""
 
-    name = "set_speaker_notes"
+    name = "draw_notes_set"
+    aliases = ["set_speaker_notes"]
     intent = "edit"
     description = (
         "Set or replace speaker notes on an Impress slide."

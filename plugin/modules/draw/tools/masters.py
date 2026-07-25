@@ -24,7 +24,8 @@ def _get_slide(doc, page_index=None):
 class ListMasterSlides(ToolBase):
     """List all master slides in a Draw/Impress document."""
 
-    name = "list_master_slides"
+    name = "draw_master_list"
+    aliases = ["list_master_slides"]
     intent = "navigate"
     description = (
         "List all master slides (master pages) in the document "
@@ -32,6 +33,7 @@ class ListMasterSlides(ToolBase):
     )
     parameters = {"type": "object", "properties": {}, "required": []}
     doc_types = ["draw", "impress"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -58,7 +60,8 @@ class ListMasterSlides(ToolBase):
 class GetSlideMaster(ToolBase):
     """Get which master slide is assigned to a slide."""
 
-    name = "get_slide_master"
+    name = "draw_master_get"
+    aliases = ["get_slide_master"]
     intent = "navigate"
     description = (
         "Get the master slide assigned to a specific slide. "
@@ -75,6 +78,7 @@ class GetSlideMaster(ToolBase):
         "required": [],
     }
     doc_types = ["draw", "impress"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -92,11 +96,12 @@ class GetSlideMaster(ToolBase):
 class SetSlideMaster(ToolBase):
     """Assign a master slide to a slide."""
 
-    name = "set_slide_master"
+    name = "draw_master_set"
+    aliases = ["set_slide_master"]
     intent = "edit"
     description = (
         "Assign a master slide to a specific slide by master name. "
-        "Use list_master_slides to see available masters."
+        "Use draw_master_list to see available masters."
     )
     parameters = {
         "type": "object",

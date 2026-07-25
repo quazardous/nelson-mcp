@@ -5,19 +5,19 @@ Vision for AI-driven presentation capabilities, extending the existing Draw modu
 ## Current capabilities
 
 ### Shared with Draw
-- `create_shape` — rectangles, ellipses, text boxes, lines
-- `edit_shape` — move, resize, recolor, change text
-- `delete_shape` — remove shapes
-- `get_draw_summary` — list shapes and properties on current slide
+- `shape_create` — rectangles, ellipses, text boxes, lines
+- `shape_edit` — move, resize, recolor, change text
+- `shape_delete` — remove shapes
+- `shape_summary` — list shapes and properties on current slide
 - `nav_page_objects` — detailed page content
-- `list_master_slides` / `get_slide_master` / `set_slide_master` — master page management
+- `draw_master_list` / `draw_master_get` / `draw_master_set` — master page management
 - `image_insert` / `image_list` / `image_delete` — images on slides
 
 ### Impress-specific
-- `get_speaker_notes` / `set_speaker_notes` — speaker notes
-- `get_slide_transition` / `set_slide_transition` — 25 FadeEffect types, speed, auto-advance
-- `get_slide_layout` / `set_slide_layout` — 30 named layout types
-- `list_placeholders` / `get_placeholder_text` / `set_placeholder_text` — title, subtitle, body placeholders
+- `draw_notes_get` / `draw_notes_set` — speaker notes
+- `draw_transition_get` / `draw_transition_set` — 25 FadeEffect types, speed, auto-advance
+- `draw_layout_get` / `draw_layout_set` — 30 named layout types
+- `draw_placeholder_list` / `draw_placeholder_get` / `draw_placeholder_set` — title, subtitle, body placeholders
 - `nav_goto_page` — navigate to a slide
 
 ## Remaining roadmap

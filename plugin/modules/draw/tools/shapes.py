@@ -44,7 +44,8 @@ def _resolve_page(ctx, **kwargs):
 
 
 class ListPages(ToolBase):
-    name = "list_pages"
+    name = "draw_page_list"
+    aliases = ["list_pages"]
     description = (
         "List all pages/slides in a Draw/Impress document. "
         "For Calc, lists sheets (use calc_sheet_list instead). "
@@ -53,6 +54,7 @@ class ListPages(ToolBase):
     parameters = {"type": "object", "properties": {}, "required": []}
     doc_types = ["draw", "impress"]
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         from plugin.modules.draw.bridge import DrawBridge
@@ -66,7 +68,8 @@ class ListPages(ToolBase):
 
 
 class GetDrawSummary(ToolBase):
-    name = "get_draw_summary"
+    name = "shape_summary"
+    aliases = ["get_draw_summary"]
     intent = "edit"
     description = (
         "Return a summary of shapes on a page. "
@@ -99,6 +102,7 @@ class GetDrawSummary(ToolBase):
         "required": [],
     }
     doc_types = None  # all document types
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         page, _ = _resolve_page(ctx, **kwargs)
@@ -120,7 +124,8 @@ class GetDrawSummary(ToolBase):
 
 
 class CreateShape(ToolBase):
-    name = "create_shape"
+    name = "shape_create"
+    aliases = ["create_shape"]
     description = (
         "Create a new shape on the drawing layer. "
         "Works on all document types."
@@ -210,7 +215,8 @@ class CreateShape(ToolBase):
 
 
 class EditShape(ToolBase):
-    name = "edit_shape"
+    name = "shape_edit"
+    aliases = ["edit_shape"]
     intent = "edit"
     description = (
         "Modify properties of an existing shape. "
@@ -280,7 +286,8 @@ class EditShape(ToolBase):
 
 
 class DeleteShape(ToolBase):
-    name = "delete_shape"
+    name = "shape_delete"
+    aliases = ["delete_shape"]
     intent = "edit"
     description = (
         "Delete a shape by index. "

@@ -95,7 +95,8 @@ _LAYOUT_NAMES = {v: k for k, v in _LAYOUTS.items()}
 class GetSlideTransition(ToolBase):
     """Read the current transition settings from a slide."""
 
-    name = "get_slide_transition"
+    name = "draw_transition_get"
+    aliases = ["get_slide_transition"]
     intent = "navigate"
     description = (
         "Get the transition effect, speed, duration, and advance mode "
@@ -112,6 +113,7 @@ class GetSlideTransition(ToolBase):
         "required": [],
     }
     doc_types = ["impress"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -170,7 +172,8 @@ class GetSlideTransition(ToolBase):
 class SetSlideTransition(ToolBase):
     """Set the transition effect on a slide."""
 
-    name = "set_slide_transition"
+    name = "draw_transition_set"
+    aliases = ["set_slide_transition"]
     intent = "edit"
     description = (
         "Set the transition effect on an Impress slide. "
@@ -325,7 +328,8 @@ class SetSlideTransition(ToolBase):
 class GetSlideLayout(ToolBase):
     """Get the layout of an Impress slide."""
 
-    name = "get_slide_layout"
+    name = "draw_layout_get"
+    aliases = ["get_slide_layout"]
     intent = "navigate"
     description = (
         "Get the layout type of an Impress slide. "
@@ -342,6 +346,7 @@ class GetSlideLayout(ToolBase):
         "required": [],
     }
     doc_types = ["impress"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -362,7 +367,8 @@ class GetSlideLayout(ToolBase):
 class SetSlideLayout(ToolBase):
     """Set the layout of an Impress slide."""
 
-    name = "set_slide_layout"
+    name = "draw_layout_set"
+    aliases = ["set_slide_layout"]
     intent = "edit"
     description = (
         "Set the layout of an Impress slide. "
@@ -370,7 +376,7 @@ class SetSlideLayout(ToolBase):
         "text_and_chart, chart, text_and_object, object, "
         "text_and_clipart, large_object, four_objects, "
         "vertical_text, two_objects, and more. "
-        "Use get_slide_layout to see all available layout names."
+        "Use draw_layout_get to see all available layout names."
     )
     parameters = {
         "type": "object",

@@ -9,7 +9,8 @@ from plugin.framework.tool_base import ToolBase
 
 
 class AddSlide(ToolBase):
-    name = "add_slide"
+    name = "draw_slide_add"
+    aliases = ["add_slide"]
     intent = "edit"
     description = "Inserts a new slide (page) at the specified index."
     parameters = {
@@ -33,7 +34,8 @@ class AddSlide(ToolBase):
 
 
 class DeleteSlide(ToolBase):
-    name = "delete_slide"
+    name = "draw_slide_delete"
+    aliases = ["delete_slide"]
     intent = "edit"
     description = "Deletes the slide (page) at the specified index."
     parameters = {
@@ -59,7 +61,8 @@ class DeleteSlide(ToolBase):
 class ReadSlideText(ToolBase):
     """Read all text content from a slide plus speaker notes."""
 
-    name = "read_slide_text"
+    name = "draw_slide_read"
+    aliases = ["read_slide_text"]
     description = (
         "Read all text content from a slide (shapes text) and "
         "speaker notes. Returns structured text per shape."
@@ -76,6 +79,7 @@ class ReadSlideText(ToolBase):
     }
     doc_types = ["draw", "impress"]
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         from plugin.modules.draw.bridge import DrawBridge
@@ -129,7 +133,8 @@ class ReadSlideText(ToolBase):
 class GetPresentationInfo(ToolBase):
     """Get presentation metadata."""
 
-    name = "get_presentation_info"
+    name = "draw_info"
+    aliases = ["get_presentation_info"]
     description = (
         "Get presentation metadata: slide count, dimensions, "
         "master slide names, and whether it is an Impress document."
@@ -137,6 +142,7 @@ class GetPresentationInfo(ToolBase):
     parameters = {"type": "object", "properties": {}, "required": []}
     doc_types = ["draw", "impress"]
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
