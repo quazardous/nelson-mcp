@@ -36,18 +36,47 @@ make set-config             # List all config keys
 make help                   # All targets
 ```
 
-> **AI agent note:** `make deploy` takes 60–120 seconds (kills LO, reinstalls extension, restarts LO, waits for bootstrap). **Do not** pipe its output (`| tail`, `| grep`) — this causes buffering freezes. Run it plain with a long timeout (300s+). The `OSError: Address already in use` on port 8766 after repeated deploys is benign.
+> **AI agent note:** `make deploy` takes 60–120 seconds (kills LO, reinstalls
+> extension, restarts LO, waits for bootstrap). **Do not** pipe its output
+> (`| tail`, `| grep`) — this causes buffering freezes. Run it plain with a long
+> timeout (300s+).
+
+**Under wbox** (the usual agent loop) use the MCP tools instead, in this order —
+never deploy while soffice is running:
+
+```
+mcp__lo-wbox__kill  →  mcp__lo-wbox__deploy  →  mcp__lo-wbox__launch
+```
+
+wbox can run headless, which is what an automated check should use; a visible
+session is for when the assertion is something you have to *look* at.
+
+> `Address already in use` on the HTTP port at startup is **not** benign, despite
+> what this file used to say. It means the server did not bind, and the
+> `HTTP server ready` line will be missing. It is a known intermittent bug —
+> see `dev/bugs/http-server-duplicate-start.md`. Do not dismiss it; if the
+> instance nonetheless answers, say so, because that combination is unexplained.
 
 ## Release
 
+**Use `make release`.** Do not hand-roll `gh release create` — the script exists
+because a release has gates that are easy to skip, most importantly that the
+`.oxt` must contain the bundled Windows `pysqlite3` payload. A Linux build that
+skips it produces an extension that installs and then fails on Windows.
+
 ```bash
-# bump version in plugin/version.py + CHANGELOG.md, then:
-git add -A && git commit -m "v1.x.y: description"
-git push
-make build
-gh release create v1.x.y --target nelson --title "v1.x.y" --notes "changelog"
-gh release upload v1.x.y build/nelson.oxt
+# 1. bump EXTENSION_VERSION in plugin/version.py
+# 2. add the matching section to CHANGELOG.md (the script extracts release notes from it)
+make release-dry     # runs every gate, builds, publishes nothing
+make release         # tags, pushes, creates the GitHub release with the .oxt
 ```
+
+Gates: on `main`, no uncommitted tracked changes, in sync with origin, tag free,
+CHANGELOG section present, and the built `.oxt` verified to carry the Windows
+payload. `make test` must be green before you start.
+
+The remaining manual gate is Windows: the `.oxt` is never registration-tested on
+a non-UTF-8 / CJK Windows box, which is the class of bug behind #16/#17.
 
 ## Build pipeline
 
@@ -79,6 +108,9 @@ Auto-discovered at build time by `generate_manifest.py`.
 - **Doc types**: `detect_doc_type()` returns `"writer"`, `"calc"`, `"impress"`, or `"draw"` (Impress and Draw are distinct). Use `doc_types = ["draw", "impress"]` for tools that work on both.
 - **Doc-type param namespacing**: Unified tools use nested objects (`"writer": {...}`, `"calc": {...}`) for doc-type-specific params. `_flatten_doc_type_params()` in `ToolRegistry` merges the matching block before `execute()`. Tool code stays flat.
 - **Draw page resolution**: Use `get_draw_page(ctx, page_index=, sheet_name=)` from `draw/bridge.py` — handles Writer (single page), Calc (per-sheet), Draw/Impress (multi-page).
+- **Mutation classification is name-derived**: when a tool leaves `is_mutation` unset, `ToolBase.detects_mutation()` infers it from a name *prefix* (`get_`, `read_`, `list_`, `find_`, `search_`, `resolve_`…). Since tools are named `domain_verb`, the verb is at the **end**, so the fallback no longer matches — **always set `is_mutation` explicitly on a new tool**. Getting it wrong is silent: a read classified as a write auto-enables track changes, opens an undo context and burns an action id on every call. A tool that dispatches on an `action` argument should override `detects_mutation(**kwargs)` instead.
+- **Tool names are strings, never identifiers**: renaming a tool means editing string literals only. `image_utils.insert_image()`, `ImageService.generate_image()` and the vendored `aihordeclient.generate_image()` are *functions* that happen to share names with tools — a blind search/replace corrupts them. Never touch `plugin/lib/` (vendored).
+- **Former names must keep working**: add the old name to `aliases` rather than breaking callers. For a merged tool use the mapping form, which pins the arguments the old name implied: `aliases = {"add_table_rows": {"action": "add", "axis": "rows"}}`.
 
 ## Cross-renderer testing
 
@@ -105,10 +137,50 @@ Key endpoints on `http://localhost:8766`:
 
 > Both `/api/config` and `/api/debug` are **disabled by default**. Enable them in Options.
 
-## Debugging
+## Verifying a change
 
-- `~/nelson.log` — plugin log (overwritten each session)
-- `~/soffice-debug.log` — LO internal errors
-- Symlinks exist in the project root (`./nelson.log`, `./soffice-debug.log`) for convenience
-- Empty log = `main.py` never loaded = extension not installed
-- `make check-ext` — verify install + manifest
+Nelson runs inside LibreOffice, so a change is not verified until a real
+LibreOffice has run it. `make test` covers pure-Python framework logic only —
+run it (it must stay green), but it proves nothing about UNO behaviour.
+
+**Do not trust a tool's own response as proof.** Asking Nelson whether Nelson
+worked is circular: if the bug is in how it reports state, the check cannot see
+it. Verify against something outside the tool:
+
+| what you changed | check it against |
+|---|---|
+| anything written to a file | the bytes on disk — `unzip -p f.xlsx xl/comments1.xml`, `unzip -p f.odt content.xml` |
+| live document state | the UNO socket (below) — a process that is not Nelson |
+| anything visual (layout, overlap, position) | `mcp__lo-wbox__screenshot`. A response saying `status: ok` cannot tell you an image overlaps the body text |
+| anything at all | the **live** log, for errors it did not report to you |
+
+### Reading live document state from outside
+
+The dev instance accepts UNO connections on port 2002
+(`--accept=socket,host=localhost,port=2002;urp;`). Any external process can
+inspect the *same live objects* — useful for state Nelson exposes no tool for:
+
+```python
+import uno
+local = uno.getComponentContext()
+ctx = local.ServiceManager.createInstanceWithContext(
+    "com.sun.star.bridge.UnoUrlResolver", local).resolve(
+    "uno:socket,host=localhost,port=2002;urp;StarOffice.ComponentContext")
+desktop = ctx.ServiceManager.createInstanceWithContext(
+    "com.sun.star.frame.Desktop", ctx)
+comps = desktop.getComponents().createEnumeration()
+while comps.hasMoreElements():
+    doc = comps.nextElement()
+    print(doc.getURL(), doc.getPropertyValue("RecordChanges"))
+```
+
+### Logs
+
+| File | Content |
+|------|---------|
+| `dev/lo-wbox/log/nelson.log` | **the live plugin log** when running under wbox — this is the one you want |
+| `~/nelson.log` | plugin log for a *native* LO run. **Stale under wbox** — it keeps an old session's content and will happily answer "no errors" about a run that never happened |
+| `~/soffice-debug.log` | LO internal errors |
+
+`mcp__lo-wbox__nelson_log` reads the correct path. Empty log = `main.py` never
+loaded = extension not installed (`make check-ext`).

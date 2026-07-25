@@ -223,23 +223,34 @@ pip install uv
 Then install the Python dependencies:
 
 ```bash
-cd dev/lo-dev-mcp
+cd dev/lo-wbox
 uv venv && uv pip install -e ../compositor && uv pip install mcp pyyaml
 ```
 
 ### MCP entries in `.mcp.json`
 
-The project `.mcp.json` defines three MCP servers:
+The project `.mcp.json` defines these MCP servers:
 
 | Server | Type | Purpose |
 |--------|------|---------|
 | `nelson` | HTTP `:8766` | Production Nelson extension (host LO) |
 | `nelson-dev` | HTTP `:8767` | Nelson extension inside the compositor LO |
-| `lo-dev` | stdio | Compositor automation (launch, screenshot, input, deploy) |
+| `lo-wbox` | stdio | Compositor automation (launch, screenshot, input, deploy, logs) |
+| `mcp-dev` | stdio | Proxy for calling any of the above; also reads log files |
+| `aiball` | — | Ticketing, unrelated to the dev loop |
 
 `nelson` and `nelson-dev` are standard Nelson HTTP MCP endpoints — they expose the same document manipulation tools. The difference is which LO instance they connect to.
 
-`lo-dev` is the compositor control server. It manages the nested Wayland compositor and the isolated LO instance running inside it. The `nelson-dev` port (8767) must match the `nelson_port` in `dev/lo-dev-mcp/config.yaml` — `lo-dev` injects this port via `NELSON_SET_CONFIG` when launching the caged LO.
+`lo-wbox` is the compositor control server. It manages the nested Wayland
+compositor and the isolated LO instance running inside it, and it can also run
+**headless** — prefer that unless you need to see the screen. The `nelson-dev`
+port (8767) must match the `nelson_port` in `dev/lo-wbox/config.yaml` — `lo-wbox`
+injects it via `NELSON_SET_CONFIG` when launching the caged LO, along with
+`NELSON_LOG_PATH`.
+
+> `mcp-dev`'s `read_log` with `log="nelson"` reads `~/nelson.log`, which is
+> **not** the wbox instance's log. Use `lo-wbox`'s `nelson_log`, or read
+> `dev/lo-wbox/log/nelson.log` directly.
 
 ### Compositor backends
 
@@ -248,7 +259,7 @@ The project `.mcp.json` defines three MCP servers:
 | **weston** (default) | Resizable, movable | Yes (restart) | `weston-screenshooter` | Daily dev |
 | **cage** | Kiosk, no decorations | No | `grim` | CI / headless |
 
-Configure in `dev/lo-dev-mcp/config.yaml`:
+Configure in `dev/lo-wbox/config.yaml`:
 
 ```yaml
 compositor: weston       # or "cage"
@@ -286,11 +297,16 @@ See `dev/README.md` for the full tool list and `mcp-test.py` CLI usage.
 |------|---------|
 | `~/nelson.log` | Plugin log — native/production LO (overwritten each session) |
 | `~/soffice-debug.log` | LO internal errors |
-| `dev/lo-dev-mcp/log/nelson.log` | Plugin log — **dev compositor** LO instance |
+| `dev/lo-wbox/log/nelson.log` | Plugin log — **dev compositor (wbox)** LO instance |
 
 Symlinks exist in the project root for convenience (`./nelson.log`, `./soffice-debug.log`). Created by `scripts/check-setup.sh`.
 
-> **Dev vs native logs:** When using the `lo-dev` MCP compositor, Nelson logs go to `dev/lo-dev-mcp/log/nelson.log` (not `~/nelson.log`). The `lo-dev` > `tail_log` tool reads from this path.
+> **Dev vs native logs:** under the wbox compositor, Nelson logs to
+> `dev/lo-wbox/log/nelson.log` (set via `NELSON_LOG_PATH`), **not** `~/nelson.log`.
+> This matters more than it looks: `~/nelson.log` is not cleared, so it keeps a
+> plausible-looking old session and grepping it returns "no errors" for a run
+> that never touched it. Always check the wbox path, or use
+> `mcp__lo-wbox__nelson_log`.
 
 **Enable verbose logging** for a session (default is `WARN`):
 
@@ -322,16 +338,28 @@ make lo-log       # Show LO error log
 
 ## Release
 
-1. Bump version in `plugin/version.py`
-2. Update `CHANGELOG.md`
-3. Commit and push
-4. Build and create GitHub release with the `.oxt` artifact:
+Use `make release` — see `scripts/release.sh`. Do not assemble a release by
+hand: the script enforces gates that are easy to forget, above all that the
+built `.oxt` actually contains the bundled Windows `pysqlite3` payload. A Linux
+build without it installs fine locally and breaks on Windows.
+
+1. Bump `EXTENSION_VERSION` in `plugin/version.py`
+2. Add the matching section to `CHANGELOG.md` — the script extracts the release
+   notes from it, so the heading must match the version exactly
+3. Commit and push, with `make test` green
 
 ```bash
-make build
-gh release create v1.x.y --target framework --title "v1.x.y" --notes "changelog"
-gh release upload v1.x.y build/nelson.oxt
+make release-dry    # every gate + a real build, publishes nothing
+make release        # tag, push, GitHub release with the .oxt attached
 ```
+
+Gates checked: on `main`, no uncommitted tracked changes, in sync with origin,
+tag not already taken, CHANGELOG section present, Windows payload present in the
+asset.
+
+Still manual: registration-testing the `.oxt` on a non-UTF-8 / CJK Windows
+machine (`unopkg add`). That is the failure mode behind #16/#17, and nothing
+automated covers it yet.
 
 ## Tests
 
@@ -339,7 +367,18 @@ gh release upload v1.x.y build/nelson.oxt
 make test
 ```
 
-Runs pytest on `tests/`. The suite is expected to pass in full — treat a failure as a regression, not as noise.
+Runs pytest on `tests/`. The suite is expected to pass in full — treat a failure
+as a regression, not as noise.
+
+**What it does and does not cover.** These are pure-Python tests of the
+framework: the tool registry, schema conversion, config, the event bus. They
+never start LibreOffice, so they say nothing about UNO behaviour — which is
+where most real bugs live. A green suite is necessary, not sufficient.
+
+Verifying UNO behaviour is manual today (see the "Verifying a change" section of
+[`AGENTS.md`](AGENTS.md) for how to do it honestly — check the bytes on disk or
+the live document through the UNO socket, not the tool's own answer). Automating
+it is tracked in #26.
 
 ## Troubleshooting
 
