@@ -44,6 +44,42 @@ def index_to_column(index: int) -> str:
     return result
 
 
+
+# A reference may name its sheet: Sheet1.A1, 'Sheet One'.A1:C5, Sheet1!A1.
+# LibreOffice writes the dot form, Excel the bang; both are accepted, and a
+# quoted name may contain spaces and dots.
+_SHEET_PREFIX = re.compile(
+    r"""^\s*
+        (?:'(?P<quoted>[^']+)'      # 'Sheet One'
+          |(?P<bare>[^.!'\s][^.!']*?))   # Sheet1
+        \s*[.!]\s*
+        (?P<rest>.+)$""",
+    re.VERBOSE)
+
+
+def split_sheet_prefix(ref: str) -> tuple[str | None, str]:
+    """Split a reference into (sheet_name, address).
+
+    Returns ``(None, ref)`` when there is no prefix. The sheet name keeps
+    its original case — only the address part is normalised, so a sheet
+    called "Summary" is not reported back as "SUMMARY" (#30).
+
+    >>> split_sheet_prefix("Sheet1.A1:C5")
+    ('Sheet1', 'A1:C5')
+    >>> split_sheet_prefix("'Data Sheet'!B2")
+    ('Data Sheet', 'B2')
+    >>> split_sheet_prefix("A1:C5")
+    (None, 'A1:C5')
+    """
+    if not ref:
+        return None, ref
+    match = _SHEET_PREFIX.match(ref)
+    if not match:
+        return None, ref.strip()
+    name = match.group("quoted") or match.group("bare")
+    return name.strip(), match.group("rest").strip()
+
+
 def parse_address(address: str) -> tuple[int, int]:
     """Convert cell address to column and row indices.
 
@@ -56,6 +92,12 @@ def parse_address(address: str) -> tuple[int, int]:
     Raises:
         ValueError: Invalid cell address.
     """
+    sheet, address = split_sheet_prefix(address)
+    if sheet is not None:
+        raise ValueError(
+            f"Cell address '{sheet}.{address}' names a sheet, but this "
+            f"operation resolves the sheet separately. Pass the sheet via "
+            f"sheet_name, or drop the prefix.")
     address = address.strip().upper()
     match = re.match(r'^([A-Z]+)(\d+)$', address)
     if not match:
@@ -74,7 +116,9 @@ def parse_range_string(range_str: str) -> tuple[tuple[int, int], tuple[int, int]
     """Convert cell range string to column/row indices.
 
     Args:
-        range_str: Range string in "A1:D10" or "A1" format.
+        range_str: Range string in "A1:D10" or "A1" format, without a
+            sheet prefix — use :func:`split_sheet_prefix` first when the
+            reference may name one.
 
     Returns:
         ((start_col, start_row), (end_col, end_row)) tuple.
@@ -83,6 +127,12 @@ def parse_range_string(range_str: str) -> tuple[tuple[int, int], tuple[int, int]
     Raises:
         ValueError: Invalid range format.
     """
+    sheet, range_str = split_sheet_prefix(range_str)
+    if sheet is not None:
+        raise ValueError(
+            f"Range '{sheet}.{range_str}' names a sheet, but this operation "
+            f"resolves the sheet separately. Pass the sheet via sheet_name, "
+            f"or drop the prefix.")
     range_str = range_str.strip().upper()
 
     pattern = r'^([A-Z]+)(\d+)(?::([A-Z]+)(\d+))?$'

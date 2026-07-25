@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- **Sheet-qualified ranges are accepted** (#30) — reported by @braklo. `parse_range_string` had no room for a sheet prefix, so `Summary.D4:D6` and every variant were rejected outright and no Calc tool could address anything but the active sheet. Cross-sheet work had to route through `switch_sheet`, a stateful operation that moves the active sheet under the user, and a chart could not be built over data sitting on a data sheet — the ordinary workbook layout. All four syntaxes now resolve: `Sheet1.A1:C5`, `'Sheet One'.A1`, `Sheet1!A1`, `'Sheet One'!A1`. Supported by `calc_read_range`, `calc_write_range`, `calc_clear_range`, `calc_comment` and `calc_chart`; a prefix wins over `sheet_name`, and disagreeing between the two is an error rather than a silent choice
+- **Sheet names are no longer upper-cased in errors** (#30) — the parser upper-cased the whole reference, so a sheet called `Summary` was reported back as `SUMMARY`. Only the address part is normalised now, and an unknown sheet lists the ones that exist
+- **Invalid Calc input no longer logs as an error** — an unknown sheet or a malformed address is the caller's mistake, not a fault, and logging it at ERROR buried the real ones
+
 ## [0.12.0] — 2026-07-25
 
 Nothing in the API changes here. This release is about helping an AI client

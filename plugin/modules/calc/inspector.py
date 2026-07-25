@@ -57,8 +57,8 @@ class CellInspector:
 
     def _get_cell(self, address: str):
         """Return the cell object for *address*."""
+        sheet, address = self.bridge.resolve(address)
         col, row = parse_address(address)
-        sheet = self.bridge.get_active_sheet()
         return self.bridge.get_cell(sheet, col, row)
 
     # ── Public API ─────────────────────────────────────────────────────
@@ -96,7 +96,10 @@ class CellInspector:
                 "type": self._cell_type_name(cell_type),
             }
         except Exception as e:
-            logger.error("Cell reading error (%s): %s", address, str(e))
+            # A bad address or sheet name is the caller's mistake, not a
+            # fault: log it quietly so real errors stay visible (#30).
+            level = logger.debug if isinstance(e, ValueError) else logger.error
+            level("Cell reading error (%s): %s", address, str(e))
             raise
 
     def get_cell_details(self, address: str) -> dict:
@@ -155,12 +158,13 @@ class CellInspector:
             2D list of dicts, each with keys: address, value, formula, type.
         """
         try:
-            sheet = self.bridge.get_active_sheet()
-
-            # Single cell shortcut
+            # Single cell shortcut — pass the reference through untouched
+            # so read_cell resolves the sheet itself. Handing it the
+            # stripped address would silently read the active sheet (#30).
             if ":" not in range_name:
-                cell_info = self.read_cell(range_name)
-                return [[cell_info]]
+                return [[self.read_cell(range_name)]]
+
+            sheet, range_name = self.bridge.resolve(range_name)
 
             cell_range = self.bridge.get_cell_range(sheet, range_name)
             addr = cell_range.getRangeAddress()
@@ -197,7 +201,8 @@ class CellInspector:
 
             return result
         except Exception as e:
-            logger.error("Range reading error (%s): %s", range_name, str(e))
+            level = logger.debug if isinstance(e, ValueError) else logger.error
+            level("Range reading error (%s): %s", range_name, str(e))
             raise
 
     def get_all_formulas(self, sheet_name: str = None) -> list[dict]:

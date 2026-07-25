@@ -51,6 +51,22 @@ mcp__lo-wbox__kill  →  mcp__lo-wbox__deploy  →  mcp__lo-wbox__launch
 wbox can run headless, which is what an automated check should use; a visible
 session is for when the assertion is something you have to *look* at.
 
+> **`unopkg add -f` does not reliably replace the installed code.** It can
+> report success while LibreOffice keeps running the previous version, which
+> looks exactly like your fix not working — and costs a debugging cycle every
+> time. If a change does not appear to take effect, verify what is actually
+> deployed before doubting the code:
+>
+> ```bash
+> NEW=$(ls -dt /tmp/lo_dev_profile/user/uno_packages/cache/uno_packages/*/nelson.oxt | head -1)
+> grep -c my_new_symbol "$NEW/plugin/.../file.py"     # 0 = stale install, not a bug
+> ```
+>
+> The reliable sequence is remove, wipe the cache, then add:
+> `unopkg remove org.extension.nelson` → `rm -rf $PROFILE/user/uno_packages/cache
+> $PROFILE/user/extensions` → `unopkg add -f`. Note `ls -d` is unsorted — use
+> `ls -dt` or you will inspect an old cache directory and conclude the wrong thing.
+
 > `Address already in use` on the HTTP port at startup is **not** benign, despite
 > what this file used to say. It means the server did not bind, and the
 > `HTTP server ready` line will be missing. It is a known intermittent bug —

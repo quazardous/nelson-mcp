@@ -11,6 +11,7 @@ from plugin.framework.tool_base import ToolBase
 from plugin.modules.calc.address_utils import (
     index_to_column,
     parse_range_string,
+    split_sheet_prefix,
 )
 
 log = logging.getLogger("nelson.calc")
@@ -37,6 +38,12 @@ def _parse_cell_ref(cell_ref):
     """Parse 'B3' into (col, row) 0-based tuple."""
     (col, row), _ = parse_range_string(cell_ref)
     return col, row
+
+
+def _split_cell_sheet(cell_ref, sheet_name):
+    """Let a sheet-qualified cell reference pick the sheet (#30)."""
+    prefix, address = split_sheet_prefix(cell_ref)
+    return address, (prefix or sheet_name)
 
 
 def _annotation_text(sheet, col, row):
@@ -121,15 +128,21 @@ class CalcComment(ToolBase):
 
     def execute(self, ctx, **kwargs):
         action = kwargs.get("action", "list")
+        cell_ref = kwargs.get("cell", "")
+        sheet_name = kwargs.get("sheet_name")
+
+        # A sheet named on the cell reference picks the sheet (#30).
+        if cell_ref:
+            cell_ref, sheet_name = _split_cell_sheet(cell_ref, sheet_name)
+
         try:
-            sheet = _resolve_sheet(ctx.doc, kwargs.get("sheet_name"))
+            sheet = _resolve_sheet(ctx.doc, sheet_name)
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
         if action == "list":
             return self._list(sheet)
 
-        cell_ref = kwargs.get("cell", "")
         if not cell_ref:
             return {"status": "error",
                     "message": "cell is required to %s a comment." % action}

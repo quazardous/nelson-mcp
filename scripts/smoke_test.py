@@ -64,6 +64,10 @@ class Harness:
         self.log_path = os.path.join(self.profile, "nelson.log")
         self.proc = None
         self._id = 0
+        # Substrings of log errors a check provoked deliberately. Without
+        # this the harness cannot test an error path at all: asserting a
+        # clean log and asserting good error handling would contradict.
+        self._expected_errors = []
 
     # -- lifecycle --------------------------------------------------
 
@@ -153,6 +157,10 @@ class Harness:
             raise Fail("%s returned no content" % tool)
         return json.loads(content[0]["text"])
 
+    def expect_error(self, substring):
+        """Tolerate log errors containing *substring* for this run."""
+        self._expected_errors.append(substring)
+
     def reset(self):
         """Close every open document.
 
@@ -214,7 +222,9 @@ class Harness:
         if not os.path.exists(self.log_path):
             return ["no log written at %s" % self.log_path]
         with open(self.log_path, encoding="utf-8", errors="replace") as f:
-            return [l.rstrip() for l in f if "[ERROR]" in l]
+            errors = [l.rstrip() for l in f if "[ERROR]" in l]
+        return [e for e in errors
+                if not any(x in e for x in self._expected_errors)]
 
     def doc(self, name):
         return os.path.join(self.workdir, name)
@@ -436,6 +446,51 @@ def check_search_backends_agree(h):
     return "both backends agree; index covers %s" % ", ".join(coverage)
 
 
+def check_sheet_qualified_refs(h):
+    """Cross-sheet references must resolve, and land on the named sheet (#30).
+
+    The parser had no room for a sheet prefix, so every qualified reference
+    was rejected and nothing but the active sheet could be addressed. The
+    part worth guarding is not that it parses but that a qualified write
+    goes to the named sheet and not the active one.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="calc")
+    h.call("calc_sheet", action="create", sheet_name="Summary")
+    h.call("calc_sheet", action="create", sheet_name="Data Sheet")
+
+    h.call("calc_write_range", start_cell="Summary.B2", values=[["MARKER"]])
+
+    for ref in ("Summary.B2", "Summary.B2:B2", "'Summary'.B2", "Summary!B2"):
+        got = h.call("calc_read_range", range_name=ref)
+        if got.get("status") != "ok":
+            raise Fail("%s was rejected: %s" % (ref, got.get("error")))
+        cell = got["result"][0][0]
+        if cell.get("value") != "MARKER":
+            raise Fail("%s read %r, expected MARKER — it resolved the wrong "
+                       "sheet" % (ref, cell.get("value")))
+
+    # The write must not have touched the active sheet.
+    active = h.call("calc_read_range", range_name="B2")["result"][0][0]
+    if active.get("value"):
+        raise Fail("a sheet-qualified write also landed on the active sheet: "
+                   "%r" % active.get("value"))
+
+    # A quoted name with a space, and a chart over data on another sheet.
+    h.call("calc_write_range", start_cell="'Data Sheet'.A1",
+           values=[["a", 1], ["b", 2]])
+    chart = h.call("calc_chart", action="create",
+                   data_range="'Data Sheet'.A1:B2", chart_type="bar")
+    if chart.get("status") != "ok":
+        raise Fail("a chart over another sheet's data failed: %s" % chart)
+
+    h.expect_error("No sheet named 'Nope'")
+    bad = h.call("calc_read_range", range_name="Nope.A1")
+    if bad.get("status") == "ok":
+        raise Fail("an unknown sheet was accepted")
+    return "4 syntaxes resolve, write stays on its sheet, cross-sheet chart ok"
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -455,6 +510,7 @@ CHECKS = [
     ("doc_id uniqueness", check_doc_ids_distinct),
     ("recording not forced", check_recording_not_forced),
     ("search backends agree", check_search_backends_agree),
+    ("sheet-qualified refs", check_sheet_qualified_refs),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

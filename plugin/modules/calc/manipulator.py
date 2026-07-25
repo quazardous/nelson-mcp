@@ -108,9 +108,9 @@ class CellManipulator:
     # ── Internal helpers ───────────────────────────────────────────────
 
     def _get_cell(self, address: str):
-        """Return the cell object for *address*."""
+        """Return the cell object for *address*, honouring a sheet prefix."""
+        sheet, address = self.bridge.resolve(address)
         col, row = parse_address(address)
-        sheet = self.bridge.get_active_sheet()
         return self.bridge.get_cell(sheet, col, row)
 
     def _apply_style_properties(
@@ -284,7 +284,7 @@ class CellManipulator:
         )
 
     def _set_range_number_format(self, range_str: str, format_str: str):
-        sheet = self.bridge.get_active_sheet()
+        sheet, range_str = self.bridge.resolve(range_str)
         start, end = self.bridge.parse_range_string(range_str)
         doc = self.bridge.get_active_document()
         formats = doc.getNumberFormats()
@@ -409,7 +409,7 @@ class CellManipulator:
             Summary of the operation.
         """
         try:
-            sheet = self.bridge.get_active_sheet()
+            sheet, range_str = self.bridge.resolve(range_str)
             start, end = self.bridge.parse_range_string(range_str)
 
             num_rows = end[1] - start[1] + 1
@@ -525,7 +525,8 @@ class CellManipulator:
         """Create a chart from data.
 
         Args:
-            data_range: Range for chart data (e.g. "A1:B10").
+            data_range: Range for chart data (e.g. "A1:B10",
+                "Data.A1:B10" for another sheet).
             chart_type: Chart type (bar, line, pie, scatter, column).
             title: Chart title.
             position: Cell where chart is placed (e.g. "E1").
@@ -535,7 +536,10 @@ class CellManipulator:
             Description string.
         """
         try:
-            sheet = self.bridge.get_active_sheet()
+            # The data usually lives on a different sheet from the chart —
+            # that is the ordinary workbook layout, and the reason a
+            # sheet-qualified data_range matters most here (#30).
+            sheet, data_range = self.bridge.resolve(data_range)
             cell_range = self.bridge.get_cell_range(sheet, data_range)
             range_address = cell_range.getRangeAddress()
 

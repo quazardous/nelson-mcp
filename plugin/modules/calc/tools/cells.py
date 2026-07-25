@@ -89,6 +89,10 @@ class ReadCellRange(ToolBase):
             else:
                 result = inspector.read_range(rn)
                 return {"status": "ok", "result": result}
+        except ValueError as e:
+            # Invalid address or unknown sheet — the caller's mistake.
+            logger.debug("calc_read_range rejected input: %s", e)
+            return {"status": "error", "error": str(e)}
         except Exception as e:
             logger.exception("calc_read_range failed")
             return {"status": "error", "error": str(e)}
@@ -514,15 +518,20 @@ class WriteCellRangeFromLists(ToolBase):
         sheet_name = kwargs.get("sheet_name")
 
         try:
-            if sheet_name:
-                sheets = doc.getSheets()
-                if not sheets.hasByName(sheet_name):
-                    return {"status": "error", "message": "Sheet not found: %s" % sheet_name}
-                sheet = sheets.getByName(sheet_name)
+            from plugin.modules.calc.address_utils import split_sheet_prefix
+            sheets = doc.getSheets()
+
+            # A sheet named on start_cell wins over sheet_name (#30).
+            prefix, start_cell = split_sheet_prefix(start_cell)
+            target = prefix or sheet_name
+            if target:
+                if not sheets.hasByName(target):
+                    return {"status": "error",
+                            "message": "Sheet not found: %s" % target}
+                sheet = sheets.getByName(target)
             else:
                 sheet = doc.getCurrentController().getActiveSheet()
 
-            # Parse start cell
             (start_col, start_row), _ = parse_range_string(start_cell)
 
             rows_written = 0
