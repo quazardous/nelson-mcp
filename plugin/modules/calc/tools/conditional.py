@@ -203,7 +203,7 @@ class AddConditionalFormat(ToolBase):
                 "type": "string",
                 "description": (
                     "Cell style to apply when condition is true. "
-                    "Use list_styles with family='CellStyles' to see available styles."
+                    "Use style_list with family='CellStyles' to see available styles."
                 ),
             },
             "sheet_name": {

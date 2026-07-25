@@ -47,5 +47,5 @@ set_track_changes(enabled=false).
 TABLE WORKFLOW: table_list → table_read → table_write_cell for targeted edits.
 For new tables or full rewrites, use text_apply_range with HTML/Markdown table.
 
-STYLE WORKFLOW: list_styles (discover exact localized names) → apply style by name.
+STYLE WORKFLOW: style_list (discover exact localized names) → apply style by name.
 ```

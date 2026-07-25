@@ -43,7 +43,7 @@ This lets you navigate documents of any size efficiently without hitting context
 
 - **Read before edit** — Always read the target content before modifying it.
 - **Track changes** — Enabled automatically on MCP mutations (configurable via `core.force_track_changes`). Use `set_track_changes(enabled=false)` only if you need to disable it temporarily.
-- **Style names are localized** — Call `list_styles` to discover exact names before applying styles.
+- **Style names are localized** — Call `style_list` to discover exact names before applying styles.
 - **Tables** — Use `table_list` → `table_read` → `table_write_cell` (Excel-style A1 refs).
 
 ## Use `/nelson` for a quick reference cheatsheet.

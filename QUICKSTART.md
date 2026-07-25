@@ -161,7 +161,7 @@ set_track_changes(enabled=false)
 Always discover available styles first — names are localized:
 
 ```
-list_styles(family="ParagraphStyles")  → list available styles
+style_list(family="ParagraphStyles")  → list available styles
 text_set_style(index=5, style="Heading 1")
 ```
 

@@ -69,6 +69,6 @@ execute_batch(operations=[...])
 - `paragraph:N` — fallback, 0-based index
 
 ## Tips
-- Call `list_styles` before applying styles — names are localized
+- Call `style_list` before applying styles — names are localized
 - Use `document_health_check` to detect structural issues
 - Use `text_get_range(scope="selection")` to read the user's current selection

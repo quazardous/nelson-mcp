@@ -68,7 +68,7 @@ export_pdf(path="/home/user/output.pdf")           # export as PDF
 2. **Read before you edit.** Always read the content before changing it.
 3. **Use locators for navigation.** Many tools accept a `locator` parameter. Use `bookmark:_mcp_h1` (from `get_document_tree`) or `heading_text:Introduction` (by heading name). These are more reliable than paragraph numbers.
 4. **Call `request_tools(intent="edit")` before editing.** Edit tools are not available by default.
-5. **Style names depend on language.** Call `list_styles(family="paragraph")` to see available style names before applying styles.
+5. **Style names depend on language.** Call `style_list(family="paragraph")` to see available style names before applying styles.
 
 ## Working with tables
 

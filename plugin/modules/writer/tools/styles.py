@@ -31,7 +31,8 @@ _FAMILY_PROPS = {
 class ListStyles(ToolBase):
     """List available styles in a given family."""
 
-    name = "list_styles"
+    name = "style_list"
+    aliases = ["list_styles"]
     intent = "edit"
     description = (
         "List available styles in the document. "
@@ -101,7 +102,8 @@ class ListStyles(ToolBase):
 class GetStyleInfo(ToolBase):
     """Get detailed properties of a named style."""
 
-    name = "get_style_info"
+    name = "style_info"
+    aliases = ["get_style_info"]
     intent = "edit"
     description = (
         "Get detailed properties of a specific style "
