@@ -116,6 +116,82 @@ class CreateSheet(ToolBase):
             return {"status": "error", "error": str(e)}
 
 
+class RenameSheet(ToolBase):
+    """Rename a sheet."""
+
+    name = "rename_sheet"
+    intent = "edit"
+    description = (
+        "Renames a sheet. LibreOffice rewrites every reference to it "
+        "automatically (formulas, cross-sheet references, named ranges, "
+        "chart data ranges)."
+    )
+    parameters = {
+        "type": "object",
+        "properties": {
+            "sheet_name": {
+                "type": "string",
+                "description": "Current name of the sheet to rename",
+            },
+            "new_name": {
+                "type": "string",
+                "description": "New sheet name",
+            },
+        },
+        "required": ["sheet_name", "new_name"],
+    }
+    doc_types = ["calc"]
+    is_mutation = True
+
+    def execute(self, ctx, **kwargs):
+        bridge = CalcBridge(ctx.doc)
+        manipulator = CellManipulator(bridge)
+        sheet_name = kwargs["sheet_name"]
+        new_name = kwargs["new_name"]
+
+        try:
+            result = manipulator.rename_sheet(sheet_name, new_name)
+            return {"status": "ok", "message": result}
+        except Exception as e:
+            logger.exception("rename_sheet failed")
+            return {"status": "error", "error": str(e)}
+
+
+class DeleteSheet(ToolBase):
+    """Delete a sheet."""
+
+    name = "delete_sheet"
+    intent = "edit"
+    description = (
+        "Deletes a sheet from the workbook. A workbook must keep at "
+        "least one sheet."
+    )
+    parameters = {
+        "type": "object",
+        "properties": {
+            "sheet_name": {
+                "type": "string",
+                "description": "Name of the sheet to delete",
+            },
+        },
+        "required": ["sheet_name"],
+    }
+    doc_types = ["calc"]
+    is_mutation = True
+
+    def execute(self, ctx, **kwargs):
+        bridge = CalcBridge(ctx.doc)
+        manipulator = CellManipulator(bridge)
+        sheet_name = kwargs["sheet_name"]
+
+        try:
+            result = manipulator.delete_sheet(sheet_name)
+            return {"status": "ok", "message": result}
+        except Exception as e:
+            logger.exception("delete_sheet failed")
+            return {"status": "error", "error": str(e)}
+
+
 class GetSheetSummary(ToolBase):
     """Return a summary of a sheet."""
 

@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.9.4] — unreleased
+
+### Added
+
+- **`rename_sheet` and `delete_sheet`** (#23) — completes the Calc sheet lifecycle alongside `create_sheet`/`list_sheets`/`switch_sheet`. `rename_sheet` is a thin wrapper over `XNamed::setName()`, so LibreOffice rewrites every reference to the sheet automatically (formulas, cross-sheet references, named ranges, chart data ranges) — a rename that can't be done by editing the saved file externally without silently breaking the workbook. `delete_sheet` removes a sheet by name and refuses to delete the last remaining one (a workbook must keep at least one sheet)
+
 ## [0.9.3] — 2026-07-25
 
 ### Added

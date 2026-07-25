@@ -704,3 +704,60 @@ class CellManipulator:
         except Exception as e:
             logger.error("Sheet creation error (%s): %s", sheet_name, str(e))
             raise
+
+    def rename_sheet(self, sheet_name: str, new_name: str):
+        """Rename a sheet.
+
+        Thin wrapper over ``XNamed::setName()``, so LibreOffice rewrites
+        every reference to the sheet (formulas, cross-sheet references,
+        named ranges, chart data ranges) automatically.
+
+        Args:
+            sheet_name: Current name of the sheet to rename.
+            new_name: New name.
+
+        Returns:
+            Confirmation string.
+        """
+        try:
+            doc = self.bridge.get_active_document()
+            sheets = doc.getSheets()
+            if not sheets.hasByName(sheet_name):
+                raise ValueError(f"No sheet found named '{sheet_name}'.")
+            if new_name == sheet_name:
+                return f"Sheet '{sheet_name}' already has that name."
+            if sheets.hasByName(new_name):
+                raise ValueError(f"A sheet named '{new_name}' already exists.")
+            sheet = sheets.getByName(sheet_name)
+            sheet.setName(new_name)
+            logger.info("Sheet renamed: %s -> %s", sheet_name, new_name)
+            return f"Sheet '{sheet_name}' renamed to '{new_name}'."
+        except Exception as e:
+            logger.error("Sheet rename error (%s -> %s): %s",
+                         sheet_name, new_name, str(e))
+            raise
+
+    def delete_sheet(self, sheet_name: str):
+        """Delete a sheet from the workbook.
+
+        Args:
+            sheet_name: Name of the sheet to delete.
+
+        Returns:
+            Confirmation string.
+        """
+        try:
+            doc = self.bridge.get_active_document()
+            sheets = doc.getSheets()
+            if not sheets.hasByName(sheet_name):
+                raise ValueError(f"No sheet found named '{sheet_name}'.")
+            if sheets.getCount() <= 1:
+                raise ValueError(
+                    "Cannot delete the only sheet; a workbook must keep "
+                    "at least one sheet.")
+            sheets.removeByName(sheet_name)
+            logger.info("Sheet deleted: %s", sheet_name)
+            return f"Sheet '{sheet_name}' deleted."
+        except Exception as e:
+            logger.error("Sheet deletion error (%s): %s", sheet_name, str(e))
+            raise
