@@ -6,6 +6,7 @@
 """HTTP server module — owns the HTTP server lifecycle."""
 
 import logging
+import threading
 
 from plugin.framework.module_base import ModuleBase
 
@@ -26,6 +27,7 @@ class HttpModule(ModuleBase):
         self._registry = HttpRouteRegistry()
         services.register_instance("http_routes", self._registry)
         self._server = None
+        self._start_lock = threading.Lock()
         self._services = services
 
         # Built-in endpoints (always available)
@@ -78,6 +80,15 @@ class HttpModule(ModuleBase):
                 self._unregister_config_routes()
 
     def _start_server(self, services):
+        # Serialised: a config override applied during bootstrap (e.g.
+        # NELSON_SET_CONFIG http.port=...) fires config:changed before
+        # start_background runs, so two starts can race. Without the lock
+        # the second one binds while the first has not published its
+        # server yet, and fails with EADDRINUSE.
+        with self._start_lock:
+            self._start_server_locked(services)
+
+    def _start_server_locked(self, services):
         from plugin.framework.http_server import HttpServer
 
         if self._server is not None and self._server.is_running():
