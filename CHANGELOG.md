@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.11.0] — 2026-07-25
+
+Change recording is no longer switched on for you. If you relied on MCP edits
+being redlined automatically, enable **Turn change recording on for MCP edits**
+in Nelson's options — it is off by default now, deliberately.
 
 ### Changed
 
