@@ -78,6 +78,30 @@ Around 30 modules; the main ones:
 | `mcp` | MCP JSON-RPC protocol handler |
 | `tunnel` | Tunnel manager (ngrok, Cloudflare, bore, Tailscale) |
 
+## Turning off what you do not use
+
+Nelson ships a lot of tools, but a client never sees all of them, and most of
+the narrowing happens on its own. In order of how much they cut:
+
+| Lever | What it does | Where |
+|---|---|---|
+| **Document type** | The tool list follows the active document — about 94 tools for Writer, 48 for Calc, out of 140. Automatic, and clients are notified when it changes | nothing to configure |
+| **Unconfigured features hide themselves** | Gallery and AI-image tools disappear entirely until you configure a gallery or an image provider. Launchers and tunnels expose no tools at all | nothing to configure |
+| **Custom endpoints** | Expose exactly the tools you choose on their own URL, e.g. 8 tools on `/mcp/minimal`. The surest way to keep a small model on the rails | Options > Nelson MCP > MCP |
+| **Presets** | Ready-made endpoint tool lists: `minimal`, `writer-edit`, `writer-read`, `calc`, `gallery` | Options > Nelson MCP > MCP |
+| **Feature switches** | Turn off the MCP server, the HTTP config API, or the debug API outright | Options, per module |
+| **Provider selection** | Pick which tunnel, launcher or AI provider is used | Options, per module |
+| **Startup scanning** | Stop the image and document folder indexes rescanning at startup | Options > gallery modules |
+
+So a Calc user is already down to 48 tools without touching anything, and a
+custom endpoint takes that to whatever you like.
+
+What Nelson deliberately does **not** have is a switch to stop a module
+loading. It would be a seventh overlapping control, and it would buy very
+little: a full startup is ~370 ms for 31 modules, and the optional families
+are already invisible in the tool list. See
+[#29](https://github.com/quazardous/nelson-mcp/issues/29) for the measurements.
+
 ## Development
 
 ```bash
