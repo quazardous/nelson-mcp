@@ -155,17 +155,20 @@ class ExecuteBatch(ToolBase):
             tool_name = op.get("tool", "")
             args = op.get("args") or {}
 
-            if tool_name == "execute_batch":
-                validation_errors.append({
-                    "step": i + 1, "tool": tool_name,
-                    "error": "Recursive execute_batch not allowed"})
-                continue
-
             tool = tool_reg.get(tool_name)
             if tool is None:
                 validation_errors.append({
                     "step": i + 1, "tool": tool_name,
                     "error": "Unknown tool: %s" % tool_name})
+                continue
+
+            # Compare the resolved tool, not the name as written: a
+            # deprecated alias would otherwise walk straight past this
+            # guard and recurse.
+            if tool.name == self.name:
+                validation_errors.append({
+                    "step": i + 1, "tool": tool_name,
+                    "error": "Recursive %s not allowed" % self.name})
                 continue
 
             # Skip validation for args with $vars (can't resolve yet)

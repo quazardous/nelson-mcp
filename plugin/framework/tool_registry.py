@@ -239,10 +239,13 @@ class ToolRegistry:
 
         # Cache invalidation moved AFTER execution (see below)
 
-        # Auto-enable track changes for MCP mutations
+        # Auto-enable track changes for MCP mutations. Compare the tool's
+        # own name, not the name it was called by: a call through a
+        # deprecated alias would otherwise slip past this guard and
+        # re-enable recording underneath the very tool disabling it.
         if (tool.detects_mutation() and ctx.caller == "mcp"
                 and ctx.doc is not None
-                and tool_name != "set_track_changes"):
+                and tool.name != "set_track_changes"):
             self._ensure_track_changes(ctx.doc)
 
         # Generate action ID for mutations (tracked in undo + result)
