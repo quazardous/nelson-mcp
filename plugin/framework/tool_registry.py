@@ -52,6 +52,7 @@ class ToolRegistry:
         self._services = services
         self._tools = {}  # name -> ToolBase instance
         self._aliases = {}  # deprecated name -> current name
+        self._alias_args = {}  # deprecated name -> pinned kwargs
         self.batch_mode = False  # suppress per-tool cache invalidation
 
     # ── Registration ──────────────────────────────────────────────────
@@ -59,22 +60,34 @@ class ToolRegistry:
     def register(self, tool):
         """Register a single ToolBase instance.
 
-        A tool may declare ``aliases = ["old_name", ...]`` — former names
-        that still resolve to it. Aliases are callable but deliberately
-        absent from ``tools/list``, so a rename never breaks existing
-        callers (custom endpoints, agent prompts, scripts) while the new
-        name is the only one advertised.
+        A tool may declare ``aliases`` — former names that still resolve
+        to it. Aliases are callable but deliberately absent from
+        ``tools/list``, so a rename never breaks existing callers (custom
+        endpoints, agent prompts, scripts) while the new name is the only
+        one advertised. Two forms::
+
+            aliases = ["list_images"]                    # plain rename
+            aliases = {"add_table_rows":                 # merged tool
+                       {"action": "add", "axis": "rows"}}
+
+        The mapping form carries the arguments that make the old name mean
+        what it used to. When several tools are merged behind one, each
+        former name keeps its exact behaviour by pinning the parameters
+        that used to be implied by the name itself.
         """
         if tool.name in self._tools:
             log.warning("Tool already registered, replacing: %s", tool.name)
         self._tools[tool.name] = tool
-        for alias in getattr(tool, "aliases", None) or ():
+        declared = getattr(tool, "aliases", None) or ()
+        for alias in declared:
             if alias in self._tools:
                 log.warning(
                     "Alias '%s' of tool '%s' collides with a registered "
                     "tool name; ignoring the alias", alias, tool.name)
                 continue
             self._aliases[alias] = tool.name
+            if isinstance(declared, dict) and declared[alias]:
+                self._alias_args[alias] = dict(declared[alias])
 
     def register_many(self, tools):
         for t in tools:
@@ -144,6 +157,10 @@ class ToolRegistry:
         """Return the current name for *name*, or None if it is not an alias."""
         return self._aliases.get(name)
 
+    def alias_args(self, name):
+        """Return the arguments pinned to an alias of a merged tool."""
+        return self._alias_args.get(name) or {}
+
     def _service_available(self, service_name):
         """Check if a service has at least one registered instance."""
         svc = self._services.get(service_name)
@@ -197,6 +214,14 @@ class ToolRegistry:
         if tool.name != tool_name:
             log.info("Tool '%s' is a deprecated alias for '%s'",
                      tool_name, tool.name)
+            # An alias of a merged tool pins the arguments its name used
+            # to imply (e.g. add_table_rows -> action=add, axis=rows).
+            # They win over anything supplied: the old signature had no
+            # way to express them, so a caller cannot mean otherwise.
+            pinned = self.alias_args(tool_name)
+            if pinned:
+                kwargs = dict(kwargs)
+                kwargs.update(pinned)
 
         bus = self._services.get("events")
 

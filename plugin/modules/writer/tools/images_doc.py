@@ -274,17 +274,32 @@ class ListImages(ToolBase):
     """List all images/graphic objects in the document."""
 
     name = "image_list"
-    aliases = ["list_images"]
+    aliases = ["list_images", "image_info", "get_image_info"]
     intent = "media"
     description = (
-        "List all images/graphic objects in the document with name, "
-        "dimensions, title, and description. "
-        "For Calc, lists images on a sheet's drawing layer. "
-        "For Draw/Impress, lists images on a page."
+        "List images/graphic objects in the document with name, "
+        "dimensions, title and description. Give image_name (Writer) or "
+        "shape_index (Calc/Draw/Impress) to get the full detail of a "
+        "single image instead: URL, anchor, orientation, position. "
+        "For Calc, works on a sheet's drawing layer; for Draw/Impress, "
+        "on a page."
     )
     parameters = {
         "type": "object",
         "properties": {
+            "image_name": {
+                "type": "string",
+                "description": (
+                    "Return the detail of this image instead of the list."
+                ),
+            },
+            "shape_index": {
+                "type": "integer",
+                "description": (
+                    "Return the detail of the image at this shape index "
+                    "(Calc/Draw/Impress)."
+                ),
+            },
             "draw": {
                 "type": "object",
                 "description": "Draw/Impress options",
@@ -315,6 +330,11 @@ class ListImages(ToolBase):
         from plugin.framework.graphic_query import (
             list_images_writer, list_images_drawpage,
         )
+        # Selecting one image asks for detail, not a list.
+        if kwargs.get("image_name") or kwargs.get("shape_index") is not None:
+            return _ImageInfo().execute(ctx, **kwargs)
+        kwargs.pop("image_name", None)
+        kwargs.pop("shape_index", None)
         doc = ctx.doc
 
         if ctx.doc_type == "writer":
@@ -337,11 +357,14 @@ class ListImages(ToolBase):
 # GetImageInfo — all doc types
 # ------------------------------------------------------------------
 
-class GetImageInfo(ToolBase):
-    """Get detailed info about a specific image."""
+class _ImageInfo(ToolBase):
+    """Detail lookup for one image — reached through image_list.
 
-    name = "image_info"
-    aliases = ["get_image_info"]
+    Not registered on its own (name is None): image_list dispatches here
+    when an image_name or shape_index is supplied.
+    """
+
+    name = None
     intent = "media"
     description = (
         "Get detailed info about a specific image: URL, dimensions, "

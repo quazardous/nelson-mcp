@@ -20,18 +20,30 @@ class ListTextFrames(ToolBase):
     """List all text frames in the document."""
 
     name = "frame_list"
-    aliases = ["list_text_frames"]
+    aliases = ["list_text_frames", "frame_info", "get_text_frame_info"]
     intent = "edit"
-    description = "List all text frames in the document."
+    description = (
+        "List the text frames in the document. Give frame_name to get "
+        "the full detail of a single frame instead."
+    )
     parameters = {
         "type": "object",
-        "properties": {},
+        "properties": {
+            "frame_name": {
+                "type": "string",
+                "description": (
+                    "Return the detail of this frame instead of the list."
+                ),
+            },
+        },
         "required": [],
     }
     doc_types = ["writer"]
     is_mutation = False
 
     def execute(self, ctx, **kwargs):
+        if kwargs.get("frame_name"):
+            return _FrameInfo().execute(ctx, **kwargs)
         doc = ctx.doc
         if not hasattr(doc, "getTextFrames"):
             return {"status": "error", "message": "Document does not support text frames."}
@@ -76,11 +88,10 @@ class ListTextFrames(ToolBase):
 # GetTextFrameInfo
 # ------------------------------------------------------------------
 
-class GetTextFrameInfo(ToolBase):
+class _FrameInfo(ToolBase):
     """Get detailed info about a text frame."""
 
-    name = "frame_info"
-    aliases = ["get_text_frame_info"]
+    name = None  # reached through frame_list, not registered on its own
     intent = "edit"
     description = "Get detailed info about a text frame."
     parameters = {

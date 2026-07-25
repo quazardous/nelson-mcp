@@ -471,13 +471,26 @@ class SetTableProperties(ToolBase):
 # AddTableRows / AddTableColumns
 # ------------------------------------------------------------------
 
-class AddTableRows(ToolBase):
-    """Add rows to a Writer table."""
+class TableStructure(ToolBase):
+    """Add or delete rows/columns of a Writer table."""
 
-    name = "table_add_rows"
-    aliases = ["add_table_rows"]
+    name = "table_structure"
+    aliases = {
+        "table_add_rows": {"action": "add", "axis": "rows"},
+        "table_add_columns": {"action": "add", "axis": "columns"},
+        "table_delete_rows": {"action": "delete", "axis": "rows"},
+        "table_delete_columns": {"action": "delete", "axis": "columns"},
+        "add_table_rows": {"action": "add", "axis": "rows"},
+        "add_table_columns": {"action": "add", "axis": "columns"},
+        "delete_table_rows": {"action": "delete", "axis": "rows"},
+        "delete_table_columns": {"action": "delete", "axis": "columns"},
+    }
     intent = "edit"
-    description = "Insert one or more rows into a Writer table at a given position."
+    description = (
+        "Add or delete rows or columns of a Writer table. "
+        "Adding without at_index appends at the end; deleting requires "
+        "at_index."
+    )
     parameters = {
         "type": "object",
         "properties": {
@@ -485,208 +498,71 @@ class AddTableRows(ToolBase):
                 "type": "string",
                 "description": "The table name.",
             },
+            "action": {
+                "type": "string",
+                "enum": ["add", "delete"],
+                "description": "Whether to add or delete.",
+            },
+            "axis": {
+                "type": "string",
+                "enum": ["rows", "columns"],
+                "description": "What to add or delete.",
+            },
             "count": {
                 "type": "integer",
-                "description": "Number of rows to add (default: 1).",
+                "description": "How many (default: 1).",
             },
             "at_index": {
                 "type": "integer",
-                "description": "Row index to insert before (appends at end if omitted).",
+                "description": (
+                    "0-based index: insert before it, or first one to "
+                    "delete. Required when deleting; appends at the end "
+                    "when adding without it."
+                ),
             },
         },
-        "required": ["table_name"],
+        "required": ["table_name", "action", "axis"],
     }
     doc_types = ["writer"]
     is_mutation = True
 
     def execute(self, ctx, **kwargs):
         table_name = kwargs.get("table_name", "")
-        doc = ctx.doc
-        tables_sup = doc.getTextTables()
-        if not tables_sup.hasByName(table_name):
-            return {"status": "error", "message": "Table '%s' not found." % table_name}
-
-        table = tables_sup.getByName(table_name)
-        rows = table.getRows()
+        action = kwargs.get("action")
+        axis = kwargs.get("axis")
         count = kwargs.get("count", 1)
         at_index = kwargs.get("at_index")
-        if at_index is None:
-            at_index = rows.getCount()
 
-        try:
-            rows.insertByIndex(at_index, count)
-            return {
-                "status": "ok",
-                "table_name": table_name,
-                "rows_added": count,
-                "at_index": at_index,
-                "total_rows": rows.getCount(),
-            }
-        except Exception as e:
-            return {"status": "error", "error": str(e)}
-
-
-class AddTableColumns(ToolBase):
-    """Add columns to a Writer table."""
-
-    name = "table_add_columns"
-    aliases = ["add_table_columns"]
-    intent = "edit"
-    description = "Insert one or more columns into a Writer table at a given position."
-    parameters = {
-        "type": "object",
-        "properties": {
-            "table_name": {
-                "type": "string",
-                "description": "The table name.",
-            },
-            "count": {
-                "type": "integer",
-                "description": "Number of columns to add (default: 1).",
-            },
-            "at_index": {
-                "type": "integer",
-                "description": "Column index to insert before (appends at end if omitted).",
-            },
-        },
-        "required": ["table_name"],
-    }
-    doc_types = ["writer"]
-    is_mutation = True
-
-    def execute(self, ctx, **kwargs):
-        table_name = kwargs.get("table_name", "")
-        doc = ctx.doc
-        tables_sup = doc.getTextTables()
+        tables_sup = ctx.doc.getTextTables()
         if not tables_sup.hasByName(table_name):
-            return {"status": "error", "message": "Table '%s' not found." % table_name}
-
+            return {"status": "error",
+                    "message": "Table '%s' not found." % table_name}
         table = tables_sup.getByName(table_name)
-        cols = table.getColumns()
-        count = kwargs.get("count", 1)
-        at_index = kwargs.get("at_index")
-        if at_index is None:
-            at_index = cols.getCount()
+        target = table.getRows() if axis == "rows" else table.getColumns()
+
+        if action == "delete" and at_index is None:
+            return {"status": "error",
+                    "message": "at_index is required when deleting."}
 
         try:
-            cols.insertByIndex(at_index, count)
-            return {
-                "status": "ok",
-                "table_name": table_name,
-                "columns_added": count,
-                "at_index": at_index,
-                "total_columns": cols.getCount(),
-            }
+            if action == "add":
+                if at_index is None:
+                    at_index = target.getCount()
+                target.insertByIndex(at_index, count)
+            else:
+                target.removeByIndex(at_index, count)
         except Exception as e:
             return {"status": "error", "error": str(e)}
 
-
-# ------------------------------------------------------------------
-# DeleteTableRows / DeleteTableColumns
-# ------------------------------------------------------------------
-
-class DeleteTableRows(ToolBase):
-    """Delete rows from a Writer table."""
-
-    name = "table_delete_rows"
-    aliases = ["delete_table_rows"]
-    intent = "edit"
-    description = "Delete one or more rows from a Writer table."
-    parameters = {
-        "type": "object",
-        "properties": {
-            "table_name": {
-                "type": "string",
-                "description": "The table name.",
-            },
-            "at_index": {
-                "type": "integer",
-                "description": "First row index to delete.",
-            },
-            "count": {
-                "type": "integer",
-                "description": "Number of rows to delete (default: 1).",
-            },
-        },
-        "required": ["table_name", "at_index"],
-    }
-    doc_types = ["writer"]
-    is_mutation = True
-
-    def execute(self, ctx, **kwargs):
-        table_name = kwargs.get("table_name", "")
-        doc = ctx.doc
-        tables_sup = doc.getTextTables()
-        if not tables_sup.hasByName(table_name):
-            return {"status": "error", "message": "Table '%s' not found." % table_name}
-
-        table = tables_sup.getByName(table_name)
-        rows = table.getRows()
-        at_index = kwargs["at_index"]
-        count = kwargs.get("count", 1)
-
-        try:
-            rows.removeByIndex(at_index, count)
-            return {
-                "status": "ok",
-                "table_name": table_name,
-                "rows_deleted": count,
-                "total_rows": rows.getCount(),
-            }
-        except Exception as e:
-            return {"status": "error", "error": str(e)}
-
-
-class DeleteTableColumns(ToolBase):
-    """Delete columns from a Writer table."""
-
-    name = "table_delete_columns"
-    aliases = ["delete_table_columns"]
-    intent = "edit"
-    description = "Delete one or more columns from a Writer table."
-    parameters = {
-        "type": "object",
-        "properties": {
-            "table_name": {
-                "type": "string",
-                "description": "The table name.",
-            },
-            "at_index": {
-                "type": "integer",
-                "description": "First column index to delete.",
-            },
-            "count": {
-                "type": "integer",
-                "description": "Number of columns to delete (default: 1).",
-            },
-        },
-        "required": ["table_name", "at_index"],
-    }
-    doc_types = ["writer"]
-    is_mutation = True
-
-    def execute(self, ctx, **kwargs):
-        table_name = kwargs.get("table_name", "")
-        doc = ctx.doc
-        tables_sup = doc.getTextTables()
-        if not tables_sup.hasByName(table_name):
-            return {"status": "error", "message": "Table '%s' not found." % table_name}
-
-        table = tables_sup.getByName(table_name)
-        cols = table.getColumns()
-        at_index = kwargs["at_index"]
-        count = kwargs.get("count", 1)
-
-        try:
-            cols.removeByIndex(at_index, count)
-            return {
-                "status": "ok",
-                "table_name": table_name,
-                "columns_deleted": count,
-                "total_columns": cols.getCount(),
-            }
-        except Exception as e:
-            return {"status": "error", "error": str(e)}
+        return {
+            "status": "ok",
+            "table_name": table_name,
+            "action": action,
+            "axis": axis,
+            "count": count,
+            "at_index": at_index,
+            "total": target.getCount(),
+        }
 
 
 # ------------------------------------------------------------------
