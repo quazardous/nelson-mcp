@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+
+- **The `initialize` instructions now guide tool choice** (#27, #2) — MCP clients inject this text straight into the model's context, and Nelson spent a third of it saying "All UNO operations run on the main thread for thread safety", which cannot change any decision a model makes. It now states the things that go wrong in practice: start from `doc_list_open` and never reach for `doc_create` when the user names a document that already exists; call `nav_outline` before editing a Writer document and address edits by bookmark rather than by counting paragraphs; the tool list depends on which document is active; work on a copy before a large edit
+- **Tools on a decision boundary name the alternative** (#27) — `doc_create` now says it will not open an existing document and points at `doc_list_open`/`doc_recent`/`doc_open`; those three say what each other is for; `text_insert` distinguishes itself from `text_set` and `text_apply_range`. Descriptions are what a model reads when it chooses, so the ones that get confused for each other should say so
+- **Tool groups are derived from the name** (#27) — the hand-written `intent` attribute was read by nothing and had drifted: 24 of 140 tools carried none, and `doc_open`, `doc_create`, `doc_close` and `doc_list_open` were all tagged `media`. Since every tool is now `domain_verb`, the group follows from the prefix (`document`, `text`, `navigate`, `review`, `media`, `calc`, `draw`, `system`), with an explicit `group` available when a prefix would mislead. A test asserts every declared tool resolves, so a new one cannot land ungrouped
+
 ## [0.11.1] — 2026-07-25
 
 ### Fixed

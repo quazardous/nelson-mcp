@@ -392,7 +392,11 @@ class InsertAtParagraph(ToolBase):
 
     name = "text_insert"
     aliases = ["insert_at_paragraph"]
-    description = "Insert text at a specific paragraph index or locator."
+    description = (
+        "Insert a paragraph of text at a paragraph index or locator. This "
+        "adds text, it does not replace any. To replace one paragraph use "
+        "text_set; for a larger rewrite use text_apply_range."
+    )
     parameters = {
         "type": "object",
         "properties": {

@@ -340,10 +340,31 @@ class MCPProtocolHandler:
                 "version": self.version,
             },
             "instructions": (
-                "Nelson MCP — AI document workspace. "
-                "WORKFLOW: 1) Use tools to interact with LibreOffice documents. "
-                "2) Tools are filtered by document type (writer/calc/draw). "
-                "3) All UNO operations run on the main thread for thread safety."
+                "Nelson edits documents that are open in LibreOffice right "
+                "now. You are working on the user's live document, not a "
+                "copy: edits appear on their screen immediately and there is "
+                "no separate commit step.\n"
+                "\n"
+                "START HERE. Call doc_list_open first to see what is already "
+                "open. If the user names a document, it is probably one of "
+                "those, or in doc_recent — open it with doc_open. Only call "
+                "doc_create when they explicitly want a NEW empty document; "
+                "it does not open theirs.\n"
+                "\n"
+                "IN A WRITER DOCUMENT, call nav_outline before editing. It "
+                "returns the heading tree with stable bookmarks, and "
+                "'bookmark:NAME' keeps pointing at the right place after "
+                "edits shift paragraph numbers. Prefer it to counting "
+                "paragraphs.\n"
+                "\n"
+                "THE TOOL LIST DEPENDS on the type of the active document, "
+                "so a tool you need may be absent simply because the wrong "
+                "document is in front. Switching documents changes the list "
+                "and you are notified when it does.\n"
+                "\n"
+                "BEFORE A LARGE OR DESTRUCTIVE EDIT, prefer doc_save_as to "
+                "work on a copy. Undo exists (doc_undo) but does not survive "
+                "closing the document."
             ),
         }
 

@@ -7,7 +7,8 @@
 
 import pytest
 
-from plugin.framework.tool_base import ToolBase
+from plugin.framework.tool_base import (
+    ToolBase, TOOL_GROUPS, _GROUP_BY_PREFIX)
 
 
 class ReadTool(ToolBase):
@@ -97,3 +98,82 @@ class TestValidate:
         t = NoParamsTool()
         ok, err = t.validate(anything="goes")
         assert ok is True
+
+
+# ── Tool grouping ─────────────────────────────────────────────────────
+
+
+class TestToolGroup:
+    """The group is derived from the name, so it cannot drift out of date.
+
+    Its predecessor, a hand-written `intent`, was read by nothing and had
+    rotted: a quarter of the tools carried none, and the document lifecycle
+    tools were all tagged "media" (#27).
+    """
+
+    def _tool(self, name, **attrs):
+        ns = {"name": name, "description": "", "parameters": None,
+              "execute": lambda self, ctx, **kw: {"status": "ok"}}
+        ns.update(attrs)
+        return type("T", (ToolBase,), ns)()
+
+    def test_group_comes_from_the_name_prefix(self):
+        assert self._tool("doc_save").tool_group() == "document"
+        assert self._tool("text_read").tool_group() == "text"
+        assert self._tool("nav_outline").tool_group() == "navigate"
+        assert self._tool("comment_add").tool_group() == "review"
+        assert self._tool("image_insert").tool_group() == "media"
+        assert self._tool("calc_sheet").tool_group() == "calc"
+        assert self._tool("job_get").tool_group() == "system"
+
+    def test_document_lifecycle_is_not_media(self):
+        # The exact mis-tagging that made the old metadata useless.
+        for name in ("doc_open", "doc_create", "doc_close", "doc_list_open"):
+            assert self._tool(name).tool_group() == "document"
+
+    def test_an_explicit_group_wins(self):
+        assert self._tool("text_thing", group="review").tool_group() == "review"
+
+    def test_an_unmapped_prefix_falls_back(self):
+        assert self._tool("wibble_thing").tool_group() == "other"
+
+    def test_every_group_is_declared(self):
+        for prefix, group in _GROUP_BY_PREFIX.items():
+            assert group in TOOL_GROUPS, "%s -> unknown group %s" % (prefix, group)
+
+
+class TestEveryRealToolIsGrouped:
+    """Scan the source so a new tool cannot land in 'other' unnoticed.
+
+    Static on purpose: importing the tool modules needs UNO, which is not
+    available here, and the check only needs the declared names.
+    """
+
+    def _declared_names(self):
+        import os
+        import re
+        root = os.path.join(os.path.dirname(os.path.dirname(
+            os.path.abspath(__file__))), "plugin", "modules")
+        names = []
+        for dirpath, _dirs, files in os.walk(root):
+            if "tools" not in dirpath.split(os.sep):
+                continue
+            for fname in files:
+                if not fname.endswith(".py"):
+                    continue
+                with open(os.path.join(dirpath, fname), encoding="utf-8") as f:
+                    names += re.findall(r'^\s*name = "([a-z0-9_]+)"', f.read(),
+                                        re.M)
+        return names
+
+    def test_names_were_found(self):
+        assert len(self._declared_names()) > 100, "the scan found nothing"
+
+    def test_every_prefix_is_mapped(self):
+        unmapped = sorted({
+            n for n in self._declared_names()
+            if n.split("_", 1)[0] not in _GROUP_BY_PREFIX})
+        assert not unmapped, (
+            "these tools have no group — add their prefix to "
+            "_GROUP_BY_PREFIX in tool_base.py, or rename them to an "
+            "existing domain: %s" % ", ".join(unmapped))

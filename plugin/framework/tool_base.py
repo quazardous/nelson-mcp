@@ -49,6 +49,40 @@ def _levenshtein(s: str, t: str) -> int:
     return prev[-1]
 
 
+# Tool group per name prefix, for progressive disclosure and for grouping
+# the tool list in documentation and presets. Derived rather than hand-set:
+# the previous `intent` attribute was maintained by hand, nothing consumed
+# it, and it drifted badly (#27).
+_GROUP_BY_PREFIX = {
+    "doc": "document",       # lifecycle: open, save, close, export, undo
+    "text": "text",
+    "table": "text",
+    "frame": "text",
+    "style": "text",
+    "header": "text",        # header_footer_*
+    "link": "text",
+    "nav": "navigate",
+    "bookmark": "navigate",
+    "section": "navigate",
+    "comment": "review",
+    "change": "review",
+    "summary": "review",
+    "task": "review",
+    "workflow": "review",
+    "image": "media",
+    "shape": "media",
+    "gallery": "media",
+    "docgallery": "media",
+    "calc": "calc",
+    "draw": "draw",
+    "batch": "system",
+    "job": "system",
+}
+
+#: Every group a tool may belong to.
+TOOL_GROUPS = frozenset(_GROUP_BY_PREFIX.values())
+
+
 class ToolBase(ABC):
     """Abstract base for every tool exposed to LLM agents and MCP clients.
 
@@ -67,8 +101,12 @@ class ToolBase(ABC):
                      ["draw"], or None for all types).
         tier:        "core" = always sent to the LLM, "extended" = on demand
                      via the tool broker.  Default "extended".
-        intent:      Broker group: "navigate", "edit", "review", or "media".
-                     Used by request_tools(intent=...) to load tool groups.
+        group:       Derived from the name prefix (see ``_GROUP_BY_PREFIX``)
+                     — "document", "text", "navigate", "review", "media",
+                     "calc", "draw" or "system". Set ``group`` explicitly
+                     only when the prefix would be misleading.
+        intent:      Free-form legacy hint. Superseded by ``group``; kept
+                     because some tools still carry it.
         is_mutation:  Whether the tool mutates the document.  ``None``
                      means auto-detect from name prefix.  Tools that
                      dispatch on an ``action`` argument should override
@@ -86,6 +124,7 @@ class ToolBase(ABC):
 
     name: Optional[str] = None
     aliases: Optional[List[str]] = None
+    group: Optional[str] = None   # None = derive from the name prefix
     description: str = ""
     help: Optional[str] = None  # detailed help (for docs, not MCP schema)
     parameters: Optional[Dict[str, Any]] = None
@@ -96,6 +135,19 @@ class ToolBase(ABC):
     long_running: bool = False
     requires_doc: bool = True
     requires_service: Optional[str] = None
+
+    def tool_group(self) -> str:
+        """Return this tool's group, derived from its name unless set.
+
+        Falls back to "other" for a name whose prefix is not mapped, which
+        is what the test asserts against — an unmapped prefix means either a
+        typo or a genuinely new domain that belongs in the table.
+        """
+        if self.group:
+            return self.group
+        if not self.name:
+            return "other"
+        return _GROUP_BY_PREFIX.get(self.name.split("_", 1)[0], "other")
 
     def detects_mutation(self, **kwargs: Any) -> bool:
         """Return True if this call mutates the document.

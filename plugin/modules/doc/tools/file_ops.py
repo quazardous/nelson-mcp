@@ -333,7 +333,12 @@ class CreateDocument(ToolBase):
     aliases = ["create_document"]
     intent = "media"
     description = (
-        "Create a new empty document in LibreOffice. "
+        "Create a NEW empty document in LibreOffice. "
+        "Use this only when the user wants a document that does not exist "
+        "yet. To work on one that already exists, do not call this — it "
+        "creates an unrelated empty document and leaves theirs untouched; "
+        "use doc_list_open (already open), doc_recent (opened before) or "
+        "doc_open (a path) instead. "
         "Optionally provide a 'path' to save it immediately "
         "(recommended — avoids ambiguity with multiple unsaved documents)."
     )
@@ -426,7 +431,12 @@ class OpenDocument(ToolBase):
     name = "doc_open"
     aliases = ["open_document"]
     intent = "media"
-    description = "Open a document file in LibreOffice."
+    description = (
+        "Open an existing document file in LibreOffice, by path. "
+        "Check doc_list_open first: if the document is already open, it "
+        "does not need opening again. Use doc_recent when the user names a "
+        "document but not its path."
+    )
     parameters = {
         "type": "object",
         "properties": {
@@ -580,7 +590,9 @@ class ListOpenDocuments(ToolBase):
     aliases = ["list_open_documents"]
     intent = "media"
     description = (
-        "List all currently open documents in LibreOffice. "
+        "List the documents currently open in LibreOffice. Start here "
+        "when the user refers to a document: it is usually already open, "
+        "and this gives you the doc_id to address it with. "
         "Each document has a unique doc_id for identification. "
         "The active document (is_active=true) is the one MCP tools operate on."
     )
@@ -615,7 +627,10 @@ class GetRecentDocuments(ToolBase):
     aliases = ["get_recent_documents"]
     intent = "media"
     description = (
-        "Get list of recently opened documents from LibreOffice history."
+        "List recently opened documents from LibreOffice history. Use "
+        "this when the user names a document that is not currently open "
+        "and you do not know its path — it is how you find the path to "
+        "give doc_open."
     )
     parameters = {
         "type": "object",
