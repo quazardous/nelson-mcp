@@ -4,7 +4,7 @@ You are working with a LibreOffice document through **Nelson MCP**.
 
 1. Call `get_document_info` to know the document type (writer, calc, draw).
 2. For **Writer** documents, call `get_document_tree` (depth=0) to see the full heading structure. Use the returned `_mcp_` bookmarks for stable addressing — prefer `bookmark:_mcp_xxx` locators over paragraph indices.
-3. Drill into sections with `get_heading_children` or `read_paragraphs`.
+3. Drill into sections with `get_heading_children` or `text_read`.
 4. Use `search_fulltext` for boolean queries (AND, OR, NOT, NEAR/N).
 
 ## Document management

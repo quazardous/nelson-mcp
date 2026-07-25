@@ -20,7 +20,8 @@ log = logging.getLogger("nelson.writer")
 class GetDocumentContent(ToolBase):
     """Export the document (or a portion) as formatted content."""
 
-    name = "get_document_content"
+    name = "text_get_range"
+    aliases = ["get_document_content"]
     description = (
         "Get document (or selection/range) content. "
         "Result includes document_length. "
@@ -90,7 +91,8 @@ class GetDocumentContent(ToolBase):
 class ApplyDocumentContent(ToolBase):
     """Insert or replace content in the document."""
 
-    name = "apply_document_content"
+    name = "text_apply_range"
+    aliases = ["apply_document_content"]
     description = (
         "Insert or replace content. Preferred for partial edits: "
         "target='search' with search= and content=. "
@@ -184,7 +186,7 @@ class ApplyDocumentContent(ToolBase):
                     msg += " (formatting preserved)"
                 if count == 0:
                     msg += (
-                        " No matches found. Try find_text first, then "
+                        " No matches found. Try text_find first, then "
                         "use target='range'."
                     )
                 return {"status": "ok", "message": msg}
@@ -267,10 +269,11 @@ class ApplyDocumentContent(ToolBase):
 class FindText(ToolBase):
     """Find text in the document."""
 
-    name = "find_text"
+    name = "text_find"
+    aliases = ["find_text"]
     description = (
         "Finds text in the document. Returns {start, end, text} per match. "
-        "Use with apply_document_content (search= or target=range)."
+        "Use with text_apply_range (search= or target=range)."
     )
     parameters = {
         "type": "object",
@@ -319,7 +322,8 @@ class FindText(ToolBase):
 class ReadParagraphs(ToolBase):
     """Read a range of paragraphs by index."""
 
-    name = "read_paragraphs"
+    name = "text_read"
+    aliases = ["read_paragraphs"]
     description = (
         "Read a range of paragraphs by index or locator. "
         "Useful for scanning text between headings."
@@ -383,7 +387,8 @@ class ReadParagraphs(ToolBase):
 class InsertAtParagraph(ToolBase):
     """Insert text at a specific paragraph index."""
 
-    name = "insert_at_paragraph"
+    name = "text_insert"
+    aliases = ["insert_at_paragraph"]
     description = "Insert text at a specific paragraph index or locator."
     parameters = {
         "type": "object",
@@ -474,7 +479,8 @@ class InsertAtParagraph(ToolBase):
 class SetParagraphText(ToolBase):
     """Replace the entire text of a paragraph, preserving its style."""
 
-    name = "set_paragraph_text"
+    name = "text_set"
+    aliases = ["set_paragraph_text"]
     description = (
         "Replace the entire text of a paragraph (preserves style). "
         "Returns paragraph_index and bookmark (if heading) for stable "
@@ -545,7 +551,8 @@ class SetParagraphText(ToolBase):
 class SetParagraphStyle(ToolBase):
     """Change the paragraph style of a paragraph."""
 
-    name = "set_paragraph_style"
+    name = "text_set_style"
+    aliases = ["set_paragraph_style"]
     intent = "edit"
     description = (
         "Set the paragraph style (e.g. 'Heading 1', 'Text Body', "
@@ -615,7 +622,8 @@ class SetParagraphStyle(ToolBase):
 class DeleteParagraph(ToolBase):
     """Delete a paragraph from the document."""
 
-    name = "delete_paragraph"
+    name = "text_delete"
+    aliases = ["delete_paragraph"]
     intent = "edit"
     description = "Delete a paragraph from the document."
     parameters = {
@@ -679,7 +687,8 @@ class DeleteParagraph(ToolBase):
 class DuplicateParagraph(ToolBase):
     """Duplicate a paragraph (with its style) after itself."""
 
-    name = "duplicate_paragraph"
+    name = "text_duplicate"
+    aliases = ["duplicate_paragraph"]
     intent = "edit"
     description = (
         "Duplicate a paragraph (with its style) after itself. "
@@ -867,7 +876,8 @@ class CloneHeadingBlock(ToolBase):
 class InsertParagraphsBatch(ToolBase):
     """Insert multiple paragraphs in one call."""
 
-    name = "insert_paragraphs_batch"
+    name = "text_insert_batch"
+    aliases = ["insert_paragraphs_batch"]
     intent = "edit"
     description = (
         "Insert multiple paragraphs in a single operation. "

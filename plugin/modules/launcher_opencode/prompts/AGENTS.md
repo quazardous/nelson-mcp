@@ -31,10 +31,10 @@ This returns headings with `_mcp_` bookmark IDs like `_mcp_h1`, `_mcp_h2`, etc. 
 
 ```
 get_heading_content(heading_path="1")        # read first heading section
-read_paragraphs(start=0, count=20)           # read first 20 paragraphs
-read_paragraphs(locator="heading_text:Annexes", count=10)  # read from a heading by name
-read_paragraphs(locator="bookmark:_mcp_h3", count=10)      # read from a bookmark ID
-search_in_document(query="budget")           # find text in document
+text_read(start=0, count=20)           # read first 20 paragraphs
+text_read(locator="heading_text:Annexes", count=10)  # read from a heading by name
+text_read(locator="bookmark:_mcp_h3", count=10)      # read from a bookmark ID
+text_search(query="budget")           # find text in document
 ```
 
 ## Step 3: Edit the document
@@ -48,10 +48,10 @@ request_tools(intent="edit")
 Now you can edit:
 
 ```
-set_paragraph_text(index=5, text="New text here")
-insert_at_paragraph(index=10, text="Inserted paragraph")
-delete_paragraph(index=3)
-replace_in_document(find="old text", replace="new text")
+text_set(index=5, text="New text here")
+text_insert(index=10, text="Inserted paragraph")
+text_delete(index=3)
+text_replace(find="old text", replace="new text")
 ```
 
 ## Step 4: Save
@@ -81,9 +81,9 @@ table_write_cell(table_index=0, cell="A1", value="Hello")  # write to cell
 ## Searching
 
 ```
-search_in_document(query="word")                # simple text search
+text_search(query="word")                # simple text search
 search_fulltext(query="budget AND 2024")        # advanced search with AND, OR, NOT
-find_text(search_string="exact phrase")         # find exact text with position
+text_find(search_string="exact phrase")         # find exact text with position
 ```
 
 ## Batch edits
@@ -92,9 +92,9 @@ To make multiple changes at once, use `execute_batch`:
 
 ```
 execute_batch(operations=[
-  {"tool": "set_paragraph_text", "args": {"index": 0, "text": "Title"}},
-  {"tool": "set_paragraph_text", "args": {"index": 1, "text": "Subtitle"}},
-  {"tool": "insert_at_paragraph", "args": {"index": 2, "text": "New paragraph"}}
+  {"tool": "text_set", "args": {"index": 0, "text": "Title"}},
+  {"tool": "text_set", "args": {"index": 1, "text": "Subtitle"}},
+  {"tool": "text_insert", "args": {"index": 2, "text": "New paragraph"}}
 ])
 ```
 

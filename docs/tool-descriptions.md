@@ -13,7 +13,7 @@ State what the tool preserves or guarantees directly in the description line:
 "Replace the entire text of a paragraph (preserves style)"
 ```
 
-If `apply_document_content` with `target="search"` preserves character formatting (bold, color, font), say so — otherwise the AI will unnecessarily re-specify formatting.
+If `text_apply_range` with `target="search"` preserves character formatting (bold, color, font), say so — otherwise the AI will unnecessarily re-specify formatting.
 
 ### 2. Explain the "why", not just the "what"
 
@@ -45,7 +45,7 @@ get_tracked_changes → accept_all_changes or reject_all_changes →
 set_track_changes(enabled=false).
 
 TABLE WORKFLOW: table_list → table_read → table_write_cell for targeted edits.
-For new tables or full rewrites, use apply_document_content with HTML/Markdown table.
+For new tables or full rewrites, use text_apply_range with HTML/Markdown table.
 
 STYLE WORKFLOW: list_styles (discover exact localized names) → apply style by name.
 ```

@@ -26,9 +26,9 @@ PRESETS = {
     "writer-edit": [
         "list_open_documents", "get_document_info", "get_document_outline",
         "open_document", "create_document", "save_document", "close_document",
-        "read_paragraphs", "get_heading_content", "find_text",
-        "insert_at_paragraph", "insert_paragraphs_batch", "set_paragraph_text",
-        "set_paragraph_style", "delete_paragraph", "duplicate_paragraph",
+        "text_read", "get_heading_content", "text_find",
+        "text_insert", "text_insert_batch", "text_set",
+        "text_set_style", "text_delete", "text_duplicate",
         "image_insert", "insert_hyperlink",
         "table_create", "table_write_cell",
         "execute_batch", "undo", "redo",
@@ -36,8 +36,8 @@ PRESETS = {
     ],
     "writer-read": [
         "list_open_documents", "get_document_info", "get_document_outline",
-        "get_document_content", "read_paragraphs", "get_heading_content",
-        "find_text", "search_in_document", "get_document_stats",
+        "text_get_range", "text_read", "get_heading_content",
+        "text_find", "text_search", "get_document_stats",
         "image_list", "table_list", "list_comments",
         "resolve_locator", "get_document_tree",
     ],
@@ -57,7 +57,7 @@ PRESETS = {
     "minimal": [
         "list_open_documents", "get_document_info",
         "open_document", "create_document", "save_document",
-        "read_paragraphs", "insert_at_paragraph",
+        "text_read", "text_insert",
         "image_insert",
     ],
 }

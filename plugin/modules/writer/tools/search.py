@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Writer search tools: search_in_document, replace_in_document."""
+"""Writer search tools: text_search, text_replace."""
 
 import logging
 
@@ -15,7 +15,8 @@ log = logging.getLogger("nelson.writer")
 class SearchInDocument(ToolBase):
     """Search for text in a document body and text frames."""
 
-    name = "search_in_document"
+    name = "text_search"
+    aliases = ["search_in_document"]
     description = (
         "Search for text in the document. Searches the body AND text frames "
         "(captions, sidebars), so images/legends placed in frames are findable. "
@@ -334,7 +335,8 @@ def _search_frames(ctx, pattern, use_regex, case_sensitive, max_results):
 class ReplaceInDocument(ToolBase):
     """Find and replace text preserving formatting."""
 
-    name = "replace_in_document"
+    name = "text_replace"
+    aliases = ["replace_in_document"]
     description = (
         "Find and replace text in the document with regex support. "
         "Preserves existing formatting. Returns count of replacements."

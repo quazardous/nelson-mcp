@@ -88,7 +88,7 @@ User says: *"Add a summary to my report"*
                                 → headings: Introduction, Chapter 1, Chapter 2, Conclusion
 3. get_heading_content(heading="Conclusion")
                                 → read existing content
-4. insert_at_paragraph(index=N, text="## Summary\n\nKey findings...", position="before")
+4. text_insert(index=N, text="## Summary\n\nKey findings...", position="before")
 ```
 
 Don't skip steps 1-3. Without discovery, you risk creating a new document when one is already open, or inserting text in the wrong place.
@@ -110,8 +110,8 @@ When working with multiple documents, always specify `_document` to avoid ambigu
 ```
 get_document_outline        → heading tree with bookmarks
 get_heading_content         → read text under a specific heading
-read_paragraphs             → read paragraphs by index range
-find_text / search_in_document → search for text
+text_read             → read paragraphs by index range
+text_find / text_search → search for text
 ```
 
 **Tip:** Use `get_document_outline` first to understand the document structure. Headings have stable bookmarks — use `heading_text:` or `bookmark:` locators to target sections.
@@ -119,11 +119,11 @@ find_text / search_in_document → search for text
 ### Edit a Document
 
 ```
-insert_at_paragraph         → insert text/HTML at a position
-set_paragraph_text          → replace a paragraph's content
-set_paragraph_style         → apply a style (Heading 1, Body Text, etc.)
-delete_paragraph            → remove a paragraph
-insert_paragraphs_batch     → insert multiple paragraphs at once
+text_insert         → insert text/HTML at a position
+text_set          → replace a paragraph's content
+text_set_style         → apply a style (Heading 1, Body Text, etc.)
+text_delete            → remove a paragraph
+text_insert_batch     → insert multiple paragraphs at once
 ```
 
 **Tip:** Use `resolve_locator` to convert a heading name or bookmark to a paragraph index before editing. Example: `resolve_locator(locator="heading_text:Chapter 3")` returns the paragraph index.
@@ -162,7 +162,7 @@ Always discover available styles first — names are localized:
 
 ```
 list_styles(family="ParagraphStyles")  → list available styles
-set_paragraph_style(index=5, style="Heading 1")
+text_set_style(index=5, style="Heading 1")
 ```
 
 ## Calc Workflows
@@ -217,14 +217,14 @@ If you're on a custom endpoint, use `tools/list` to see which tools are availabl
 ```
 1. get_document_outline          → find heading bookmark
 2. resolve_locator("heading_text:X")  → get paragraph index
-3. insert_at_paragraph(index=N+1, text="...", position="after")
+3. text_insert(index=N+1, text="...", position="after")
 ```
 
 ### "Replace a paragraph"
 
 ```
-1. find_text("old text")         → find paragraph index
-2. set_paragraph_text(index=N, text="new text")
+1. text_find("old text")         → find paragraph index
+2. text_set(index=N, text="new text")
 ```
 
 ### "Insert an image from gallery"
@@ -238,7 +238,7 @@ If you're on a custom endpoint, use `tools/list` to see which tools are availabl
 
 ```
 1. create_document(type="writer", path="C:/Users/me/report.odt")
-2. insert_paragraphs_batch(paragraphs=[
+2. text_insert_batch(paragraphs=[
      {"text": "Monthly Report", "style": "Heading 1"},
      {"text": "Summary of findings...", "style": "Body Text"}
    ])

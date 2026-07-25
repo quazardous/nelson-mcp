@@ -2,11 +2,11 @@
 
 ## Range coordinate mismatch (Writer)
 
-**Status**: Open — affects `get_document_content(scope="range")` and `apply_document_content(target="range")`.
+**Status**: Open — affects `text_get_range(scope="range")` and `text_apply_range(target="range")`.
 
-Character offsets from `find_text` (cursor-based) don't match offsets used by range export (paragraph-enumeration with summed lengths). The same numeric range is interpreted in two different coordinate systems, producing corrupted output (e.g. "## ary..." instead of "## Summary...").
+Character offsets from `text_find` (cursor-based) don't match offsets used by range export (paragraph-enumeration with summed lengths). The same numeric range is interpreted in two different coordinate systems, producing corrupted output (e.g. "## ary..." instead of "## Summary...").
 
-**Recommended fix**: Use cursor-based paragraph offsets — for each enumerated paragraph, measure start/end with `gotoRange(para.getStart(), True)` + `len(cursor.getString())`. This aligns range export with `find_text` coordinates.
+**Recommended fix**: Use cursor-based paragraph offsets — for each enumerated paragraph, measure start/end with `gotoRange(para.getStart(), True)` + `len(cursor.getString())`. This aligns range export with `text_find` coordinates.
 
 **Workaround**: Avoid `scope="range"` for section replacement. Use `target="search"` with full section text instead.
 

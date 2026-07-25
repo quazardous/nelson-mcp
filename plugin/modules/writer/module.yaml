@@ -16,10 +16,10 @@ config:
     type: string
     default: direct
     widget: select
-    label: Search backend for search_in_document
+    label: Search backend for text_search
     public: true
     description: >
-      How search_in_document searches the document body. 'direct' does an exact
+      How text_search searches the document body. 'direct' does an exact
       literal/regex scan (always fresh, regex-capable). 'index' uses the
       stemmed full-text index (fuzzy word matching, boolean operators, faster on
       large documents, but no regex). Text frames are always searched in both

@@ -30,7 +30,7 @@ POST /api/do
 }
 ```
 
-Nelson resolves "Introduction" internally (heading lookup → bookmark → paragraph index → `insert_at_paragraph`). The model never sees paragraph indices, bookmarks, or locators. ~15 structured actions instead of 148 low-level tools.
+Nelson resolves "Introduction" internally (heading lookup → bookmark → paragraph index → `text_insert`). The model never sees paragraph indices, bookmarks, or locators. ~15 structured actions instead of 148 low-level tools.
 
 ### Tool broker (progressive disclosure)
 
@@ -102,7 +102,7 @@ This approach builds on well-established fields:
 - **Sequential Pattern Mining** (PrefixSpan, Pei et al. 2001) — finding frequent subsequences in logs. "80% of sessions that do A→B end up doing C" — more robust than counting bigrams.
 - **Markov chains** — tool transitions form a natural Markov chain. The matrix `P(next_tool | current_tool, doc_type)` is computed directly from traces. No ML needed — pure statistics.
 - **Voyager** (Wang et al. 2023) — Minecraft agent that builds a *skill library* from gameplay traces, analyzed by an LLM. Our `rules.json` is their skill library: patterns extracted from experience, refined over time.
-- **LATM — LLM As Tool Maker** (Cai et al. 2023) — LLM identifies repetitive tool sequences and synthesizes composite tools. If `resolve_locator → get_heading_content → insert_at_paragraph` appears 50 times, the LLM can generate `insert_under_heading` as a reusable workflow.
+- **LATM — LLM As Tool Maker** (Cai et al. 2023) — LLM identifies repetitive tool sequences and synthesizes composite tools. If `resolve_locator → get_heading_content → text_insert` appears 50 times, the LLM can generate `insert_under_heading` as a reusable workflow.
 
 ### Three-level analysis
 
@@ -148,18 +148,18 @@ All three levels feed a single rules file, loaded at boot:
   {
     "after": ["list_open_documents", "get_document_outline"],
     "doc_type": "writer",
-    "suggest": ["get_heading_content", "find_text"],
+    "suggest": ["get_heading_content", "text_find"],
     "confidence": 0.85,
     "source": "markov"
   },
   {
-    "after": ["insert_at_paragraph"],
+    "after": ["text_insert"],
     "followed_by_undo_rate": 0.30,
     "hint": "Verify paragraph_index with resolve_locator before inserting",
     "source": "prefixspan"
   },
   {
-    "pattern": "resolve_locator → get_heading_content → insert_at_paragraph → save",
+    "pattern": "resolve_locator → get_heading_content → text_insert → save",
     "name": "edit_section",
     "frequency": 0.60,
     "source": "llm",
