@@ -9,16 +9,16 @@ Works with any MCP-compatible client: Claude Code, OpenCode, Goose, ollmcp, etc.
 Nelson MCP runs an HTTP server inside LibreOffice and speaks the [Model Context Protocol](https://modelcontextprotocol.io/). AI agents connect to it and use tools to interact with your open document — no copy-paste, no file export.
 
 ```
-┌─────────────┐       HTTP/MCP        ┌──────────────┐
-│  AI Client   │ ──────────────────── │  LibreOffice  │
-│ (Claude Code,│   tools/call         │  + Nelson MCP │
-│  OpenCode…)  │ ◄──────────────────  │               │
-└─────────────┘    tool results       └──────────────┘
+┌─────────────────┐     HTTP/MCP     ┌────────────────┐
+│  AI Client      │ ───────────────► │  LibreOffice   │
+│  (Claude Code,  │    tools/call    │  + Nelson MCP  │
+│  OpenCode…)     │ ◄─────────────── │                │
+└─────────────────┘   tool results   └────────────────┘
 ```
 
 ## Features
 
-- **148 document tools** — read content, edit text, manage styles, insert images, handle tables, charts, conditional formatting, hyperlinks, track changes, navigate headings, search, and more
+- **160+ document tools** — read content, edit text, manage styles, insert images, handle tables, charts, conditional formatting, hyperlinks, track changes, page headers/footers, navigate headings, search, and more. The list is filtered by the active document type, so a client sees only what applies (about 100 with a Writer document, 65 with Calc)
 - **Custom MCP endpoints** — expose only the tools your agent needs. Built-in presets (minimal, writer-edit, writer-read, calc, gallery) or create your own filtered endpoints
 - **Writer, Calc, Draw, Impress** — tools adapt to the active document type
 - **Calc `=PROMPT()`** — call an LLM directly from a spreadsheet cell
@@ -57,15 +57,22 @@ Open a document in LibreOffice, then ask your AI client to read or edit it.
 
 ## Modules
 
+Around 30 modules; the main ones:
+
 | Module | Description |
 |--------|-------------|
 | `core` | Document access, config, events, formatting |
-| `writer` | Content editing, comments, styles, tables, change tracking |
+| `doc` | Tools common to every document type — open, save, close, export, print, undo/redo, hyperlinks |
+| `writer` | Content editing, comments, styles, tables, images, headers/footers, change tracking |
 | `writer.nav` | Heading tree, bookmarks, proximity navigation |
 | `writer.index` | Full-text search with Snowball stemming |
 | `calc` | Cells, sheets, formulas, charts, conditional formatting, comments |
 | `draw` | Shapes, pages, slides, placeholders, master slides, transitions (Draw and Impress) |
-| `images` | Image generation and editing (pluggable providers) |
+| `images` / `documents` | Image and document gallery providers (browse and reuse existing assets) |
+| `ai_images` | AI image generation and editing (Stable Diffusion, OpenAI, AI Horde) |
+| `ai` | AI text providers, behind the Calc `=PROMPT()` function |
+| `launcher` | Launch Claude Code, Gemini CLI or OpenCode from LibreOffice |
+| `panel` | Sidebar panels — MCP action log, running jobs |
 | `batch` | Multi-tool execution with variable chaining |
 | `http` | Shared HTTP server with optional SSL |
 | `mcp` | MCP JSON-RPC protocol handler |
@@ -77,9 +84,26 @@ Open a document in LibreOffice, then ask your AI client to read or edit it.
 ./install.sh              # Set up dev environment
 make deploy               # Build + install + restart LO + show log
 make test                 # Run tests
+make release              # Tag, build and publish a release (see scripts/release.sh)
 ```
 
 See [DEVEL.md](DEVEL.md) for the complete developer guide and [docs/modules.md](docs/modules.md) for the module framework reference.
+
+### Developing with an AI agent
+
+This project is developed with AI coding agents, using
+**[wbox-mcp](https://github.com/quazardous/wbox-mcp)** to make that practical.
+
+Nelson lives *inside* LibreOffice, so an agent cannot verify a change without
+actually running LibreOffice — and a headless process cannot show whether a
+logo really landed in the page header. wbox-mcp is an MCP server that hands the
+agent a sandboxed LibreOffice in a nested Wayland compositor: it can kill,
+deploy and relaunch the extension, drive the UI, read the Nelson log, and take
+screenshots of the result.
+
+That closes the loop. The agent edits the code, redeploys, calls the tool
+through MCP, and *looks* at the rendered document to confirm the change —
+instead of assuming it worked.
 
 ## Documentation
 
@@ -99,4 +123,4 @@ Nelson MCP is the result of merging and reworking two other projects:
 
 ## License
 
-MPL 2.0 — see `License.txt`.
+MPL 2.0 — see [`extension/registration/license.txt`](extension/registration/license.txt).
