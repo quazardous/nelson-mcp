@@ -74,7 +74,7 @@ doc_export_pdf(path="/home/user/output.pdf")           # export as PDF
 
 ```
 table_list()                          # see all tables
-table_read(table_index=0)             # read first table
+table_list(table_name="Table1")       # read that table
 table_write_cell(table_index=0, cell="A1", value="Hello")  # write to cell
 ```
 

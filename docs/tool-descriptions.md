@@ -44,7 +44,8 @@ REVIEW WORKFLOW: change_set(enabled=true) → make edits →
 change_list → change_accept_all or change_reject_all →
 change_set(enabled=false).
 
-TABLE WORKFLOW: table_list → table_read → table_write_cell for targeted edits.
+TABLE WORKFLOW: table_list → table_list(table_name=...) → table_write_cell
+for targeted edits.
 For new tables or full rewrites, use text_apply_range with HTML/Markdown table.
 
 STYLE WORKFLOW: style_list (discover exact localized names) → apply style by name.

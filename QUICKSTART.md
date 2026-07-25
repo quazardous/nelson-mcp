@@ -46,9 +46,10 @@ If document or image gallery tools are available, explore what the user has inde
 ```
 docgallery_list           → browse indexed document folders
 docgallery_search("report")  → search documents by content/metadata
-gallery_providers           → list configured image galleries
-gallery_list                → browse images in a gallery
-gallery_search("safari")    → search images by keywords
+gallery_providers                     → list configured image galleries
+gallery_query(action="list")          → browse images in a gallery
+gallery_query(action="search", ...)   → search images by keywords
+gallery_query(action="get", ...)      → full metadata for one image
 ```
 
 Galleries give you access to files the user has organized — you can open documents or insert images from them.
@@ -75,7 +76,7 @@ Connected
  │       ├─ User names a doc → doc_recent → doc_open
  │       ├─ User wants to find a doc → docgallery_search
  │       └─ User wants a new doc → doc_create
- └─ User mentions images → gallery_search / gallery_list
+ └─ User mentions images → gallery_query(action="search"|"list")
 ```
 
 ### Example: First Exchange
@@ -131,11 +132,12 @@ text_insert_batch     → insert multiple paragraphs at once
 ### Tables
 
 ```
-table_list                 → find tables in the document
-table_read                  → read a table's content
-table_create                → create a new table
-table_write_cell            → write to a specific cell
-table_write_row             → write an entire row
+table_list                        → find tables in the document
+table_list(table_name="Table1")   → read that table's content
+table_create                      → create a new table
+table_write_cell                  → write to a specific cell
+table_write_row                   → write an entire row
+table_structure(action=, axis=)   → add/delete rows or columns
 ```
 
 ### Images
@@ -143,7 +145,7 @@ table_write_row             → write an entire row
 ```
 image_list                 → find images in the document
 image_insert                → insert an image (with caption)
-gallery_search              → search image galleries by keyword
+gallery_query               → browse, search or inspect gallery images
 ```
 
 ### Review Workflow
@@ -168,10 +170,13 @@ text_set_style(index=5, style="Heading 1")
 ## Calc Workflows
 
 ```
-table_list                 → list sheets
-table_read                  → read cell range (e.g. "A1:D10")
-table_write_cell            → write to a cell
-table_write_row             → write a full row
+calc_sheet(action="list")         → list sheets
+calc_sheet(action="create"|"rename"|"delete"|"switch")
+calc_read_range("A1:D10")         → read a cell range
+calc_write_range                  → write values to a range
+calc_write_formula                → write formulas or values
+calc_chart(action="create", ...)  → create a chart
+calc_search(action="search"|"replace")
 ```
 
 ## Batch Operations
@@ -230,7 +235,7 @@ If you're on a custom endpoint, use `tools/list` to see which tools are availabl
 ### "Insert an image from gallery"
 
 ```
-1. gallery_search("sunset beach") → find image path
+1. gallery_query(action="search", query="sunset beach") → find image path
 2. image_insert(path="/path/to/image.jpg", paragraph_index=10)
 ```
 

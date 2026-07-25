@@ -10,7 +10,7 @@ Nelson MCP indexes images in 3 passes:
 2. **Pass 2 — Folder Universe** (requires Ollama): analyzes folder context to understand the theme (e.g. "safari trip", "family reunion")
 3. **Pass 3 — Per-Image Tags** (requires Ollama): combines CLIP description + folder context to generate rich, thematic keywords
 
-After indexation, you can search images by theme, activity, location, or content using the `gallery_search` tool.
+After indexation, you can search images by theme, activity, location, or content using the `gallery_query` tool (`action="search"`).
 
 ## Prerequisites
 
@@ -87,11 +87,11 @@ Progress is shown in the LibreOffice status bar.
 
 ## Step 6 — Search Your Images
 
-Once indexed, use the `gallery_search` MCP tool:
+Once indexed, use the `gallery_query` MCP tool with `action="search"`:
 
 > "Find photos of elephants near water"
 
-Or use the `gallery_list` tool to browse by folder with keyword metadata.
+Or use `gallery_query(action="list")` to browse by folder with keyword metadata.
 
 ## Index Language
 

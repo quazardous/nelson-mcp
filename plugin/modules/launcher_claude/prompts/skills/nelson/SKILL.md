@@ -37,13 +37,13 @@ text_replace        → find & replace with regex, preserves formatting
 
 ### 4. Tables
 ```
-table_list → table_read → table_write_cell (A1, B2...)
+table_list → table_list(table_name=...) → table_write_cell (A1, B2...)
 table_create(rows, cols, locator)
 ```
 
 ### 5. Images
 ```
-image_list → image_info
+image_list → image_list(image_name=...)
 image_insert(image_path, locator)
 image_replace / image_set / image_delete
 ```

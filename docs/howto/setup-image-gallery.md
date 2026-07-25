@@ -4,7 +4,7 @@ This guide explains how to configure a folder of images as a searchable gallery 
 
 ## Overview
 
-Nelson MCP's image gallery system indexes local folders and makes their contents available through MCP tools (`gallery_list`, `gallery_search`, `gallery_get`). Images are indexed in a local SQLite database with full-text search. Metadata is stored in standard XMP sidecar files.
+Nelson MCP's image gallery system indexes local folders and makes their contents available through the `gallery_query` MCP tool. Images are indexed in a local SQLite database with full-text search. Metadata is stored in standard XMP sidecar files.
 
 ## Step 1 — Add a Folder
 
@@ -42,9 +42,9 @@ Only changed files are re-indexed on subsequent scans (incremental, based on fil
 
 Use these tools:
 
-- `gallery_list` — browse images by folder, with pagination
-- `gallery_search` — full-text search across filenames, titles, descriptions, and keywords
-- `gallery_get` — get full metadata for a specific image
+- `gallery_query(action="list")` — browse images by folder, with pagination
+- `gallery_query(action="search")` — full-text search across filenames, titles, descriptions, and keywords
+- `gallery_query(action="get")` — get full metadata for a specific image
 
 ### Example
 
