@@ -11,6 +11,7 @@ Route handlers are registered with the HTTP route registry by MCPModule.
 
 import json
 import logging
+import queue
 import threading
 import time
 import uuid
@@ -70,6 +71,51 @@ def _tool_error(code, message, hint=None, retryable=False):
     return err
 
 
+# ── SSE client registry — server→client notifications ────────────────────
+# Each live GET-SSE connection registers a queue.Queue here; broadcasts are
+# enqueued and drained by the connection thread. Shared across all protocol
+# handlers (main + custom endpoints) so one broadcast reaches every stream.
+_sse_lock = threading.Lock()
+_sse_clients = []  # list[queue.Queue]
+
+
+def _sse_register():
+    q = queue.Queue()
+    with _sse_lock:
+        _sse_clients.append(q)
+    return q
+
+
+def _sse_unregister(q):
+    with _sse_lock:
+        try:
+            _sse_clients.remove(q)
+        except ValueError:
+            pass
+
+
+def _sse_has_clients():
+    with _sse_lock:
+        return bool(_sse_clients)
+
+
+def broadcast_notification(method, params=None):
+    """Enqueue a JSON-RPC notification frame to every live SSE client."""
+    frame = {"jsonrpc": "2.0", "method": method}
+    if params is not None:
+        frame["params"] = params
+    data = ("data: %s\n\n" % json.dumps(
+        frame, ensure_ascii=False, default=str)).encode("utf-8")
+    with _sse_lock:
+        clients = list(_sse_clients)
+    for q in clients:
+        try:
+            q.put_nowait(data)
+        except Exception:
+            pass
+    return len(clients)
+
+
 class MCPProtocolHandler:
     """MCP JSON-RPC protocol — route handlers for the HTTP server."""
 
@@ -106,13 +152,19 @@ class MCPProtocolHandler:
         handler.send_header("Cache-Control", "no-cache")
         self._send_cors_headers(handler)
         handler.end_headers()
+        q = _sse_register()
         try:
             while True:
-                handler.wfile.write(b": keepalive\n\n")
+                try:
+                    data = q.get(timeout=15)
+                except queue.Empty:
+                    data = b": keepalive\n\n"
+                handler.wfile.write(data)
                 handler.wfile.flush()
-                time.sleep(15)
         except (BrokenPipeError, ConnectionResetError, OSError):
             pass
+        finally:
+            _sse_unregister(q)
 
     def handle_mcp_delete(self, handler):
         """DELETE /mcp — session termination."""
@@ -131,10 +183,17 @@ class MCPProtocolHandler:
             self._send_cors_headers(handler)
             handler.end_headers()
             log.info("[SSE] GET stream opened")
-            while True:
-                handler.wfile.write(b": keepalive\n\n")
-                handler.wfile.flush()
-                time.sleep(15)
+            q = _sse_register()
+            try:
+                while True:
+                    try:
+                        data = q.get(timeout=15)
+                    except queue.Empty:
+                        data = b": keepalive\n\n"
+                    handler.wfile.write(data)
+                    handler.wfile.flush()
+            finally:
+                _sse_unregister(q)
         except (BrokenPipeError, ConnectionResetError, OSError):
             log.info("[SSE] GET stream disconnected")
 
@@ -253,7 +312,7 @@ class MCPProtocolHandler:
         return {
             "protocolVersion": client_version,
             "capabilities": {
-                "tools": {"listChanged": False},
+                "tools": {"listChanged": True},
                 "resources": {"listChanged": False},
                 "prompts": {"listChanged": False},
             },

@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [0.9.3] — 2026-07-24
+## [0.9.3] — 2026-07-25
+
+### Added
+
+- **Tool list updates live when the active document changes** (#24) — the tool set is filtered by document type (writer/calc/draw), but MCP clients only refetch `tools/list` when told to. Nelson now advertises `capabilities.tools.listChanged: true` and, while any SSE client is connected, watches the active document type and broadcasts a `notifications/tools/list_changed` frame on every transition (e.g. switching focus Writer→Calc). Clients that honour the notification refetch the now-correct tool set automatically. The poller only runs while a client is listening and re-baselines on reconnect, so idle sessions and reconnects never spuriously notify
 
 ### Fixed
 
