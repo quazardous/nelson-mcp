@@ -16,7 +16,8 @@ log = logging.getLogger("nelson.writer")
 class ListComments(ToolBase):
     """List all comments (annotations) in the document."""
 
-    name = "list_comments"
+    name = "comment_list"
+    aliases = ["list_comments"]
     intent = "review"
     description = (
         "List all comments/annotations in the document, including "
@@ -74,7 +75,8 @@ class ListComments(ToolBase):
 class AddComment(ToolBase):
     """Add a comment anchored to a paragraph."""
 
-    name = "add_comment"
+    name = "comment_add"
+    aliases = ["add_comment"]
     intent = "review"
     description = (
         "Add a comment/annotation. Anchor via search_text, locator, "
@@ -171,7 +173,8 @@ class AddComment(ToolBase):
 class DeleteComment(ToolBase):
     """Delete comments by name or author."""
 
-    name = "delete_comment"
+    name = "comment_delete"
+    aliases = ["delete_comment"]
     intent = "review"
     description = (
         "Delete comments by name or author. "
@@ -184,7 +187,7 @@ class DeleteComment(ToolBase):
         "properties": {
             "comment_name": {
                 "type": "string",
-                "description": "The 'name' field returned by list_comments.",
+                "description": "The 'name' field returned by comment_list.",
             },
             "author": {
                 "type": "string",
@@ -244,7 +247,8 @@ class DeleteComment(ToolBase):
 class ResolveComment(ToolBase):
     """Resolve a comment with an optional reason."""
 
-    name = "resolve_comment"
+    name = "comment_resolve"
+    aliases = ["resolve_comment"]
     intent = "review"
     description = (
         "Resolve a comment with an optional reason. Adds a reply "
@@ -255,7 +259,7 @@ class ResolveComment(ToolBase):
         "properties": {
             "comment_name": {
                 "type": "string",
-                "description": "The 'name' field returned by list_comments.",
+                "description": "The 'name' field returned by comment_list.",
             },
             "resolution": {
                 "type": "string",

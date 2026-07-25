@@ -102,6 +102,6 @@ execute_batch(operations=[
 
 - `get_document_stats()` — word count, page count, paragraph count
 - `image_list()` / `image_insert()` — work with images
-- `list_comments()` / `add_comment()` — work with comments
-- `set_track_changes(enabled=false)` — disable auto track changes temporarily (enabled by default on MCP mutations)
+- `comment_list()` / `comment_add()` — work with comments
+- `change_set(enabled=false)` — disable auto track changes temporarily (enabled by default on MCP mutations)
 - `bookmark_list()` — see all bookmarks in the document

@@ -15,7 +15,8 @@ log = logging.getLogger("nelson.writer")
 class SetTrackChanges(ToolBase):
     """Enable or disable change tracking."""
 
-    name = "set_track_changes"
+    name = "change_set"
+    aliases = ["set_track_changes"]
     intent = "review"
     description = "Enable or disable track changes (change recording) in the document."
     parameters = {
@@ -42,7 +43,8 @@ class SetTrackChanges(ToolBase):
 class GetTrackedChanges(ToolBase):
     """List all tracked changes (redlines) in the document."""
 
-    name = "get_tracked_changes"
+    name = "change_list"
+    aliases = ["get_tracked_changes"]
     intent = "review"
     description = (
         "List all tracked changes (redlines) in the document, "
@@ -106,7 +108,8 @@ class GetTrackedChanges(ToolBase):
 class AcceptAllChanges(ToolBase):
     """Accept all tracked changes in the document."""
 
-    name = "accept_all_changes"
+    name = "change_accept_all"
+    aliases = ["accept_all_changes"]
     intent = "review"
     description = "Accept all tracked changes in the document."
     parameters = {
@@ -133,7 +136,8 @@ class AcceptAllChanges(ToolBase):
 class RejectAllChanges(ToolBase):
     """Reject all tracked changes in the document."""
 
-    name = "reject_all_changes"
+    name = "change_reject_all"
+    aliases = ["reject_all_changes"]
     intent = "review"
     description = "Reject all tracked changes in the document."
     parameters = {

@@ -38,7 +38,7 @@ PRESETS = {
         "list_open_documents", "get_document_info", "nav_outline",
         "text_get_range", "text_read", "nav_heading_content",
         "text_find", "text_search", "get_document_stats",
-        "image_list", "table_list", "list_comments",
+        "image_list", "table_list", "comment_list",
         "nav_resolve", "nav_tree",
     ],
     "calc": [

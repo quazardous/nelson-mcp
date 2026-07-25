@@ -50,9 +50,9 @@ image_replace / image_set / image_delete
 
 ### 6. Comments & Review
 ```
-list_comments / add_comment / resolve_comment
-set_track_changes(enabled=true/false)
-get_tracked_changes / accept_all_changes / reject_all_changes
+comment_list / comment_add / comment_resolve
+change_set(enabled=true/false)
+change_list / change_accept_all / change_reject_all
 scan_tasks → find TODO-AI, FIX, QUESTION in comments
 ```
 

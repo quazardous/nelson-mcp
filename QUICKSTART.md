@@ -149,11 +149,11 @@ gallery_search              → search image galleries by keyword
 ### Review Workflow
 
 ```
-set_track_changes(enabled=true)
+change_set(enabled=true)
   → make edits (insert, delete, modify)
-get_tracked_changes         → see all changes
-accept_all_changes          → accept
-set_track_changes(enabled=false)
+change_list         → see all changes
+change_accept_all          → accept
+change_set(enabled=false)
 ```
 
 ### Styles

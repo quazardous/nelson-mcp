@@ -245,7 +245,7 @@ class ToolRegistry:
         # re-enable recording underneath the very tool disabling it.
         if (tool.detects_mutation() and ctx.caller == "mcp"
                 and ctx.doc is not None
-                and tool.name != "set_track_changes"):
+                and tool.name != "change_set"):
             self._ensure_track_changes(ctx.doc)
 
         # Generate action ID for mutations (tracked in undo + result)

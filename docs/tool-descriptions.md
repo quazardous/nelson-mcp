@@ -40,9 +40,9 @@ When returning search matches, include surrounding content so the AI can verify 
 These patterns should appear in system prompts or AGENTS.md:
 
 ```
-REVIEW WORKFLOW: set_track_changes(enabled=true) → make edits →
-get_tracked_changes → accept_all_changes or reject_all_changes →
-set_track_changes(enabled=false).
+REVIEW WORKFLOW: change_set(enabled=true) → make edits →
+change_list → change_accept_all or change_reject_all →
+change_set(enabled=false).
 
 TABLE WORKFLOW: table_list → table_read → table_write_cell for targeted edits.
 For new tables or full rewrites, use text_apply_range with HTML/Markdown table.
