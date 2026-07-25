@@ -10,10 +10,12 @@ The server handles CORS, JSON encode/decode, and main-thread dispatch.
 Route handlers are looked up from an HttpRouteRegistry instance.
 """
 
+import errno
 import json
 import logging
 import socketserver
 import threading
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 
@@ -62,6 +64,13 @@ def send_cors_headers(handler):
 class _ThreadedHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
     """HTTP server that handles each request in its own thread."""
     daemon_threads = True
+    allow_reuse_address = True
+
+
+# A restart usually races the previous process releasing the port, so a
+# first bind can fail while the old listener is still going away.
+_BIND_RETRIES = 5
+_BIND_RETRY_DELAY = 0.4
 
 
 class GenericRequestHandler(BaseHTTPRequestHandler):
@@ -142,6 +151,32 @@ class HttpServer:
         self._thread = None
         self._running = False
 
+    def _bind(self):
+        """Bind the listening socket, retrying while the port frees up.
+
+        On a restart the previous process may still hold the port for a
+        moment, so a first EADDRINUSE is expected rather than fatal.
+        """
+        last = None
+        for attempt in range(1, _BIND_RETRIES + 1):
+            try:
+                return _ThreadedHTTPServer(
+                    (self.host, self.port), GenericRequestHandler)
+            except OSError as e:
+                if e.errno != errno.EADDRINUSE:
+                    raise
+                last = e
+                if attempt < _BIND_RETRIES:
+                    log.debug("Port %s busy, retrying bind (%d/%d)",
+                              self.port, attempt, _BIND_RETRIES)
+                    time.sleep(_BIND_RETRY_DELAY)
+        raise OSError(
+            last.errno,
+            "Port %s is already in use — another Nelson instance or a "
+            "different program is listening on it. Change the port in "
+            "Tools > Options > Nelson, or stop the other process."
+            % self.port)
+
     def start(self):
         if self._running:
             log.warning("HTTP server is already running")
@@ -149,8 +184,7 @@ class HttpServer:
 
         GenericRequestHandler.route_registry = self.route_registry
 
-        self._server = _ThreadedHTTPServer(
-            (self.host, self.port), GenericRequestHandler)
+        self._server = self._bind()
 
         if self.use_ssl:
             from plugin.modules.http.ssl_certs import ensure_certs, create_ssl_context

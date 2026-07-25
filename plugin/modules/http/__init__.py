@@ -80,10 +80,14 @@ class HttpModule(ModuleBase):
     def _start_server(self, services):
         from plugin.framework.http_server import HttpServer
 
+        if self._server is not None and self._server.is_running():
+            log.debug("HTTP server already running — not starting a second one")
+            return
+
         cfg = services.config.proxy_for(self.name)
         event_bus = getattr(services, "events", None)
 
-        self._server = HttpServer(
+        server = HttpServer(
             route_registry=self._registry,
             port=cfg.get("port") or 8766,
             host=cfg.get("host") or "localhost",
@@ -92,17 +96,24 @@ class HttpModule(ModuleBase):
             ssl_key=cfg.get("ssl_key") or "",
         )
         try:
-            self._server.start()
-            if event_bus:
-                status = self._server.get_status()
-                event_bus.emit("http:server_started",
-                               port=status["port"], host=status["host"],
-                               url=status["url"])
-            if event_bus:
-                event_bus.emit("menu:update")
+            server.start()
+        except OSError as e:
+            # Port taken (after the bind retries) — report it plainly and
+            # keep self._server untouched rather than dropping a handle to
+            # a listener that may still be running.
+            log.error("HTTP server not started: %s", e)
+            return
         except Exception:
             log.exception("Failed to start HTTP server")
-            self._server = None
+            return
+
+        self._server = server
+        if event_bus:
+            status = self._server.get_status()
+            event_bus.emit("http:server_started",
+                           port=status["port"], host=status["host"],
+                           url=status["url"])
+            event_bus.emit("menu:update")
 
     def _stop_server(self):
         if self._server:

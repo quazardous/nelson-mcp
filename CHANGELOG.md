@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **HTTP server failed to start after a restart** — relaunching LibreOffice raced the previous process releasing the port, so the bind failed with `[Errno 98] Address already in use` and the server never came up (the `HTTP server ready` line was never logged). The socket now sets `allow_reuse_address` and retries the bind briefly before giving up with a plain message naming the port. A failed start also no longer discards the handle to an already-running server, and the server is not started twice
 - **Aliased calls were wrongly rejected when no document was open** (#11) — the `requires_doc` pre-check bypassed alias resolution, so a tool invoked by a former name looked unknown and was treated as requiring an open document
 
 ## [0.9.4] — 2026-07-25
