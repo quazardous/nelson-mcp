@@ -15,7 +15,8 @@ log = logging.getLogger("nelson.writer")
 class ListTables(ToolBase):
     """List all text tables in the document."""
 
-    name = "list_tables"
+    name = "table_list"
+    aliases = ["list_tables"]
     intent = "edit"
     description = (
         "List all text tables in the document with their names "
@@ -48,7 +49,8 @@ class ListTables(ToolBase):
 class ReadTable(ToolBase):
     """Read all cell contents from a named Writer table."""
 
-    name = "read_table"
+    name = "table_read"
+    aliases = ["read_table"]
     intent = "edit"
     description = "Read all cell contents from a named Writer table as a 2D array."
     parameters = {
@@ -56,7 +58,7 @@ class ReadTable(ToolBase):
         "properties": {
             "table_name": {
                 "type": "string",
-                "description": "The table name from list_tables.",
+                "description": "The table name from table_list.",
             },
         },
         "required": ["table_name"],
@@ -105,7 +107,8 @@ class ReadTable(ToolBase):
 class WriteTableCell(ToolBase):
     """Write a value to a specific cell in a Writer table."""
 
-    name = "write_table_cell"
+    name = "table_write_cell"
+    aliases = ["write_table_cell"]
     intent = "edit"
     description = (
         "Write a value to a specific cell in a named Writer table. "
@@ -117,7 +120,7 @@ class WriteTableCell(ToolBase):
         "properties": {
             "table_name": {
                 "type": "string",
-                "description": "The table name from list_tables.",
+                "description": "The table name from table_list.",
             },
             "cell": {
                 "type": "string",
@@ -170,7 +173,8 @@ class WriteTableCell(ToolBase):
 class CreateTable(ToolBase):
     """Create a new table at a paragraph position."""
 
-    name = "create_table"
+    name = "table_create"
+    aliases = ["create_table"]
     intent = "edit"
     description = (
         "Create a new table at a paragraph position. "
@@ -279,7 +283,8 @@ class CreateTable(ToolBase):
 class DeleteTable(ToolBase):
     """Delete a table from the document."""
 
-    name = "delete_table"
+    name = "table_delete"
+    aliases = ["delete_table"]
     intent = "edit"
     description = "Delete a named table from the Writer document."
     parameters = {
@@ -287,7 +292,7 @@ class DeleteTable(ToolBase):
         "properties": {
             "table_name": {
                 "type": "string",
-                "description": "The table name from list_tables.",
+                "description": "The table name from table_list.",
             },
         },
         "required": ["table_name"],
@@ -319,7 +324,8 @@ class DeleteTable(ToolBase):
 class SetTableProperties(ToolBase):
     """Set table layout properties: width, alignment, equal columns."""
 
-    name = "set_table_properties"
+    name = "table_set"
+    aliases = ["set_table_properties"]
     intent = "edit"
     description = (
         "Set layout properties on a Writer table: width, alignment, "
@@ -331,7 +337,7 @@ class SetTableProperties(ToolBase):
         "properties": {
             "table_name": {
                 "type": "string",
-                "description": "The table name from list_tables.",
+                "description": "The table name from table_list.",
             },
             "width_mm": {
                 "type": "number",
@@ -431,7 +437,7 @@ class SetTableProperties(ToolBase):
                             len(custom_widths), cols),
                     }
             except Exception as e:
-                log.debug("set_table_properties: column adjust failed: %s", e)
+                log.debug("table_set: column adjust failed: %s", e)
 
         # Repeat header
         repeat = kwargs.get("repeat_header")
@@ -466,7 +472,8 @@ class SetTableProperties(ToolBase):
 class AddTableRows(ToolBase):
     """Add rows to a Writer table."""
 
-    name = "add_table_rows"
+    name = "table_add_rows"
+    aliases = ["add_table_rows"]
     intent = "edit"
     description = "Insert one or more rows into a Writer table at a given position."
     parameters = {
@@ -520,7 +527,8 @@ class AddTableRows(ToolBase):
 class AddTableColumns(ToolBase):
     """Add columns to a Writer table."""
 
-    name = "add_table_columns"
+    name = "table_add_columns"
+    aliases = ["add_table_columns"]
     intent = "edit"
     description = "Insert one or more columns into a Writer table at a given position."
     parameters = {
@@ -578,7 +586,8 @@ class AddTableColumns(ToolBase):
 class DeleteTableRows(ToolBase):
     """Delete rows from a Writer table."""
 
-    name = "delete_table_rows"
+    name = "table_delete_rows"
+    aliases = ["delete_table_rows"]
     intent = "edit"
     description = "Delete one or more rows from a Writer table."
     parameters = {
@@ -629,7 +638,8 @@ class DeleteTableRows(ToolBase):
 class DeleteTableColumns(ToolBase):
     """Delete columns from a Writer table."""
 
-    name = "delete_table_columns"
+    name = "table_delete_columns"
+    aliases = ["delete_table_columns"]
     intent = "edit"
     description = "Delete one or more columns from a Writer table."
     parameters = {
@@ -684,11 +694,12 @@ class DeleteTableColumns(ToolBase):
 class WriteTableRow(ToolBase):
     """Write a full row of values to a Writer table."""
 
-    name = "write_table_row"
+    name = "table_write_row"
+    aliases = ["write_table_row"]
     intent = "edit"
     description = (
         "Write a full row of values to a Writer table in one call. "
-        "More efficient than calling write_table_cell for each cell."
+        "More efficient than calling table_write_cell for each cell."
     )
     parameters = {
         "type": "object",

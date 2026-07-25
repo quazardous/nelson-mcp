@@ -60,7 +60,7 @@ Once you know which document to work on, get its structure:
 ```
 get_document_info           → page count, word count, type, path
 get_document_outline        → heading tree with bookmarks (Writer)
-list_tables                 → sheets (Calc) or tables (Writer)
+table_list                 → sheets (Calc) or tables (Writer)
 ```
 
 For Writer documents, `get_document_outline` is essential — it gives you the heading hierarchy and stable bookmark references you'll use for all subsequent operations.
@@ -131,11 +131,11 @@ insert_paragraphs_batch     → insert multiple paragraphs at once
 ### Tables
 
 ```
-list_tables                 → find tables in the document
-read_table                  → read a table's content
-create_table                → create a new table
-write_table_cell            → write to a specific cell
-write_table_row             → write an entire row
+table_list                 → find tables in the document
+table_read                  → read a table's content
+table_create                → create a new table
+table_write_cell            → write to a specific cell
+table_write_row             → write an entire row
 ```
 
 ### Images
@@ -168,10 +168,10 @@ set_paragraph_style(index=5, style="Heading 1")
 ## Calc Workflows
 
 ```
-list_tables                 → list sheets
-read_table                  → read cell range (e.g. "A1:D10")
-write_table_cell            → write to a cell
-write_table_row             → write a full row
+table_list                 → list sheets
+table_read                  → read cell range (e.g. "A1:D10")
+table_write_cell            → write to a cell
+table_write_row             → write a full row
 ```
 
 ## Batch Operations

@@ -37,8 +37,8 @@ replace_in_document        → find & replace with regex, preserves formatting
 
 ### 4. Tables
 ```
-list_tables → read_table → write_table_cell (A1, B2...)
-create_table(rows, cols, locator)
+table_list → table_read → table_write_cell (A1, B2...)
+table_create(rows, cols, locator)
 ```
 
 ### 5. Images

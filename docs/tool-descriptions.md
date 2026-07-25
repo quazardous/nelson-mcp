@@ -44,7 +44,7 @@ REVIEW WORKFLOW: set_track_changes(enabled=true) → make edits →
 get_tracked_changes → accept_all_changes or reject_all_changes →
 set_track_changes(enabled=false).
 
-TABLE WORKFLOW: list_tables → read_table → write_table_cell for targeted edits.
+TABLE WORKFLOW: table_list → table_read → table_write_cell for targeted edits.
 For new tables or full rewrites, use apply_document_content with HTML/Markdown table.
 
 STYLE WORKFLOW: list_styles (discover exact localized names) → apply style by name.
