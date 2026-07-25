@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.12.0] — 2026-07-25
+
+Nothing in the API changes here. This release is about helping an AI client
+pick the right tool — the complaint behind #2 — by spending the `initialize`
+instructions on decisions rather than internals, and by making tools that get
+confused for each other say what the other one is for.
 
 ### Changed
 
