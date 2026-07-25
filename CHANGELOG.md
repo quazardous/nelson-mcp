@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.10.1] — 2026-07-25
+
+### Fixed
+
+- **Calc cell comments read back empty from a reopened `.xlsx`** (#21) — a second, distinct cause from the one fixed in 0.9.3, found and diagnosed by @braklo. Once a workbook has been closed and reopened from `.xlsx`, LibreOffice has not yet built the caption object for its notes, and until it exists *no* `XSheetAnnotation` read path returns the text — while `xl/comments*.xml` plainly holds it. The read now falls back to `getAnnotationShape()`, which LibreOffice implements as `GetOrCreateCaption()`, so the caption is materialised on demand. Unlike forcing the note visible, this changes neither what the user sees nor the undo stack: verified that the note stays hidden and the document stays unmodified
+- An empty `date` on a `.xlsx` comment is **not** a defect and is no longer treated as one — the format has no date field on a comment element. Dates continue to work for ODF
+
 ## [0.10.0] — 2026-07-25
 
 This release reworks the tool surface. **No existing caller breaks**: every
