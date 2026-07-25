@@ -375,10 +375,22 @@ framework: the tool registry, schema conversion, config, the event bus. They
 never start LibreOffice, so they say nothing about UNO behaviour — which is
 where most real bugs live. A green suite is necessary, not sufficient.
 
-Verifying UNO behaviour is manual today (see the "Verifying a change" section of
-[`AGENTS.md`](AGENTS.md) for how to do it honestly — check the bytes on disk or
-the live document through the UNO socket, not the tool's own answer). Automating
-it is tracked in #26.
+For UNO behaviour use `make smoke`, which installs the built `.oxt` into a
+throwaway profile, starts LibreOffice headless and drives it over MCP:
+
+```bash
+make smoke                              # build + run every check
+python3 scripts/smoke_test.py --keep    # keep the profile and documents to inspect
+```
+
+Each check corresponds to a bug that reached a release, and where possible it
+verifies against something other than the tool's own answer — the md5 of the
+file on disk, `content.xml` inside the saved package, or the live document read
+through the UNO socket. `scripts/release.sh` runs it as a hard gate before
+publishing (`--skip-smoke` to bypass, which warns loudly).
+
+Exit codes: `0` all checks passed, `1` one or more failed, `2` setup failed
+(no build, LibreOffice missing, server never came up).
 
 ## Troubleshooting
 

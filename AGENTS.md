@@ -143,6 +143,18 @@ Nelson runs inside LibreOffice, so a change is not verified until a real
 LibreOffice has run it. `make test` covers pure-Python framework logic only —
 run it (it must stay green), but it proves nothing about UNO behaviour.
 
+```bash
+make test     # fast, pure Python, never starts LibreOffice
+make smoke    # installs the built .oxt, runs LO headless, drives it over MCP
+```
+
+`make smoke` is the one that can catch a real regression: it asserts the bugs
+that actually shipped (#11 mutation classification and aliases, #19 save-as,
+#20 doc_id, #22 change recording), checking the md5 of files on disk and the
+live document through the UNO socket rather than the tool's own answer.
+`scripts/release.sh` runs it as a hard gate. Add a check there whenever you fix
+something a unit test cannot see — that is the whole point of it.
+
 **Do not trust a tool's own response as proof.** Asking Nelson whether Nelson
 worked is circular: if the bug is in how it reports state, the check cannot see
 it. Verify against something outside the tool:
