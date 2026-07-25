@@ -12,6 +12,8 @@ appropriate helper class per call using ``ctx.doc``.
 import logging
 
 from plugin.framework.tool_base import ToolBase
+from plugin.framework.tool_merge import (
+    merged_parameters, dispatch)
 from plugin.modules.calc.bridge import CalcBridge
 from plugin.modules.calc.manipulator import CellManipulator
 from plugin.modules.calc.analyzer import SheetAnalyzer
@@ -22,8 +24,7 @@ logger = logging.getLogger("nelson.calc")
 class ListSheets(ToolBase):
     """List all sheet names in the workbook."""
 
-    name = "calc_sheet_list"
-    aliases = ["list_sheets"]
+    name = None  # merged
     description = "Lists all sheet names in the workbook."
     parameters = {
         "type": "object",
@@ -48,8 +49,7 @@ class ListSheets(ToolBase):
 class SwitchSheet(ToolBase):
     """Switch to a specified sheet."""
 
-    name = "calc_sheet_switch"
-    aliases = ["switch_sheet"]
+    name = None  # merged
     intent = "edit"
     description = "Switches to the specified sheet (makes it active)."
     parameters = {
@@ -81,8 +81,7 @@ class SwitchSheet(ToolBase):
 class CreateSheet(ToolBase):
     """Create a new sheet."""
 
-    name = "calc_sheet_create"
-    aliases = ["create_sheet"]
+    name = None  # merged
     intent = "edit"
     description = "Creates a new sheet."
     parameters = {
@@ -122,8 +121,7 @@ class CreateSheet(ToolBase):
 class RenameSheet(ToolBase):
     """Rename a sheet."""
 
-    name = "calc_sheet_rename"
-    aliases = ["rename_sheet"]
+    name = None  # merged
     intent = "edit"
     description = (
         "Renames a sheet. LibreOffice rewrites every reference to it "
@@ -164,8 +162,7 @@ class RenameSheet(ToolBase):
 class DeleteSheet(ToolBase):
     """Delete a sheet."""
 
-    name = "calc_sheet_delete"
-    aliases = ["delete_sheet"]
+    name = None  # merged
     intent = "edit"
     description = (
         "Deletes a sheet from the workbook. A workbook must keep at "
@@ -200,8 +197,7 @@ class DeleteSheet(ToolBase):
 class GetSheetSummary(ToolBase):
     """Return a summary of a sheet."""
 
-    name = "calc_sheet_summary"
-    aliases = ["get_sheet_summary"]
+    name = None  # merged
     description = (
         "Returns a summary of the active or specified sheet (size, "
         "used cells, column headers, etc.)"
@@ -236,8 +232,7 @@ class GetSheetSummary(ToolBase):
 class CreateChart(ToolBase):
     """Create a chart from data."""
 
-    name = "calc_chart_create"
-    aliases = ["create_chart"]
+    name = None  # merged
     intent = "edit"
     description = (
         "Creates a chart from data. Supports bar, column, line, pie, "
@@ -293,3 +288,46 @@ class CreateChart(ToolBase):
         except Exception as e:
             logger.exception("calc_chart_create failed")
             return {"status": "error", "error": str(e)}
+
+
+class CalcSheet(ToolBase):
+    """Manage the sheets of a Calc workbook."""
+
+    _IMPL = {
+        "list": ListSheets,
+        "summary": GetSheetSummary,
+        "create": CreateSheet,
+        "rename": RenameSheet,
+        "delete": DeleteSheet,
+        "switch": SwitchSheet,
+    }
+
+    name = "calc_sheet"
+    aliases = {
+        "calc_sheet_list": {"action": "list"},
+        "calc_sheet_summary": {"action": "summary"},
+        "calc_sheet_create": {"action": "create"},
+        "calc_sheet_rename": {"action": "rename"},
+        "calc_sheet_delete": {"action": "delete"},
+        "calc_sheet_switch": {"action": "switch"},
+        "list_sheets": {"action": "list"},
+        "get_sheet_summary": {"action": "summary"},
+        "create_sheet": {"action": "create"},
+        "rename_sheet": {"action": "rename"},
+        "delete_sheet": {"action": "delete"},
+        "switch_sheet": {"action": "switch"},
+    }
+    intent = "edit"
+    description = (
+        "Manage the sheets of a Calc workbook: list them, summarise one, "
+        "create, rename, delete, or switch to one. Renaming rewrites "
+        "every reference to the sheet automatically."
+    )
+    parameters = merged_parameters(_IMPL, "What to do with the sheet(s).")
+    doc_types = ["calc"]
+
+    def detects_mutation(self, **kwargs):
+        return kwargs.get("action") not in ("list", "summary")
+
+    def execute(self, ctx, **kwargs):
+        return dispatch(self._IMPL, ctx, kwargs.pop("action", None), kwargs)

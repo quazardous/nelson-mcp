@@ -15,7 +15,7 @@ log = logging.getLogger("nelson.images")
 class GetImageInfo(ToolBase):
     """Get detailed metadata for a specific image in the gallery."""
 
-    name = "gallery_get"
+    name = None  # merged
     requires_service = "images"
     description = (
         "Get detailed metadata for a specific image in the gallery, "

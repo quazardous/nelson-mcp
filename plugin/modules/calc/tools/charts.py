@@ -8,6 +8,9 @@
 import logging
 
 from plugin.framework.tool_base import ToolBase
+from plugin.framework.tool_merge import (
+    merged_parameters, dispatch)
+from plugin.modules.calc.tools.sheets import CreateChart
 
 log = logging.getLogger("nelson.calc")
 
@@ -25,8 +28,7 @@ def _get_sheet(doc, sheet_name=None):
 class ListCharts(ToolBase):
     """List all charts on a Calc sheet."""
 
-    name = "calc_chart_list"
-    aliases = ["list_charts"]
+    name = None  # merged
     intent = "navigate"
     description = (
         "List all charts on a Calc sheet with name, position, and size."
@@ -80,8 +82,7 @@ class ListCharts(ToolBase):
 class GetChartInfo(ToolBase):
     """Get detailed info about a chart."""
 
-    name = "calc_chart_info"
-    aliases = ["get_chart_info"]
+    name = None  # merged
     intent = "navigate"
     description = (
         "Get detailed info about a Calc chart: type, title, "
@@ -158,8 +159,7 @@ class GetChartInfo(ToolBase):
 class EditChart(ToolBase):
     """Modify chart properties."""
 
-    name = "calc_chart_edit"
-    aliases = ["edit_chart"]
+    name = None  # merged
     intent = "edit"
     description = (
         "Edit a Calc chart: update title, subtitle, legend visibility."
@@ -236,8 +236,7 @@ class EditChart(ToolBase):
 class DeleteChart(ToolBase):
     """Delete a chart from a Calc sheet."""
 
-    name = "calc_chart_delete"
-    aliases = ["delete_chart"]
+    name = None  # merged
     intent = "edit"
     description = "Delete a chart from a Calc sheet by name."
     parameters = {
@@ -300,3 +299,44 @@ def _range_to_str(range_addr):
         )
     except Exception:
         return str(range_addr)
+
+
+class CalcChart(ToolBase):
+    """List, inspect, create, edit or delete Calc charts."""
+
+    _IMPL = {
+        "list": ListCharts,
+        "info": GetChartInfo,
+        "create": CreateChart,
+        "edit": EditChart,
+        "delete": DeleteChart,
+    }
+
+    name = "calc_chart"
+    aliases = {
+        "calc_chart_list": {"action": "list"},
+        "calc_chart_info": {"action": "info"},
+        "calc_chart_create": {"action": "create"},
+        "calc_chart_edit": {"action": "edit"},
+        "calc_chart_delete": {"action": "delete"},
+        "list_charts": {"action": "list"},
+        "get_chart_info": {"action": "info"},
+        "create_chart": {"action": "create"},
+        "edit_chart": {"action": "edit"},
+        "delete_chart": {"action": "delete"},
+    }
+    intent = "edit"
+    description = (
+        "Work with charts in a Calc sheet: list them, inspect one, "
+        "create one from a data range, edit an existing one, or delete "
+        "it."
+    )
+    parameters = merged_parameters(
+        _IMPL, "What to do with the chart(s).")
+    doc_types = ["calc"]
+
+    def detects_mutation(self, **kwargs):
+        return kwargs.get("action") not in ("list", "info")
+
+    def execute(self, ctx, **kwargs):
+        return dispatch(self._IMPL, ctx, kwargs.pop("action", None), kwargs)

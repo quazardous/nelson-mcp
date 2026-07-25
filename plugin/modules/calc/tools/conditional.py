@@ -12,6 +12,8 @@ conditional format rules.
 import logging
 
 from plugin.framework.tool_base import ToolBase
+from plugin.framework.tool_merge import (
+    merged_parameters, dispatch)
 from plugin.modules.calc.address_utils import parse_range_string, index_to_column
 
 log = logging.getLogger("nelson.calc")
@@ -100,8 +102,7 @@ def _entry_to_dict(entry, idx):
 class ListConditionalFormats(ToolBase):
     """List conditional formatting rules on a cell range."""
 
-    name = "calc_condformat_list"
-    aliases = ["list_conditional_formats"]
+    name = None  # merged
     intent = "navigate"
     description = (
         "List conditional formatting rules on a Calc cell range. "
@@ -166,8 +167,7 @@ class ListConditionalFormats(ToolBase):
 class AddConditionalFormat(ToolBase):
     """Add a conditional formatting rule to a cell range."""
 
-    name = "calc_condformat_add"
-    aliases = ["add_conditional_format"]
+    name = None  # merged
     intent = "edit"
     description = (
         "Add a conditional formatting rule to a Calc cell range. "
@@ -306,8 +306,7 @@ class AddConditionalFormat(ToolBase):
 class RemoveConditionalFormat(ToolBase):
     """Remove a conditional formatting rule from a cell range."""
 
-    name = "calc_condformat_remove"
-    aliases = ["remove_conditional_format"]
+    name = None  # merged
     intent = "edit"
     description = (
         "Remove a conditional formatting rule from a Calc cell range by index. "
@@ -371,8 +370,7 @@ class RemoveConditionalFormat(ToolBase):
 class ClearConditionalFormats(ToolBase):
     """Clear all conditional formatting from a cell range."""
 
-    name = "calc_condformat_clear"
-    aliases = ["clear_conditional_formats"]
+    name = None  # merged
     intent = "edit"
     description = "Remove all conditional formatting rules from a Calc cell range."
     parameters = {
@@ -407,3 +405,40 @@ class ClearConditionalFormats(ToolBase):
             return {"status": "ok", "cell_range": cell_range_str, "cleared": True}
         except Exception as e:
             return {"status": "error", "error": str(e)}
+
+
+class CalcCondFormat(ToolBase):
+    """List, add, remove or clear Calc conditional formats."""
+
+    _IMPL = {
+        "list": ListConditionalFormats,
+        "add": AddConditionalFormat,
+        "remove": RemoveConditionalFormat,
+        "clear": ClearConditionalFormats,
+    }
+
+    name = "calc_condformat"
+    aliases = {
+        "calc_condformat_list": {"action": "list"},
+        "calc_condformat_add": {"action": "add"},
+        "calc_condformat_remove": {"action": "remove"},
+        "calc_condformat_clear": {"action": "clear"},
+        "list_conditional_formats": {"action": "list"},
+        "add_conditional_format": {"action": "add"},
+        "remove_conditional_format": {"action": "remove"},
+        "clear_conditional_formats": {"action": "clear"},
+    }
+    intent = "edit"
+    description = (
+        "Work with conditional formatting in a Calc sheet: list the "
+        "rules, add one to a range, remove one, or clear them all."
+    )
+    parameters = merged_parameters(
+        _IMPL, "What to do with the conditional format(s).")
+    doc_types = ["calc"]
+
+    def detects_mutation(self, **kwargs):
+        return kwargs.get("action") != "list"
+
+    def execute(self, ctx, **kwargs):
+        return dispatch(self._IMPL, ctx, kwargs.pop("action", None), kwargs)

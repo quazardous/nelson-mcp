@@ -15,7 +15,7 @@ log = logging.getLogger("nelson.images")
 class ListImages(ToolBase):
     """List images from a gallery provider with pagination."""
 
-    name = "gallery_list"
+    name = None  # merged
     requires_service = "images"
     description = (
         "List images from the image gallery with optional path filtering "

@@ -16,21 +16,31 @@ class ListTables(ToolBase):
     """List all text tables in the document."""
 
     name = "table_list"
-    aliases = ["list_tables"]
+    aliases = ["list_tables", "table_read", "read_table"]
     intent = "edit"
     description = (
-        "List all text tables in the document with their names "
-        "and dimensions (rows x cols)."
+        "List the text tables in the document with their names and "
+        "dimensions (rows x cols). Give table_name to read that table's "
+        "cell contents instead, as a 2D array."
     )
     parameters = {
         "type": "object",
-        "properties": {},
+        "properties": {
+            "table_name": {
+                "type": "string",
+                "description": (
+                    "Read this table's contents instead of listing."
+                ),
+            },
+        },
         "required": [],
     }
     doc_types = ["writer"]
     is_mutation = False
 
     def execute(self, ctx, **kwargs):
+        if kwargs.get("table_name"):
+            return ReadTable().execute(ctx, **kwargs)
         doc = ctx.doc
         if not hasattr(doc, "getTextTables"):
             return {"status": "error", "message": "Document does not support text tables."}
@@ -50,8 +60,7 @@ class ListTables(ToolBase):
 class ReadTable(ToolBase):
     """Read all cell contents from a named Writer table."""
 
-    name = "table_read"
-    aliases = ["read_table"]
+    name = None  # merged
     intent = "edit"
     description = "Read all cell contents from a named Writer table as a 2D array."
     parameters = {

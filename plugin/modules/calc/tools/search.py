@@ -8,6 +8,8 @@
 import logging
 
 from plugin.framework.tool_base import ToolBase
+from plugin.framework.tool_merge import (
+    merged_parameters, dispatch)
 
 log = logging.getLogger("nelson.calc")
 
@@ -36,8 +38,7 @@ def _cell_address_str(cell):
 class SearchInSpreadsheet(ToolBase):
     """Search for text in the spreadsheet."""
 
-    name = "calc_search"
-    aliases = ["search_in_spreadsheet"]
+    name = None  # merged
     description = (
         "Search for text or values in a Calc spreadsheet. "
         "Returns matching cells with their addresses and values."
@@ -134,8 +135,7 @@ class SearchInSpreadsheet(ToolBase):
 class ReplaceInSpreadsheet(ToolBase):
     """Find and replace in the spreadsheet."""
 
-    name = "calc_replace"
-    aliases = ["replace_in_spreadsheet"]
+    name = None  # merged
     description = (
         "Find and replace text or values in a Calc spreadsheet. "
         "Returns count of replacements made."
@@ -217,3 +217,34 @@ class ReplaceInSpreadsheet(ToolBase):
             }
         except Exception as e:
             return {"status": "error", "error": str(e)}
+
+
+class CalcSearch(ToolBase):
+    """Search a Calc sheet, optionally replacing what is found."""
+
+    _IMPL = {
+        "search": SearchInSpreadsheet,
+        "replace": ReplaceInSpreadsheet,
+    }
+
+    name = "calc_search"
+    aliases = {
+        "search_in_spreadsheet": {"action": "search"},
+        "calc_replace": {"action": "replace"},
+        "replace_in_spreadsheet": {"action": "replace"},
+    }
+    intent = "edit"
+    description = (
+        "Find text in a Calc sheet. action='search' reports the matches; "
+        "action='replace' rewrites them."
+    )
+    parameters = merged_parameters(
+        _IMPL, "Report matches, or replace them (default: search).")
+    doc_types = ["calc"]
+
+    def detects_mutation(self, **kwargs):
+        return kwargs.get("action") == "replace"
+
+    def execute(self, ctx, **kwargs):
+        action = kwargs.pop("action", "search")
+        return dispatch(self._IMPL, ctx, action, kwargs)
