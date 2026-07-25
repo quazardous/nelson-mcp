@@ -20,7 +20,8 @@ log = logging.getLogger("nelson.doc")
 class ListHyperlinks(ToolBase):
     """List all hyperlinks in the document."""
 
-    name = "list_hyperlinks"
+    name = "link_list"
+    aliases = ["list_hyperlinks"]
     intent = "navigate"
     description = (
         "List all hyperlinks in the document. "
@@ -44,6 +45,7 @@ class ListHyperlinks(ToolBase):
         "required": [],
     }
     doc_types = ["writer", "calc"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         if ctx.doc_type == "writer":
@@ -148,7 +150,7 @@ class ListHyperlinks(ToolBase):
                     except Exception:
                         pass
         except Exception as e:
-            log.debug("list_hyperlinks calc: %s", e)
+            log.debug("link_list calc: %s", e)
 
         return {
             "status": "ok",
@@ -161,7 +163,8 @@ class ListHyperlinks(ToolBase):
 class InsertHyperlink(ToolBase):
     """Insert a hyperlink into the document."""
 
-    name = "insert_hyperlink"
+    name = "link_insert"
+    aliases = ["insert_hyperlink"]
     intent = "edit"
     description = (
         "Insert a hyperlink into the document. "
@@ -257,7 +260,7 @@ class InsertHyperlink(ToolBase):
 
             return {"status": "ok", "url": url, "text": text}
         except Exception as e:
-            log.exception("insert_hyperlink writer failed")
+            log.exception("link_insert writer failed")
             return {"status": "error", "error": str(e)}
 
     def _insert_calc(self, ctx, url, text, **kwargs):
@@ -297,10 +300,11 @@ class InsertHyperlink(ToolBase):
 class RemoveHyperlink(ToolBase):
     """Remove a hyperlink from the document."""
 
-    name = "remove_hyperlink"
+    name = "link_remove"
+    aliases = ["remove_hyperlink"]
     intent = "edit"
     description = (
-        "Remove a hyperlink by index (from list_hyperlinks). "
+        "Remove a hyperlink by index (from link_list). "
         "In Writer, clears HyperLinkURL on the text portion. "
         "In Calc, removes the URL text field from the cell. "
         "The display text is preserved."
@@ -310,7 +314,7 @@ class RemoveHyperlink(ToolBase):
         "properties": {
             "index": {
                 "type": "integer",
-                "description": "Hyperlink index (from list_hyperlinks).",
+                "description": "Hyperlink index (from link_list).",
             },
             "calc": {
                 "type": "object",
@@ -444,7 +448,7 @@ class RemoveHyperlink(ToolBase):
                     except Exception:
                         pass
         except Exception as e:
-            log.debug("remove_hyperlink calc: %s", e)
+            log.debug("link_remove calc: %s", e)
 
         return {"status": "error", "message": "Hyperlink index %d not found." % target_index}
 
@@ -452,10 +456,11 @@ class RemoveHyperlink(ToolBase):
 class EditHyperlink(ToolBase):
     """Edit an existing hyperlink."""
 
-    name = "edit_hyperlink"
+    name = "link_edit"
+    aliases = ["edit_hyperlink"]
     intent = "edit"
     description = (
-        "Edit an existing hyperlink by index (from list_hyperlinks). "
+        "Edit an existing hyperlink by index (from link_list). "
         "Can change the URL and/or display text."
     )
     parameters = {
@@ -463,7 +468,7 @@ class EditHyperlink(ToolBase):
         "properties": {
             "index": {
                 "type": "integer",
-                "description": "Hyperlink index (from list_hyperlinks).",
+                "description": "Hyperlink index (from link_list).",
             },
             "url": {
                 "type": "string",
@@ -634,6 +639,6 @@ class EditHyperlink(ToolBase):
                     except Exception:
                         pass
         except Exception as e:
-            log.debug("edit_hyperlink calc: %s", e)
+            log.debug("link_edit calc: %s", e)
 
         return {"status": "error", "message": "Hyperlink index %d not found." % target_index}

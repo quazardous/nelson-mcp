@@ -15,7 +15,8 @@ log = logging.getLogger("nelson.common")
 class GetDocumentInfo(ToolBase):
     """Return generic metadata about the current document."""
 
-    name = "get_document_info"
+    name = "doc_info"
+    aliases = ["get_document_info"]
     description = (
         "Returns generic document metadata: title, file path, document type, "
         "modification status, and document properties (author, subject, etc.)."
@@ -27,6 +28,7 @@ class GetDocumentInfo(ToolBase):
     }
     doc_types = None  # works with all document types
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc

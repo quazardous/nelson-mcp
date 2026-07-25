@@ -9,9 +9,9 @@ description: Quick reference for Nelson MCP — LibreOffice document tools
 
 ### 1. Discover
 ```
-get_document_info          → doc type, title, path
+doc_info          → doc type, title, path
 nav_tree          → heading structure + _mcp_ bookmarks (depth=0 for all)
-get_document_stats         → word count, page count, etc.
+doc_stats         → word count, page count, etc.
 list_available_tools       → see extended tools you can activate
 request_tools(intent=...)  → activate: navigate, edit, review, media
 ```
@@ -70,5 +70,5 @@ execute_batch(operations=[...])
 
 ## Tips
 - Call `style_list` before applying styles — names are localized
-- Use `document_health_check` to detect structural issues
+- Use `doc_health` to detect structural issues
 - Use `text_get_range(scope="selection")` to read the user's current selection

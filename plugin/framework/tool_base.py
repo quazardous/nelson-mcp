@@ -73,7 +73,7 @@ class ToolBase(ABC):
                      means auto-detect from name prefix.
         long_running: Hint that the tool may take a while (e.g. image gen).
         requires_doc: Whether the tool needs an open document.  Set to
-                     False for tools like create_document, open_document
+                     False for tools like doc_create, doc_open
                      that should work without any document open.
         requires_service: Service name that must have at least one
                      registered instance for this tool to be visible.

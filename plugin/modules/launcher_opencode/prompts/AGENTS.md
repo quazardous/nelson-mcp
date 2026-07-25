@@ -7,16 +7,16 @@ You have access to Nelson MCP tools. These tools let you read, edit, and manage 
 First, check if a document is already open:
 
 ```
-get_document_info()
+doc_info()
 ```
 
 If no document is open, find one to work with:
 
 ```
-list_open_documents()        # see all open documents
-get_recent_documents()       # see recently opened files
-open_document(file_path="/home/user/mydoc.odt")   # open a file
-create_document(doc_type="writer")                 # create new empty document
+doc_list_open()        # see all open documents
+doc_recent()       # see recently opened files
+doc_open(file_path="/home/user/mydoc.odt")   # open a file
+doc_create(doc_type="writer")                 # create new empty document
 ```
 
 ## Step 2: Read the document
@@ -57,14 +57,14 @@ text_replace(find="old text", replace="new text")
 ## Step 4: Save
 
 ```
-save_document()                                    # save to current file
-save_document_as(target_path="/home/user/new.odt") # save as new file
-export_pdf(path="/home/user/output.pdf")           # export as PDF
+doc_save()                                    # save to current file
+doc_save_as(target_path="/home/user/new.odt") # save as new file
+doc_export_pdf(path="/home/user/output.pdf")           # export as PDF
 ```
 
 ## Important rules
 
-1. **Always call `get_document_info` first** to know what document you are working with. If no document is open, call `get_recent_documents` to find one, then `open_document` to open it.
+1. **Always call `doc_info` first** to know what document you are working with. If no document is open, call `doc_recent` to find one, then `doc_open` to open it.
 2. **Read before you edit.** Always read the content before changing it.
 3. **Use locators for navigation.** Many tools accept a `locator` parameter. Use `bookmark:_mcp_h1` (from `nav_tree`) or `heading_text:Introduction` (by heading name). These are more reliable than paragraph numbers.
 4. **Call `request_tools(intent="edit")` before editing.** Edit tools are not available by default.
@@ -100,7 +100,7 @@ execute_batch(operations=[
 
 ## Other useful tools
 
-- `get_document_stats()` — word count, page count, paragraph count
+- `doc_stats()` — word count, page count, paragraph count
 - `image_list()` / `image_insert()` — work with images
 - `comment_list()` / `comment_add()` — work with comments
 - `change_set(enabled=false)` — disable auto track changes temporarily (enabled by default on MCP mutations)

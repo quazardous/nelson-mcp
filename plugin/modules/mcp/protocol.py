@@ -491,7 +491,7 @@ class MCPProtocolHandler:
                     return _tool_error(
                         "document_not_found",
                         "Document not found: %s" % doc_uri,
-                        hint="Use list_open_documents to see available docs.",
+                        hint="Use doc_list_open to see available docs.",
                         retryable=False,
                     )
             else:
@@ -509,7 +509,7 @@ class MCPProtocolHandler:
             return _tool_error(
                 "no_document",
                 "No document open in LibreOffice.",
-                hint="Use create_document or open_document first.",
+                hint="Use doc_create or doc_open first.",
                 retryable=False,
             )
 

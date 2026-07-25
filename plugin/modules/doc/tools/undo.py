@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Undo/redo tools for all document types via XUndoManager."""
+"""Undo/doc_redo tools for all document types via XUndoManager."""
 
 from plugin.framework.tool_base import ToolBase
 
@@ -12,23 +12,24 @@ def _get_undo_manager(doc):
     """Return the UndoManager for any document type."""
     if hasattr(doc, "getUndoManager"):
         return doc.getUndoManager()
-    raise RuntimeError("Document does not support undo.")
+    raise RuntimeError("Document does not support doc_undo.")
 
 
 class Undo(ToolBase):
     """Undo the last action."""
 
-    name = "undo"
+    name = "doc_undo"
+    aliases = ["undo"]
     description = (
         "Undo the last action in the document. "
-        "Can undo multiple steps. Works on all document types."
+        "Can doc_undo multiple steps. Works on all document types."
     )
     parameters = {
         "type": "object",
         "properties": {
             "steps": {
                 "type": "integer",
-                "description": "Number of steps to undo (default: 1).",
+                "description": "Number of steps to doc_undo (default: 1).",
             },
         },
         "required": [],
@@ -59,17 +60,18 @@ class Undo(ToolBase):
 class Redo(ToolBase):
     """Redo the last undone action."""
 
-    name = "redo"
+    name = "doc_redo"
+    aliases = ["redo"]
     description = (
         "Redo the last undone action in the document. "
-        "Can redo multiple steps. Works on all document types."
+        "Can doc_redo multiple steps. Works on all document types."
     )
     parameters = {
         "type": "object",
         "properties": {
             "steps": {
                 "type": "integer",
-                "description": "Number of steps to redo (default: 1).",
+                "description": "Number of steps to doc_redo (default: 1).",
             },
         },
         "required": [],

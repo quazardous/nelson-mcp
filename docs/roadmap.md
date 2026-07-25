@@ -36,7 +36,7 @@ Nelson resolves "Introduction" internally (heading lookup → bookmark → parag
 
 Bring back the two-tier tool delivery, adapted for MCP:
 
-- **Core tools** always visible: `list_open_documents`, `get_document_info`, `nav_outline`, `do`, `request_tools`
+- **Core tools** always visible: `doc_list_open`, `doc_info`, `nav_outline`, `do`, `request_tools`
 - **Extended tools** unlocked on demand by intent: `request_tools(intent="edit")` adds editing tools to the session
 - Intent groups: `navigate`, `edit`, `search`, `tables`, `images`, `styles`, `review`, `calc`, `draw`
 - `tools/list` reflects the current session — starts small, grows as the agent asks
@@ -47,7 +47,7 @@ Bring back the two-tier tool delivery, adapted for MCP:
 `tools/list` adapts to what's happening:
 - No document open → only lifecycle tools (open, create, list recent)
 - Writer document → Writer tools only (no Calc/Draw noise)
-- First edit done → surface `undo`, `save_document`
+- First edit done → surface `doc_undo`, `doc_save`
 
 ### Pre-trained baseline rules
 
@@ -117,7 +117,7 @@ Level 1 — Statistics (zero deps, always on)
 Level 2 — Sequential mining (lightweight, on-demand)
   PrefixSpan on accumulated traces
   → Frequent multi-step workflows discovered
-  → Anti-patterns detected (sequences ending in undo/failure)
+  → Anti-patterns detected (sequences ending in doc_undo/failure)
 
 Level 3 — LLM interpretation (offline, when GPU is free)
   Feed Level 1+2 outputs to LLM
@@ -146,7 +146,7 @@ All three levels feed a single rules file, loaded at boot:
 ```json
 [
   {
-    "after": ["list_open_documents", "nav_outline"],
+    "after": ["doc_list_open", "nav_outline"],
     "doc_type": "writer",
     "suggest": ["nav_heading_content", "text_find"],
     "confidence": 0.85,
@@ -169,7 +169,7 @@ All three levels feed a single rules file, loaded at boot:
 ```
 
 - **Workflow patterns** — common sequences that work, ranked by frequency and confidence
-- **Anti-patterns** — sequences that lead to undo or failure, with corrective hints
+- **Anti-patterns** — sequences that lead to doc_undo or failure, with corrective hints
 - **Composite tools** — auto-generated high-level tools from repeated patterns (LATM)
 - **Suggestion weights** — what to propose after each tool, specific to this user's habits and document types
 
@@ -183,7 +183,7 @@ Both MCP and `/api/do` return `_next` after every action, powered by the learned
   "result": { "paragraph_index": 12 },
   "_next": [
     {"tool": "nav_heading_content", "args": {"heading": "Conclusion"}},
-    {"tool": "save_document", "reason": "5 unsaved edits"}
+    {"tool": "doc_save", "reason": "5 unsaved edits"}
   ]
 }
 ```

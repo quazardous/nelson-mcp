@@ -1004,7 +1004,7 @@ class OptionsHandler(unohelper.Base, XContainerWindowEventHandler, XServiceInfo)
     # ── Scroll support ────────────────────────────────────────────────
 
     def _reset_scroll(self, xWindow):
-        """Restore original positions of all controls (undo scroll offset).
+        """Restore original positions of all controls (doc_undo scroll offset).
 
         Prefers the stored _ScrollListener which holds exact original positions.
         Falls back to arithmetic (PositionY + ScrollValue) when no listener.

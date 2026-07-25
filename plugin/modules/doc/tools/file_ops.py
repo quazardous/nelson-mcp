@@ -104,7 +104,8 @@ def _save_to_path(doc, path):
 class SaveDocument(ToolBase):
     """Save the current document to its existing location."""
 
-    name = "save_document"
+    name = "doc_save"
+    aliases = ["save_document"]
     description = (
         "Saves the current document. If the document has never been saved, "
         "provide a 'path' to save it for the first time (e.g. "
@@ -174,7 +175,8 @@ class SaveDocument(ToolBase):
 class ExportPdf(ToolBase):
     """Export the current document as PDF."""
 
-    name = "export_pdf"
+    name = "doc_export_pdf"
+    aliases = ["export_pdf"]
     description = (
         "Exports the current document to a PDF file at the given path."
     )
@@ -226,7 +228,8 @@ class ExportPdf(ToolBase):
 class SaveDocumentAs(ToolBase):
     """Save the current document to a new path (File > Save As)."""
 
-    name = "save_document_as"
+    name = "doc_save_as"
+    aliases = ["save_document_as"]
     intent = "media"
     description = (
         "Save the current document to a new path. "
@@ -286,7 +289,8 @@ def _get_desktop():
 class CreateDocument(ToolBase):
     """Create a new empty document in LibreOffice."""
 
-    name = "create_document"
+    name = "doc_create"
+    aliases = ["create_document"]
     intent = "media"
     description = (
         "Create a new empty document in LibreOffice. "
@@ -314,7 +318,7 @@ class CreateDocument(ToolBase):
                     "(e.g. C:/Users/me/report.odt). "
                     "Supported extensions: "
                     + ", ".join(sorted(_EXT_FILTERS)) + ". "
-                    "Tip: use get_recent_documents to discover valid "
+                    "Tip: use doc_recent to discover valid "
                     "directory paths on this machine."
                 ),
             },
@@ -379,7 +383,8 @@ class CreateDocument(ToolBase):
 class OpenDocument(ToolBase):
     """Open a document file in LibreOffice."""
 
-    name = "open_document"
+    name = "doc_open"
+    aliases = ["open_document"]
     intent = "media"
     description = "Open a document file in LibreOffice."
     parameters = {
@@ -428,10 +433,11 @@ class OpenDocument(ToolBase):
 class CloseDocument(ToolBase):
     """Close the current document."""
 
-    name = "close_document"
+    name = "doc_close"
+    aliases = ["close_document"]
     intent = "media"
     description = (
-        "Close the current document. Use save_document first if needed."
+        "Close the current document. Use doc_save first if needed."
     )
     parameters = {
         "type": "object",
@@ -451,7 +457,7 @@ class CloseDocument(ToolBase):
             frames = desktop.getFrames()
             frame_count = frames.getCount()
             log.debug(
-                "close_document: %d frames before close", frame_count
+                "doc_close: %d frames before close", frame_count
             )
             for i in range(frame_count):
                 frame = frames.getByIndex(i)
@@ -503,7 +509,7 @@ class CloseDocument(ToolBase):
         # Close the document
         try:
             closing_doc.close(False)
-            log.info("close_document: document closed successfully")
+            log.info("doc_close: document closed successfully")
         except Exception as exc:
             log.exception("CloseDocument failed: %s", exc)
             return {"status": "error", "error": str(exc)}
@@ -513,16 +519,16 @@ class CloseDocument(ToolBase):
             try:
                 next_frame.activate()
                 next_title = next_frame.getTitle()
-                log.info("close_document: activated next doc: %s", next_title)
+                log.info("doc_close: activated next doc: %s", next_title)
                 return {
                     "status": "ok",
                     "message": "Document closed.",
                     "active_document": next_title,
                 }
             except Exception:
-                log.warning("close_document: failed to activate next frame", exc_info=True)
+                log.warning("doc_close: failed to activate next frame", exc_info=True)
         else:
-            log.info("close_document: no next frame found")
+            log.info("doc_close: no next frame found")
 
         return {"status": "ok", "message": "Document closed."}
 
@@ -530,7 +536,8 @@ class CloseDocument(ToolBase):
 class ListOpenDocuments(ToolBase):
     """List all currently open documents in LibreOffice."""
 
-    name = "list_open_documents"
+    name = "doc_list_open"
+    aliases = ["list_open_documents"]
     intent = "media"
     description = (
         "List all currently open documents in LibreOffice. "
@@ -543,6 +550,7 @@ class ListOpenDocuments(ToolBase):
         "required": [],
     }
     doc_types = None
+    is_mutation = False
     requires_doc = False
 
     def execute(self, ctx, **kwargs):
@@ -563,7 +571,8 @@ class ListOpenDocuments(ToolBase):
 class GetRecentDocuments(ToolBase):
     """Get list of recently opened documents from LibreOffice history."""
 
-    name = "get_recent_documents"
+    name = "doc_recent"
+    aliases = ["get_recent_documents"]
     intent = "media"
     description = (
         "Get list of recently opened documents from LibreOffice history."
@@ -579,6 +588,7 @@ class GetRecentDocuments(ToolBase):
         "required": [],
     }
     doc_types = None
+    is_mutation = False
     requires_doc = False
 
     def execute(self, ctx, **kwargs):
@@ -637,7 +647,8 @@ class GetRecentDocuments(ToolBase):
 class SetDocumentProperties(ToolBase):
     """Set document metadata properties."""
 
-    name = "set_document_properties"
+    name = "doc_set_properties"
+    aliases = ["set_document_properties"]
     intent = "media"
     description = (
         "Set document metadata properties "

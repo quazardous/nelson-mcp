@@ -33,10 +33,10 @@ class OpenCodeProvider:
     def get_args(self, mcp_url, config):
         return [
             "--prompt", "You are helping the user work with a LibreOffice "
-            "document through Nelson MCP. Start by calling get_document_info "
+            "document through Nelson MCP. Start by calling doc_info "
             "to see the current document. If no document is open, use "
-            "list_open_documents or get_recent_documents to find one, "
-            "then open_document to open it.",
+            "doc_list_open or doc_recent to find one, "
+            "then doc_open to open it.",
         ]
 
     def setup_env(self, mcp_url, env, cwd, config):

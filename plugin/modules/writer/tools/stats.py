@@ -15,7 +15,8 @@ log = logging.getLogger("nelson.writer")
 class GetDocumentStats(ToolBase):
     """Return basic statistics about the current Writer document."""
 
-    name = "get_document_stats"
+    name = "doc_stats"
+    aliases = ["get_document_stats"]
     description = (
         "Returns document statistics: character count, word count, "
         "paragraph count, page count, and heading count."
@@ -27,6 +28,7 @@ class GetDocumentStats(ToolBase):
     }
     doc_types = ["writer"]
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc

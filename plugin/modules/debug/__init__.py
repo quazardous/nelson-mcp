@@ -137,7 +137,7 @@ class DebugModule(ModuleBase):
                 },
                 "call_tool": {
                     "description": "Call a registered tool",
-                    "body": {"action": "call_tool", "tool": "get_document_info", "args": {}},
+                    "body": {"action": "call_tool", "tool": "doc_info", "args": {}},
                 },
                 "trigger": {
                     "description": "Simulate a menu trigger command",

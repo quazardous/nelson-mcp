@@ -26,7 +26,7 @@ When you first connect, you don't know what the user has. **Explore before actin
 ### Step 1 — What's already open?
 
 ```
-list_open_documents
+doc_list_open
 ```
 
 Returns all documents currently open in LibreOffice with their `doc_id`, title, type, and file path. This is your starting point. If documents are open, the user likely wants to work on one of them.
@@ -34,7 +34,7 @@ Returns all documents currently open in LibreOffice with their `doc_id`, title, 
 ### Step 2 — What was recently used?
 
 ```
-get_recent_documents
+doc_recent
 ```
 
 Returns the user's recently opened documents (from LibreOffice history). Useful when nothing is open or the user mentions a document by name — you can find its path here and open it.
@@ -58,7 +58,7 @@ Galleries give you access to files the user has organized — you can open docum
 Once you know which document to work on, get its structure:
 
 ```
-get_document_info           → page count, word count, type, path
+doc_info           → page count, word count, type, path
 nav_outline        → heading tree with bookmarks (Writer)
 table_list                 → sheets (Calc) or tables (Writer)
 ```
@@ -69,12 +69,12 @@ For Writer documents, `nav_outline` is essential — it gives you the heading hi
 
 ```
 Connected
- ├─ list_open_documents
- │   ├─ Documents open → get_document_info / nav_outline
+ ├─ doc_list_open
+ │   ├─ Documents open → doc_info / nav_outline
  │   └─ Nothing open
- │       ├─ User names a doc → get_recent_documents → open_document
+ │       ├─ User names a doc → doc_recent → doc_open
  │       ├─ User wants to find a doc → docs_gallery_search
- │       └─ User wants a new doc → create_document
+ │       └─ User wants a new doc → doc_create
  └─ User mentions images → gallery_search / gallery_list
 ```
 
@@ -83,7 +83,7 @@ Connected
 User says: *"Add a summary to my report"*
 
 ```
-1. list_open_documents          → find "Annual Report 2025.odt" (doc_id: abc123)
+1. doc_list_open          → find "Annual Report 2025.odt" (doc_id: abc123)
 2. nav_outline(_document="id:abc123")
                                 → headings: Introduction, Chapter 1, Chapter 2, Conclusion
 3. nav_heading_content(heading="Conclusion")
@@ -189,11 +189,11 @@ Use `execute_batch` to run multiple tools in one call. Supports variable chainin
 
 ## Undo
 
-All mutations support `undo`. If something goes wrong:
+All mutations support `doc_undo`. If something goes wrong:
 
 ```
-undo    → revert last MCP operation (one Ctrl+Z)
-redo    → re-apply if needed
+doc_undo    → revert last MCP operation (one Ctrl+Z)
+doc_redo    → re-apply if needed
 ```
 
 ## Tool Presets
@@ -237,12 +237,12 @@ If you're on a custom endpoint, use `tools/list` to see which tools are availabl
 ### "Create a report from scratch"
 
 ```
-1. create_document(type="writer", path="C:/Users/me/report.odt")
+1. doc_create(type="writer", path="C:/Users/me/report.odt")
 2. text_insert_batch(paragraphs=[
      {"text": "Monthly Report", "style": "Heading 1"},
      {"text": "Summary of findings...", "style": "Body Text"}
    ])
-3. save_document
+3. doc_save
 ```
 
 ## Tips

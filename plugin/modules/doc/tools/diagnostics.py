@@ -15,7 +15,8 @@ log = logging.getLogger("nelson.common")
 class DocumentHealthCheck(ToolBase):
     """Run structural health checks on a Writer document."""
 
-    name = "document_health_check"
+    name = "doc_health"
+    aliases = ["document_health_check"]
     intent = "review"
     description = (
         "Run structural health checks on the document. "
@@ -28,6 +29,7 @@ class DocumentHealthCheck(ToolBase):
         "required": [],
     }
     doc_types = ["writer"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
@@ -225,7 +227,8 @@ class DocumentHealthCheck(ToolBase):
 class SetDocumentProtection(ToolBase):
     """Set or remove document section protection."""
 
-    name = "set_document_protection"
+    name = "doc_protect"
+    aliases = ["set_document_protection"]
     intent = "review"
     description = "Set or remove document section protection."
     parameters = {

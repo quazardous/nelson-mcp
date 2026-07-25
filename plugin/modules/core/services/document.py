@@ -692,7 +692,7 @@ class DocumentService(ServiceBase):
     def reassign_doc_id(self, model):
         """Force a fresh doc_id on *model*, overwriting any existing one.
 
-        Used after ``save_document_as`` so the newly written file — now a
+        Used after ``doc_save_as`` so the newly written file — now a
         distinct document — gets its own identity instead of inheriting
         the source file's ``NelsonDocId`` (#20).
         """

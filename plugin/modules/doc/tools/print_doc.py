@@ -11,7 +11,8 @@ from plugin.framework.tool_base import ToolBase
 class PrintDocument(ToolBase):
     """Print the current document."""
 
-    name = "print_document"
+    name = "doc_print"
+    aliases = ["print_document"]
     intent = "media"
     description = (
         "Print the current document to the default printer or a named printer. "

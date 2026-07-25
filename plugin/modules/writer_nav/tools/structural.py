@@ -3,8 +3,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Structural tools: section_list, nav_goto_page, nav_page_objects, refresh_indexes,
-section_read, bookmark_resolve, update_fields, nav_resolve."""
+"""Structural tools: section_list, nav_goto_page, nav_page_objects, doc_refresh_indexes,
+section_read, bookmark_resolve, doc_update_fields, nav_resolve."""
 
 from plugin.framework.tool_base import ToolBase
 
@@ -202,7 +202,8 @@ def _scan_page_objects(doc, vc, page):
 
 
 class RefreshIndexes(ToolBase):
-    name = "refresh_indexes"
+    name = "doc_refresh_indexes"
+    aliases = ["refresh_indexes"]
     intent = "navigate"
     description = "Refresh all document indexes (TOC, bibliography, etc.)."
     parameters = {"type": "object", "properties": {}, "required": []}
@@ -443,7 +444,8 @@ class ResolveLocator(ToolBase):
 class UpdateFields(ToolBase):
     """Refresh all text fields in the document."""
 
-    name = "update_fields"
+    name = "doc_update_fields"
+    aliases = ["update_fields"]
     intent = "navigate"
     description = (
         "Refresh all text fields (dates, page numbers, cross-references). "

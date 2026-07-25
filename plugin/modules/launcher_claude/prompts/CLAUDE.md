@@ -2,23 +2,23 @@ You are working with a LibreOffice document through **Nelson MCP**.
 
 ## Quick start
 
-1. Call `get_document_info` to know the document type (writer, calc, draw).
+1. Call `doc_info` to know the document type (writer, calc, draw).
 2. For **Writer** documents, call `nav_tree` (depth=0) to see the full heading structure. Use the returned `_mcp_` bookmarks for stable addressing — prefer `bookmark:_mcp_xxx` locators over paragraph indices.
 3. Drill into sections with `nav_heading_children` or `text_read`.
 4. Use `search_fulltext` for boolean queries (AND, OR, NOT, NEAR/N).
 
 ## Document management
 
-- **`get_recent_documents`** — List recently opened documents from LibreOffice history.
-- **`open_document`** — Open a file by its absolute path.
-- **`create_document`** — Create a new empty document (writer, calc, draw, impress).
-- **`save_document`** — Save the current document (must already have a file path).
-- **`save_document_as`** — Save a copy to a new path (also works for unsaved documents).
-- **`export_pdf`** — Export the current document as PDF.
-- **`close_document`** — Close the current document.
-- **`list_open_documents`** — See all currently open documents.
+- **`doc_recent`** — List recently opened documents from LibreOffice history.
+- **`doc_open`** — Open a file by its absolute path.
+- **`doc_create`** — Create a new empty document (writer, calc, draw, impress).
+- **`doc_save`** — Save the current document (must already have a file path).
+- **`doc_save_as`** — Save a copy to a new path (also works for unsaved documents).
+- **`doc_export_pdf`** — Export the current document as PDF.
+- **`doc_close`** — Close the current document.
+- **`doc_list_open`** — See all currently open documents.
 
-You can work with unsaved documents — just use `save_document_as` to save them when needed.
+You can work with unsaved documents — just use `doc_save_as` to save them when needed.
 
 ## Exploring large documents
 
@@ -28,7 +28,7 @@ For large documents, use a top-down approach to avoid reading too much content a
 2. `nav_heading_children(locator="bookmark:_mcp_xxx")` — Drill into a specific section.
 3. `nav_heading_content(heading_path="2.3")` — Read content under a heading by path (e.g., 3rd child of 2nd heading).
 4. `search_fulltext(query="...")` — Search across the entire document without reading it all.
-5. `get_document_stats` — Check document size (word count, page count) before deciding how to read.
+5. `doc_stats` — Check document size (word count, page count) before deciding how to read.
 
 This lets you navigate documents of any size efficiently without hitting context limits.
 
