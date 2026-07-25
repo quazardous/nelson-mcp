@@ -100,7 +100,8 @@ def _entry_to_dict(entry, idx):
 class ListConditionalFormats(ToolBase):
     """List conditional formatting rules on a cell range."""
 
-    name = "list_conditional_formats"
+    name = "calc_condformat_list"
+    aliases = ["list_conditional_formats"]
     intent = "navigate"
     description = (
         "List conditional formatting rules on a Calc cell range. "
@@ -121,6 +122,7 @@ class ListConditionalFormats(ToolBase):
         "required": [],
     }
     doc_types = ["calc"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -164,7 +166,8 @@ class ListConditionalFormats(ToolBase):
 class AddConditionalFormat(ToolBase):
     """Add a conditional formatting rule to a cell range."""
 
-    name = "add_conditional_format"
+    name = "calc_condformat_add"
+    aliases = ["add_conditional_format"]
     intent = "edit"
     description = (
         "Add a conditional formatting rule to a Calc cell range. "
@@ -303,11 +306,12 @@ class AddConditionalFormat(ToolBase):
 class RemoveConditionalFormat(ToolBase):
     """Remove a conditional formatting rule from a cell range."""
 
-    name = "remove_conditional_format"
+    name = "calc_condformat_remove"
+    aliases = ["remove_conditional_format"]
     intent = "edit"
     description = (
         "Remove a conditional formatting rule from a Calc cell range by index. "
-        "Use list_conditional_formats to see current rules and their indices."
+        "Use calc_condformat_list to see current rules and their indices."
     )
     parameters = {
         "type": "object",
@@ -367,7 +371,8 @@ class RemoveConditionalFormat(ToolBase):
 class ClearConditionalFormats(ToolBase):
     """Clear all conditional formatting from a cell range."""
 
-    name = "clear_conditional_formats"
+    name = "calc_condformat_clear"
+    aliases = ["clear_conditional_formats"]
     intent = "edit"
     description = "Remove all conditional formatting rules from a Calc cell range."
     parameters = {

@@ -25,7 +25,8 @@ def _get_sheet(doc, sheet_name=None):
 class ListCharts(ToolBase):
     """List all charts on a Calc sheet."""
 
-    name = "list_charts"
+    name = "calc_chart_list"
+    aliases = ["list_charts"]
     intent = "navigate"
     description = (
         "List all charts on a Calc sheet with name, position, and size."
@@ -41,6 +42,7 @@ class ListCharts(ToolBase):
         "required": [],
     }
     doc_types = ["calc"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -78,7 +80,8 @@ class ListCharts(ToolBase):
 class GetChartInfo(ToolBase):
     """Get detailed info about a chart."""
 
-    name = "get_chart_info"
+    name = "calc_chart_info"
+    aliases = ["get_chart_info"]
     intent = "navigate"
     description = (
         "Get detailed info about a Calc chart: type, title, "
@@ -89,7 +92,7 @@ class GetChartInfo(ToolBase):
         "properties": {
             "chart_name": {
                 "type": "string",
-                "description": "Chart name (from list_charts).",
+                "description": "Chart name (from calc_chart_list).",
             },
             "sheet_name": {
                 "type": "string",
@@ -99,6 +102,7 @@ class GetChartInfo(ToolBase):
         "required": ["chart_name"],
     }
     doc_types = ["calc"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         try:
@@ -154,7 +158,8 @@ class GetChartInfo(ToolBase):
 class EditChart(ToolBase):
     """Modify chart properties."""
 
-    name = "edit_chart"
+    name = "calc_chart_edit"
+    aliases = ["edit_chart"]
     intent = "edit"
     description = (
         "Edit a Calc chart: update title, subtitle, legend visibility."
@@ -164,7 +169,7 @@ class EditChart(ToolBase):
         "properties": {
             "chart_name": {
                 "type": "string",
-                "description": "Chart name (from list_charts).",
+                "description": "Chart name (from calc_chart_list).",
             },
             "sheet_name": {
                 "type": "string",
@@ -231,7 +236,8 @@ class EditChart(ToolBase):
 class DeleteChart(ToolBase):
     """Delete a chart from a Calc sheet."""
 
-    name = "delete_chart"
+    name = "calc_chart_delete"
+    aliases = ["delete_chart"]
     intent = "edit"
     description = "Delete a chart from a Calc sheet by name."
     parameters = {
@@ -239,7 +245,7 @@ class DeleteChart(ToolBase):
         "properties": {
             "chart_name": {
                 "type": "string",
-                "description": "Chart name (from list_charts).",
+                "description": "Chart name (from calc_chart_list).",
             },
             "sheet_name": {
                 "type": "string",

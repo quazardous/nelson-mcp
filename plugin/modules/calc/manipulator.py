@@ -29,7 +29,7 @@ def _parse_formula_or_values_string(s: str):
 
     The AI often sends formula_or_values as a JSON-encoded string (e.g.
     ``'["Name"; "Category"; "Value"]'``) or as a raw string like
-    ``'Name;Category;Value'``.  Without this, write_formula_range would
+    ``'Name;Category;Value'``.  Without this, calc_write_formula would
     write the whole string as one value per cell.  We normalise
     LibreOffice-style semicolon separators and return a flat list.
 

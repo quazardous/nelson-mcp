@@ -22,7 +22,8 @@ logger = logging.getLogger("nelson.calc")
 class ListSheets(ToolBase):
     """List all sheet names in the workbook."""
 
-    name = "list_sheets"
+    name = "calc_sheet_list"
+    aliases = ["list_sheets"]
     description = "Lists all sheet names in the workbook."
     parameters = {
         "type": "object",
@@ -40,14 +41,15 @@ class ListSheets(ToolBase):
             result = manipulator.list_sheets()
             return {"status": "ok", "result": result}
         except Exception as e:
-            logger.exception("list_sheets failed")
+            logger.exception("calc_sheet_list failed")
             return {"status": "error", "error": str(e)}
 
 
 class SwitchSheet(ToolBase):
     """Switch to a specified sheet."""
 
-    name = "switch_sheet"
+    name = "calc_sheet_switch"
+    aliases = ["switch_sheet"]
     intent = "edit"
     description = "Switches to the specified sheet (makes it active)."
     parameters = {
@@ -72,14 +74,15 @@ class SwitchSheet(ToolBase):
             result = manipulator.switch_sheet(sheet_name)
             return {"status": "ok", "message": result}
         except Exception as e:
-            logger.exception("switch_sheet failed")
+            logger.exception("calc_sheet_switch failed")
             return {"status": "error", "error": str(e)}
 
 
 class CreateSheet(ToolBase):
     """Create a new sheet."""
 
-    name = "create_sheet"
+    name = "calc_sheet_create"
+    aliases = ["create_sheet"]
     intent = "edit"
     description = "Creates a new sheet."
     parameters = {
@@ -112,14 +115,15 @@ class CreateSheet(ToolBase):
             result = manipulator.create_sheet(sheet_name, position=position)
             return {"status": "ok", "message": result}
         except Exception as e:
-            logger.exception("create_sheet failed")
+            logger.exception("calc_sheet_create failed")
             return {"status": "error", "error": str(e)}
 
 
 class RenameSheet(ToolBase):
     """Rename a sheet."""
 
-    name = "rename_sheet"
+    name = "calc_sheet_rename"
+    aliases = ["rename_sheet"]
     intent = "edit"
     description = (
         "Renames a sheet. LibreOffice rewrites every reference to it "
@@ -153,14 +157,15 @@ class RenameSheet(ToolBase):
             result = manipulator.rename_sheet(sheet_name, new_name)
             return {"status": "ok", "message": result}
         except Exception as e:
-            logger.exception("rename_sheet failed")
+            logger.exception("calc_sheet_rename failed")
             return {"status": "error", "error": str(e)}
 
 
 class DeleteSheet(ToolBase):
     """Delete a sheet."""
 
-    name = "delete_sheet"
+    name = "calc_sheet_delete"
+    aliases = ["delete_sheet"]
     intent = "edit"
     description = (
         "Deletes a sheet from the workbook. A workbook must keep at "
@@ -188,14 +193,15 @@ class DeleteSheet(ToolBase):
             result = manipulator.delete_sheet(sheet_name)
             return {"status": "ok", "message": result}
         except Exception as e:
-            logger.exception("delete_sheet failed")
+            logger.exception("calc_sheet_delete failed")
             return {"status": "error", "error": str(e)}
 
 
 class GetSheetSummary(ToolBase):
     """Return a summary of a sheet."""
 
-    name = "get_sheet_summary"
+    name = "calc_sheet_summary"
+    aliases = ["get_sheet_summary"]
     description = (
         "Returns a summary of the active or specified sheet (size, "
         "used cells, column headers, etc.)"
@@ -223,14 +229,15 @@ class GetSheetSummary(ToolBase):
             result = analyzer.get_sheet_summary(sheet_name=sheet_name)
             return {"status": "ok", "result": result}
         except Exception as e:
-            logger.exception("get_sheet_summary failed")
+            logger.exception("calc_sheet_summary failed")
             return {"status": "error", "error": str(e)}
 
 
 class CreateChart(ToolBase):
     """Create a chart from data."""
 
-    name = "create_chart"
+    name = "calc_chart_create"
+    aliases = ["create_chart"]
     intent = "edit"
     description = (
         "Creates a chart from data. Supports bar, column, line, pie, "
@@ -284,5 +291,5 @@ class CreateChart(ToolBase):
             )
             return {"status": "ok", "message": result}
         except Exception as e:
-            logger.exception("create_chart failed")
+            logger.exception("calc_chart_create failed")
             return {"status": "error", "error": str(e)}

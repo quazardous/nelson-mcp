@@ -3,7 +3,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-"""Calc search tools: search_in_spreadsheet, replace_in_spreadsheet."""
+"""Calc search tools: calc_search, calc_replace."""
 
 import logging
 
@@ -36,7 +36,8 @@ def _cell_address_str(cell):
 class SearchInSpreadsheet(ToolBase):
     """Search for text in the spreadsheet."""
 
-    name = "search_in_spreadsheet"
+    name = "calc_search"
+    aliases = ["search_in_spreadsheet"]
     description = (
         "Search for text or values in a Calc spreadsheet. "
         "Returns matching cells with their addresses and values."
@@ -73,6 +74,7 @@ class SearchInSpreadsheet(ToolBase):
     }
     doc_types = ["calc"]
     tier = "core"
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         pattern = kwargs.get("pattern", "")
@@ -132,7 +134,8 @@ class SearchInSpreadsheet(ToolBase):
 class ReplaceInSpreadsheet(ToolBase):
     """Find and replace in the spreadsheet."""
 
-    name = "replace_in_spreadsheet"
+    name = "calc_replace"
+    aliases = ["replace_in_spreadsheet"]
     description = (
         "Find and replace text or values in a Calc spreadsheet. "
         "Returns count of replacements made."

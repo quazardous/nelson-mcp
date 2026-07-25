@@ -24,7 +24,8 @@ def _range_address_str(ra):
 class ListNamedRanges(ToolBase):
     """List all named ranges in the spreadsheet."""
 
-    name = "list_named_ranges"
+    name = "calc_named_range_list"
+    aliases = ["list_named_ranges"]
     intent = "navigate"
     description = (
         "List all named ranges defined in the Calc spreadsheet. "
@@ -36,6 +37,7 @@ class ListNamedRanges(ToolBase):
         "required": [],
     }
     doc_types = ["calc"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
@@ -67,7 +69,8 @@ class ListNamedRanges(ToolBase):
 class GetSheetOverview(ToolBase):
     """Get an overview of a sheet's data regions and structure."""
 
-    name = "get_sheet_overview"
+    name = "calc_sheet_overview"
+    aliases = ["get_sheet_overview"]
     intent = "navigate"
     description = (
         "Get an overview of a Calc sheet: used area, data regions, "
@@ -84,6 +87,7 @@ class GetSheetOverview(ToolBase):
         "required": [],
     }
     doc_types = ["calc"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc

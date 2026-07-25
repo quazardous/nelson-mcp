@@ -42,7 +42,8 @@ def _parse_cell_ref(cell_ref):
 class ListCellComments(ToolBase):
     """List all cell comments/annotations in a sheet."""
 
-    name = "list_cell_comments"
+    name = "calc_comment_list"
+    aliases = ["list_cell_comments"]
     intent = "review"
     description = (
         "List all cell comments (annotations) in a Calc sheet. "
@@ -59,6 +60,7 @@ class ListCellComments(ToolBase):
         "required": [],
     }
     doc_types = ["calc"]
+    is_mutation = False
 
     def execute(self, ctx, **kwargs):
         doc = ctx.doc
@@ -95,7 +97,8 @@ class ListCellComments(ToolBase):
 class AddCellComment(ToolBase):
     """Add a comment to a cell."""
 
-    name = "add_cell_comment"
+    name = "calc_comment_add"
+    aliases = ["add_cell_comment"]
     intent = "review"
     description = (
         "Add a comment (annotation) to a specific cell in a Calc sheet."
@@ -161,7 +164,8 @@ class AddCellComment(ToolBase):
 class DeleteCellComment(ToolBase):
     """Delete a comment from a cell."""
 
-    name = "delete_cell_comment"
+    name = "calc_comment_delete"
+    aliases = ["delete_cell_comment"]
     intent = "review"
     description = "Delete the comment (annotation) from a specific cell."
     parameters = {

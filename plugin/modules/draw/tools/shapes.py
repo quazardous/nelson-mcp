@@ -47,7 +47,7 @@ class ListPages(ToolBase):
     name = "list_pages"
     description = (
         "List all pages/slides in a Draw/Impress document. "
-        "For Calc, lists sheets (use list_sheets instead). "
+        "For Calc, lists sheets (use calc_sheet_list instead). "
         "For Writer, returns the single drawing layer."
     )
     parameters = {"type": "object", "properties": {}, "required": []}

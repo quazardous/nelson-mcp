@@ -53,7 +53,8 @@ def _parse_color(color_str):
 class ReadCellRange(ToolBase):
     """Read values from one or more cell ranges."""
 
-    name = "read_cell_range"
+    name = "calc_read_range"
+    aliases = ["read_cell_range"]
     description = (
         "Reads values from the specified cell range(s). "
         "Supports lists for non-contiguous areas."
@@ -89,14 +90,15 @@ class ReadCellRange(ToolBase):
                 result = inspector.read_range(rn)
                 return {"status": "ok", "result": result}
         except Exception as e:
-            logger.exception("read_cell_range failed")
+            logger.exception("calc_read_range failed")
             return {"status": "error", "error": str(e)}
 
 
 class WriteCellRange(ToolBase):
     """Write formulas or values to a cell range."""
 
-    name = "write_formula_range"
+    name = "calc_write_formula"
+    aliases = ["write_formula_range"]
     description = (
         "Writes formulas or values to a cell range(s) efficiently. "
         "Use a single value to fill the entire range, or an array of "
@@ -142,14 +144,15 @@ class WriteCellRange(ToolBase):
                 result = manipulator.write_formula_range(rn, fov)
                 return {"status": "ok", "message": result}
         except Exception as e:
-            logger.exception("write_formula_range failed")
+            logger.exception("calc_write_formula failed")
             return {"status": "error", "error": str(e)}
 
 
 class SetCellStyle(ToolBase):
     """Apply style and formatting to cells or ranges."""
 
-    name = "set_cell_style"
+    name = "calc_set_style"
+    aliases = ["set_cell_style"]
     intent = "edit"
     description = (
         "Applies style and formatting to the specified cell(s) or "
@@ -235,19 +238,20 @@ class SetCellStyle(ToolBase):
                 manipulator.set_cell_style(rn, **style_kwargs)
                 return {"status": "ok", "message": f"Style applied to {rn}"}
         except Exception as e:
-            logger.exception("set_cell_style failed")
+            logger.exception("calc_set_style failed")
             return {"status": "error", "error": str(e)}
 
 
 class MergeCells(ToolBase):
     """Merge a cell range."""
 
-    name = "merge_cells"
+    name = "calc_merge_cells"
+    aliases = ["merge_cells"]
     intent = "edit"
     description = (
         "Merges the specified cell range(s). Typically used for main "
-        "headers. Write text with write_formula_range and style with "
-        "set_cell_style after merging. Supports lists for non-contiguous "
+        "headers. Write text with calc_write_formula and style with "
+        "calc_set_style after merging. Supports lists for non-contiguous "
         "areas."
     )
     parameters = {
@@ -289,14 +293,15 @@ class MergeCells(ToolBase):
                 manipulator.merge_cells(rn, center=center)
                 return {"status": "ok", "message": f"Merged cells {rn}"}
         except Exception as e:
-            logger.exception("merge_cells failed")
+            logger.exception("calc_merge_cells failed")
             return {"status": "error", "error": str(e)}
 
 
 class ClearRange(ToolBase):
     """Clear all contents in a cell range."""
 
-    name = "clear_range"
+    name = "calc_clear_range"
+    aliases = ["clear_range"]
     intent = "edit"
     description = (
         "Clears all contents (values, formulas) in the specified "
@@ -336,14 +341,15 @@ class ClearRange(ToolBase):
                 manipulator.clear_range(rn)
                 return {"status": "ok", "message": f"Cleared range {rn}"}
         except Exception as e:
-            logger.exception("clear_range failed")
+            logger.exception("calc_clear_range failed")
             return {"status": "error", "error": str(e)}
 
 
 class SortRange(ToolBase):
     """Sort a range by a column."""
 
-    name = "sort_range"
+    name = "calc_sort_range"
+    aliases = ["sort_range"]
     intent = "edit"
     description = (
         "Sorts the specified range(s) by a column. Use for ordering "
@@ -413,14 +419,15 @@ class SortRange(ToolBase):
                 )
                 return {"status": "ok", "message": result}
         except Exception as e:
-            logger.exception("sort_range failed")
+            logger.exception("calc_sort_range failed")
             return {"status": "error", "error": str(e)}
 
 
 class ImportCsv(ToolBase):
     """Import CSV data into the sheet."""
 
-    name = "import_csv_from_string"
+    name = "calc_import_csv"
+    aliases = ["import_csv_from_string"]
     intent = "edit"
     description = (
         "Inserts CSV data into the sheet starting at a cell. "
@@ -453,14 +460,15 @@ class ImportCsv(ToolBase):
             result = manipulator.import_csv_from_string(csv_data, target_cell=target_cell)
             return {"status": "ok", "message": result}
         except Exception as e:
-            logger.exception("import_csv_from_string failed")
+            logger.exception("calc_import_csv failed")
             return {"status": "error", "error": str(e)}
 
 
 class WriteCellRangeFromLists(ToolBase):
     """Write a 2D array of values to a cell range."""
 
-    name = "write_cell_range"
+    name = "calc_write_range"
+    aliases = ["write_cell_range"]
     intent = "edit"
     description = (
         "Write a 2D array of values to cells starting at a given cell. "
@@ -551,14 +559,15 @@ class WriteCellRangeFromLists(ToolBase):
                 ),
             }
         except Exception as e:
-            logger.exception("write_cell_range failed")
+            logger.exception("calc_write_range failed")
             return {"status": "error", "error": str(e)}
 
 
 class DeleteStructure(ToolBase):
     """Delete rows or columns."""
 
-    name = "delete_structure"
+    name = "calc_delete_structure"
+    aliases = ["delete_structure"]
     intent = "edit"
     description = (
         "Deletes rows or columns. Use for structural changes; "
@@ -599,5 +608,5 @@ class DeleteStructure(ToolBase):
             result = manipulator.delete_structure(structure_type, start, count=count)
             return {"status": "ok", "message": result}
         except Exception as e:
-            logger.exception("delete_structure failed")
+            logger.exception("calc_delete_structure failed")
             return {"status": "error", "error": str(e)}

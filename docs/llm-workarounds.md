@@ -6,11 +6,11 @@ Workarounds for LLM quirks when interacting with LibreOffice tools.
 
 LLMs are inconsistent with CSV delimiters. Since Calc uses semicolons (`;`) for formula arguments, models often use them for CSV data too.
 
-**Workaround**: `import_csv_from_string` auto-detects the delimiter by peeking at the first few lines. If semicolons outnumber commas, it switches to `;`.
+**Workaround**: `calc_import_csv` auto-detects the delimiter by peeking at the first few lines. If semicolons outnumber commas, it switches to `;`.
 
 ## Calc: semicolon splitting in range writes
 
-Models often send `"Name;Age;Salary"` instead of `["Name", "Age", "Salary"]` to `write_formula_range`.
+Models often send `"Name;Age;Salary"` instead of `["Name", "Age", "Salary"]` to `calc_write_formula`.
 
 **Workaround**: The parser detects raw semicolon-separated strings (skipping formulas starting with `=`) and splits them using `csv.reader` with quote awareness.
 
@@ -26,7 +26,7 @@ LibreOffice requires semicolons as formula argument separators. Wrong: `=SUM(A1,
 
 **Workaround**: System prompt includes explicit rules:
 - "FORMULA SYNTAX: LibreOffice uses semicolon (;) as the formula argument separator"
-- "CSV DATA: Use comma (,) for import_csv_from_string"
+- "CSV DATA: Use comma (,) for calc_import_csv"
 
 ## Defensive parameter handling
 

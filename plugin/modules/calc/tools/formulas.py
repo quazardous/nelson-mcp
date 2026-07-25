@@ -22,7 +22,8 @@ logger = logging.getLogger("nelson.calc")
 class DetectErrors(ToolBase):
     """Detect and explain formula errors in a range."""
 
-    name = "detect_and_explain_errors"
+    name = "calc_detect_errors"
+    aliases = ["detect_and_explain_errors"]
     intent = "edit"
     description = (
         "Detects formula errors in the specified range(s) and provides "
@@ -72,5 +73,5 @@ class DetectErrors(ToolBase):
                 result = error_detector.detect_and_explain(range_str=rn)
                 return {"status": "ok", "result": result}
         except Exception as e:
-            logger.exception("detect_and_explain_errors failed")
+            logger.exception("calc_detect_errors failed")
             return {"status": "error", "error": str(e)}

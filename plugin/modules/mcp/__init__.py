@@ -45,7 +45,7 @@ PRESETS = {
         "doc_list_open", "doc_info",
         "doc_open", "doc_create", "doc_save",
         "table_read", "table_write_cell", "table_write_row",
-        "create_chart", "table_list",
+        "calc_chart_create", "table_list",
         "batch_execute", "doc_undo", "doc_redo",
     ],
     "gallery": [
