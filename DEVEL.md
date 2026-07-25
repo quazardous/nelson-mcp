@@ -339,7 +339,7 @@ gh release upload v1.x.y build/nelson.oxt
 make test
 ```
 
-Runs pytest on `tests/`. Legacy tests in `tests/legacy/` may not pass.
+Runs pytest on `tests/`. The suite is expected to pass in full — treat a failure as a regression, not as noise.
 
 ## Troubleshooting
 

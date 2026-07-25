@@ -20,17 +20,20 @@ from plugin.framework.event_bus import EventBus
 
 
 @pytest.fixture
-def config_dir(tmp_path):
-    """Provide a temp dir for config file."""
-    return tmp_path
+def store():
+    """The values a ConfigService has written.
+
+    Config lives in the LibreOffice configuration registry, which does
+    not exist outside LibreOffice. The service accepts a dict-like store
+    to hold them instead, which is also what makes it testable.
+    """
+    return {}
 
 
 @pytest.fixture
-def config_svc(config_dir):
-    """ConfigService with a temp config path (bypasses UNO)."""
-    svc = ConfigService()
-    svc._config_path = str(config_dir / "nelson.json")
-    return svc
+def config_svc(store):
+    """ConfigService backed by an in-memory store (no UNO needed)."""
+    return ConfigService(store=store)
 
 
 @pytest.fixture
@@ -88,13 +91,10 @@ class TestSetGet:
         config_svc.set("mcp.port", 9000)
         assert config_svc.get("mcp.port") == 9000
 
-    def test_set_persists_to_file(self, config_svc, config_dir, manifest):
+    def test_set_persists_to_the_store(self, config_svc, store, manifest):
         config_svc.set_manifest(manifest)
         config_svc.set("mcp.port", 9000)
-
-        with open(config_dir / "nelson.json") as f:
-            data = json.load(f)
-        assert data["mcp.port"] == 9000
+        assert store["mcp.port"] == 9000
 
     def test_remove(self, config_svc, manifest):
         config_svc.set_manifest(manifest)

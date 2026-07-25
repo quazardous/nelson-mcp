@@ -18,7 +18,7 @@ plugin/framework/           Core engine (services, tools, events, config, http, 
 plugin/modules/<name>/      Feature modules (module.yaml + __init__.py + tools/ + services/)
 extension/                  Static LO files (XCU, manifest, assets)
 scripts/                    Build & deploy scripts
-tests/                      Pytest suite (tests/legacy/ = old, may not pass)
+tests/                      Pytest suite (must pass — 'make test' is a gate)
 Makefile                    All build/dev targets
 install.ps1 / install.sh    Dev environment setup (installs bash, make, pyyaml, vendor deps)
 ```

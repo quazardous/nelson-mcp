@@ -32,10 +32,14 @@ class ConfigAccessError(Exception):
 class ConfigService(ServiceBase):
     name = "config"
 
-    def __init__(self):
+    def __init__(self, store=None):
         self._defaults = {}   # "module.key" -> default_value
         self._manifest = {}   # "module.key" -> field schema
         self._events = None   # EventBus, set after init
+        # Values live in the LibreOffice configuration registry. Pass a
+        # dict-like *store* to keep them in memory instead — used by the
+        # tests, which run without a UNO context.
+        self._store = store
 
     def initialize(self, ctx):
         # ctx is no longer stored — we use get_ctx() for fresh context
@@ -249,6 +253,8 @@ class ConfigService(ServiceBase):
 
     def _registry_read(self, key):
         """Read a single value from the LO configuration registry."""
+        if self._store is not None:
+            return self._store.get(key)
         ctx = get_ctx()
         if not ctx or "." not in key:
             return None
@@ -271,15 +277,32 @@ class ConfigService(ServiceBase):
             return None
 
     def _registry_write(self, key, value):
-        """Write a single value to the LO configuration registry."""
+        """Write a single value to the LO configuration registry.
+
+        Returns True when the value was stored. A write with no UNO
+        context used to return silently, so the value simply vanished
+        and a later read returned the default; it is now reported.
+        """
+        if self._store is not None:
+            self._store[key] = value
+            return True
         ctx = get_ctx()
-        if not ctx or "." not in key:
-            return
+        if not ctx:
+            log.warning(
+                "Config write dropped: no UNO context to store %s = %r. "
+                "Values are held in the LibreOffice registry, which is "
+                "only reachable from inside LibreOffice.", key, value)
+            return False
+        if "." not in key:
+            log.warning("Config write dropped: %r is not a module.key", key)
+            return False
         try:
             nodepath, field_name = self._registry_nodepath(key)
             self._registry_write_node(nodepath, [(field_name, key, value)])
+            return True
         except Exception:
             log.exception("Failed to write registry: %s = %r", key, value)
+            return False
 
     def _registry_write_node(self, nodepath, fields):
         """Write multiple fields to a single registry node with one commit.

@@ -109,25 +109,35 @@ class TestExecute:
         with pytest.raises(KeyError, match="Unknown tool"):
             reg.execute("nope", ctx)
 
-    def test_incompatible_doc_type_raises(self):
+    # Failures are reported as structured MCP errors rather than
+    # exceptions, so a client gets a machine-readable code and knows
+    # whether retrying is worth it.
+
+    def test_incompatible_doc_type_returns_error(self):
         reg = _make_registry(FakeTool())
-        ctx = _make_ctx("calc")
-        with pytest.raises(ValueError, match="does not support"):
-            reg.execute("fake_tool", ctx, text="x")
+        result = reg.execute("fake_tool", _make_ctx("calc"), text="x")
+        assert result["status"] == "error"
+        assert result["code"] == "incompatible_doc_type"
+        assert "requires writer" in result["message"]
+        assert result["retryable"] is False
+        assert "hint" in result
 
     def test_validation_failure_returns_error(self):
         reg = _make_registry(FakeTool())
-        ctx = _make_ctx("writer")
-        result = reg.execute("fake_tool", ctx)  # missing 'text'
+        result = reg.execute("fake_tool", _make_ctx("writer"))  # no 'text'
         assert result["status"] == "error"
-        assert "Missing required" in result["error"]
+        assert result["code"] == "invalid_params"
+        assert "Missing required parameter: text" in result["message"]
+        assert result["retryable"] is False
 
     def test_execution_failure_returns_error(self):
         reg = _make_registry(FailingTool())
-        ctx = _make_ctx("writer")
-        result = reg.execute("fail_tool", ctx)
+        result = reg.execute("fail_tool", _make_ctx("writer"))
         assert result["status"] == "error"
-        assert "intentional failure" in result["error"]
+        assert result["code"] == "execution_error"
+        assert "intentional failure" in result["message"]
+        # A crash inside a tool may be transient, unlike a bad request.
+        assert result["retryable"] is True
 
 
 class TestSchemas:
