@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+
+- **`tools/list` payload cut by ~17%** (#11) — the `_document` meta-parameter is injected on ~96 tools, so its description was repeated ~96 times and made up 31% of the entire schema payload; it is now terse. Multi-type tools also shipped their `calc`/`draw` option blocks to Writer sessions (and vice versa) even though only the block matching the active document type can apply — the inapplicable ones are now dropped (the full schema is still sent when no document is open). Measured on a Writer document: 20,767 → 17,281 tokens for the same 100 tools
+
+### Added
+
+- **Tool aliases** (#11) — a tool can declare `aliases = [...]`: former names stay callable but are never advertised in `tools/list`, so renaming a tool no longer breaks existing callers. Custom-endpoint tool filters and `tools/call` both resolve through the alias map, so an endpoint configured with a tool's old name keeps working
+
+### Fixed
+
+- **Aliased calls were wrongly rejected when no document was open** (#11) — the `requires_doc` pre-check bypassed alias resolution, so a tool invoked by a former name looked unknown and was treated as requiring an open document
+
 ## [0.9.4] — 2026-07-25
 
 ### Added
