@@ -823,6 +823,108 @@ def check_heading_bookmarks(h):
     return "in file: %s; never modified, names stable across saves" % seen
 
 
+def check_calc_sheet_targets(h):
+    """Writes and charts go where the caller said (#31, #32, #33).
+
+    #33: a prefix that disagrees with sheet_name is refused on the write
+    paths too, an unknown sheet lists the real ones, and a single-cell read
+    echoes a clean address. #31: a chart lands on the active sheet (or
+    sheet_name), whatever sheet its data is on. #32: charts on two sheets get
+    distinct names instead of an empty error.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="calc")
+    h.call("calc_sheet", action="create", sheet_name="Summary")
+    h.call("calc_sheet", action="create", sheet_name="Data Sheet")
+    h.call("calc_write_range", start_cell="'Data Sheet'.A1",
+           values=[["a", 1], ["b", 2], ["c", 3]])
+
+    clash = h.call("calc_write_range", start_cell="Summary.B4",
+                   values=[["CONFLICT"]], sheet_name="Data Sheet")
+    if clash.get("status") == "ok":
+        raise Fail("#33: calc_write_range accepted a prefix that disagrees "
+                   "with sheet_name")
+    for sheet in ("Summary", "Data Sheet"):
+        got = h.call("calc_read_range", range_name="'%s'.B4" % sheet)
+        if got["result"][0][0].get("value"):
+            raise Fail("#33: the refused write still landed on %s" % sheet)
+    note = h.call("calc_comment", action="add", cell="Summary.C2",
+                  text="conflict", sheet_name="Data Sheet")
+    if note.get("status") == "ok":
+        raise Fail("#33: calc_comment accepted a prefix that disagrees with "
+                   "sheet_name")
+    missing = h.call("calc_write_range", start_cell="Nope.A1", values=[["x"]])
+    if "Available" not in json.dumps(missing):
+        raise Fail("#33: an unknown sheet on write does not list the sheets: "
+                   "%s" % missing)
+    addr = h.call("calc_read_range", range_name="'Data Sheet'.B2")
+    if addr["result"][0][0].get("address") != "B2":
+        raise Fail("#33: single-cell read echoes %r, expected 'B2'"
+                   % addr["result"][0][0].get("address"))
+
+    h.call("calc_sheet", action="switch", sheet_name="Summary")
+    first = h.call("calc_chart", action="create", chart_type="bar",
+                   data_range="'Data Sheet'.A1:B3", position="D1")
+    if first.get("status") != "ok":
+        raise Fail("#31: cross-sheet chart failed: %s" % first)
+
+    def names(sheet):
+        listed = h.call("calc_chart", action="list", sheet_name=sheet)
+        return [c["name"] for c in listed.get("charts", [])]
+
+    if names("Summary") != [first.get("chart_name")] or names("Data Sheet"):
+        raise Fail("#31: chart over 'Data Sheet' data should be on the active "
+                   "sheet Summary only; got Summary=%s, Data Sheet=%s"
+                   % (names("Summary"), names("Data Sheet")))
+
+    second = h.call("calc_chart", action="create", chart_type="line",
+                    data_range="A1:B3", sheet_name="Data Sheet")
+    if second.get("status") != "ok":
+        raise Fail("#32: a chart on a second sheet failed: %s" % second)
+    if second.get("chart_name") == first.get("chart_name"):
+        raise Fail("#32: both charts are named %s" % first.get("chart_name"))
+    if names("Data Sheet") != [second.get("chart_name")]:
+        raise Fail("#31: sheet_name did not place the chart: Data Sheet=%s"
+                   % names("Data Sheet"))
+    h.expect_error("No sheet named 'Nope'")
+    return ("conflicts refused, sheets listed, clean address; charts on "
+            "the sheet asked for, names %s/%s"
+            % (first.get("chart_name"), second.get("chart_name")))
+
+
+def check_close_reports_truth(h):
+    """doc_close closes the document it is aimed at, and says which (#36).
+
+    Aimed at a document that is not the active one, it must close that one
+    and leave the active one open; and it must never report ok for a
+    document it did not close.
+    """
+    a, b = h.doc("close_a.odt"), h.doc("close_b.odt")
+    h.reset()
+    h.call("doc_create", doc_type="writer", path=a)
+    h.call("doc_create", doc_type="writer", path=b)
+    h.call("doc_open", file_path=a)                  # A active, B behind
+
+    closed = h.call("doc_close", _document="path:%s" % b)
+    if closed.get("status") != "ok":
+        raise Fail("closing B failed: %s" % closed)
+    closed_url = (closed.get("closed") or {}).get("url") or ""
+    if not closed_url.endswith("close_b.odt"):
+        raise Fail("doc_close does not say it closed B: %s" % closed)
+    urls = [d.get("url") or "" for d in
+            h.call("doc_list_open").get("documents", [])]
+    if any(u.endswith("close_b.odt") for u in urls):
+        raise Fail("B is still open after doc_close reported closing it")
+    if not any(u.endswith("close_a.odt") for u in urls):
+        raise Fail("doc_close aimed at B closed A instead: open=%s" % urls)
+
+    again = h.call("doc_close", _document="path:%s" % b)
+    if again.get("status") == "ok":
+        raise Fail("closing an already closed document reported ok: %s"
+                   % again)
+    return "closed the document aimed at, said so, refused a second close"
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -844,6 +946,8 @@ CHECKS = [
     ("recording not forced", check_recording_not_forced),
     ("search backends agree", check_search_backends_agree),
     ("sheet-qualified refs", check_sheet_qualified_refs),
+    ("calc sheet targets (#31-33)", check_calc_sheet_targets),
+    ("doc_close truthful (#36)", check_close_reports_truth),
     ("browser origin refused", check_origin_rejected),
     ("session semantics (#38)", check_session_semantics),
     ("access token", check_auth_token),

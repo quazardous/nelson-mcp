@@ -11,6 +11,7 @@ from plugin.framework.tool_base import ToolBase
 from plugin.modules.calc.address_utils import (
     index_to_column,
     parse_range_string,
+    same_sheet_name,
     split_sheet_prefix,
 )
 
@@ -22,7 +23,8 @@ def _resolve_sheet(doc, sheet_name=None):
     if sheet_name:
         sheets = doc.getSheets()
         if not sheets.hasByName(sheet_name):
-            raise ValueError("Sheet not found: %s" % sheet_name)
+            raise ValueError("No sheet named '%s'. Available: %s"
+                             % (sheet_name, ", ".join(sheets.getElementNames())))
         return sheets.getByName(sheet_name)
     controller = doc.getCurrentController()
     if hasattr(controller, "getActiveSheet"):
@@ -41,8 +43,16 @@ def _parse_cell_ref(cell_ref):
 
 
 def _split_cell_sheet(cell_ref, sheet_name):
-    """Let a sheet-qualified cell reference pick the sheet (#30)."""
+    """Let a sheet-qualified cell reference pick the sheet (#30).
+
+    Raises ValueError when the prefix and *sheet_name* disagree (#33).
+    """
     prefix, address = split_sheet_prefix(cell_ref)
+    if prefix is not None and sheet_name and not same_sheet_name(
+            prefix, sheet_name):
+        raise ValueError(
+            "Reference names sheet '%s' but sheet_name says '%s' — "
+            "pass one or the other." % (prefix, sheet_name))
     return address, (prefix or sheet_name)
 
 
@@ -132,10 +142,9 @@ class CalcComment(ToolBase):
         sheet_name = kwargs.get("sheet_name")
 
         # A sheet named on the cell reference picks the sheet (#30).
-        if cell_ref:
-            cell_ref, sheet_name = _split_cell_sheet(cell_ref, sheet_name)
-
         try:
+            if cell_ref:
+                cell_ref, sheet_name = _split_cell_sheet(cell_ref, sheet_name)
             sheet = _resolve_sheet(ctx.doc, sheet_name)
         except Exception as e:
             return {"status": "error", "error": str(e)}

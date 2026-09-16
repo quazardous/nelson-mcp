@@ -518,19 +518,16 @@ class WriteCellRangeFromLists(ToolBase):
         sheet_name = kwargs.get("sheet_name")
 
         try:
-            from plugin.modules.calc.address_utils import split_sheet_prefix
-            sheets = doc.getSheets()
+            from plugin.modules.calc.bridge import CalcBridge
 
-            # A sheet named on start_cell wins over sheet_name (#30).
-            prefix, start_cell = split_sheet_prefix(start_cell)
-            target = prefix or sheet_name
-            if target:
-                if not sheets.hasByName(target):
-                    return {"status": "error",
-                            "message": "Sheet not found: %s" % target}
-                sheet = sheets.getByName(target)
-            else:
-                sheet = doc.getCurrentController().getActiveSheet()
+            # Same resolution as the read paths: a sheet named on start_cell
+            # wins, disagreeing with sheet_name is refused, and an unknown
+            # sheet lists the ones that exist (#30, #33).
+            try:
+                sheet, start_cell = CalcBridge(doc).resolve(
+                    start_cell, sheet_name)
+            except ValueError as e:
+                return {"status": "error", "message": str(e)}
 
             (start_col, start_row), _ = parse_range_string(start_cell)
 

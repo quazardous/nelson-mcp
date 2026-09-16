@@ -521,8 +521,14 @@ class CellManipulator:
         title: str = None,
         position: str = None,
         has_header: bool = True,
+        sheet_name: str = None,
     ):
         """Create a chart from data.
+
+        The chart goes on *sheet_name*, else on the sheet named by
+        *position*, else on the active sheet — as Insert > Chart does. The
+        data can live anywhere: a sheet-qualified *data_range* reads another
+        sheet, an unqualified one reads the chart's sheet (#31).
 
         Args:
             data_range: Range for chart data (e.g. "A1:B10",
@@ -531,20 +537,36 @@ class CellManipulator:
             title: Chart title.
             position: Cell where chart is placed (e.g. "E1").
             has_header: Whether first row/column is a label.
+            sheet_name: Sheet the chart is placed on.
 
         Returns:
-            Description string.
+            dict with message, chart name and the placement and data sheets.
         """
         try:
-            # The data usually lives on a different sheet from the chart —
-            # that is the ordinary workbook layout, and the reason a
-            # sheet-qualified data_range matters most here (#30).
-            sheet, data_range = self.bridge.resolve(data_range)
-            cell_range = self.bridge.get_cell_range(sheet, data_range)
+            from plugin.modules.calc.address_utils import split_sheet_prefix
+
+            # Placement: sheet_name, else position's prefix, else active.
+            if position:
+                chart_sheet, position = self.bridge.resolve(
+                    position, sheet_name)
+            elif sheet_name:
+                chart_sheet = self.bridge.get_sheet(sheet_name)
+            else:
+                chart_sheet = self.bridge.get_active_sheet()
+
+            # Data: its own prefix, else the chart's sheet. A prefix that
+            # differs from sheet_name is the ordinary layout here — chart on
+            # a summary sheet, data elsewhere — not a conflict.
+            data_prefix, data_address = split_sheet_prefix(data_range)
+            data_sheet = (self.bridge.get_sheet(data_prefix)
+                          if data_prefix is not None else chart_sheet)
+            cell_range = self.bridge.get_cell_range(data_sheet, data_address)
             range_address = cell_range.getRangeAddress()
 
             if position:
-                pos_cell = self._get_cell(position)
+                # Pixel position from the sheet the chart is drawn on.
+                col, row = parse_address(position)
+                pos_cell = self.bridge.get_cell(chart_sheet, col, row)
                 pos_x = pos_cell.Position.X
                 pos_y = pos_cell.Position.Y
             else:
@@ -559,8 +581,8 @@ class CellManipulator:
             rect.Width = 12000
             rect.Height = 8000
 
-            charts = sheet.getCharts()
-            chart_name = f"Chart_{len(charts)}"
+            charts = chart_sheet.getCharts()
+            chart_name = self._unique_chart_name()
 
             type_map = {
                 "bar": "com.sun.star.chart.BarDiagram",
@@ -590,10 +612,37 @@ class CellManipulator:
                 chart_title.setPropertyValue("String", title)
 
             logger.info("Chart created: %s (%s)", chart_name, chart_type)
-            return f"{chart_type} type chart created."
+            return {
+                "message": f"{chart_type} type chart created.",
+                "chart_name": chart_name,
+                "sheet": chart_sheet.getName(),
+                "data_sheet": data_sheet.getName(),
+            }
         except Exception as e:
             logger.error("Chart creation error: %s", str(e))
             raise
+
+    def _unique_chart_name(self):
+        """A chart name no sheet uses yet.
+
+        Chart names are unique per document, not per sheet, so counting the
+        target sheet's charts collides as soon as two sheets have one (#32).
+        """
+        taken = set()
+        sheets = self.bridge.doc.getSheets()
+        for i in range(sheets.getCount()):
+            try:
+                taken.update(sheets.getByIndex(i).getCharts().getElementNames())
+            except Exception:
+                pass
+        try:
+            taken.update(self.bridge.doc.getEmbeddedObjects().getElementNames())
+        except Exception:
+            pass
+        n = len(taken)
+        while "Chart_%d" % n in taken:
+            n += 1
+        return "Chart_%d" % n
 
     # ── Structure operations ───────────────────────────────────────────
 

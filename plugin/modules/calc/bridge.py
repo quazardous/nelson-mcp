@@ -16,6 +16,7 @@ from plugin.modules.calc.address_utils import (
     index_to_column,
     column_to_index,
     parse_range_string,
+    same_sheet_name,
     split_sheet_prefix,
 )
 
@@ -76,7 +77,8 @@ class CalcBridge:
         error rather than a silent choice (#30).
         """
         prefix, address = split_sheet_prefix(ref)
-        if prefix is not None and sheet_name and prefix != sheet_name:
+        if (prefix is not None and sheet_name
+                and not same_sheet_name(prefix, sheet_name)):
             raise ValueError(
                 "Reference names sheet '%s' but sheet_name says '%s' — "
                 "pass one or the other." % (prefix, sheet_name))

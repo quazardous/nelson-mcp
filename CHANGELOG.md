@@ -30,6 +30,36 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **`doc_close` reported success whether or not it closed anything** (#36,
+  fault 2). It returned "Document closed." whenever `close()` did not raise,
+  and a close LibreOffice declined or ignored looked exactly like a real one.
+  It now checks the document is really gone, returns `document_not_closed`
+  (with the reason when LibreOffice vetoed) otherwise, and says which
+  document it closed (`closed`: title and URL), so a caller can tell a close
+  of the wrong document from the right one. `make smoke` closes a document
+  that is not the active one and checks which one went. Faults 1 and 3 of
+  #36 are not reproduced yet
+- **Calc charts landed on the sheet their data came from** (#31). A chart over
+  `'Data Sheet'.A1:B5` was added to `Data Sheet`, `sheet_name` was ignored by
+  `calc_chart create`, and `position` was measured on the active sheet while
+  the chart went on another. Charts now go where Insert > Chart puts them —
+  on `sheet_name` if given, else the sheet named in `position`, else the
+  active sheet — with the data read from wherever `data_range` points. The
+  response names the chart and both sheets
+- **A second chart on another sheet failed with an empty error** (#32). New
+  charts were named after the count of charts on their own sheet, but names
+  must be unique across the document, so `Chart_0` came back on the second
+  sheet and `addNewByName` refused it with an exception that has no text.
+  Names are now unique across the workbook, and chart errors always carry a
+  message
+- **Calc writes accepted a sheet prefix that contradicted `sheet_name`**
+  (#33). The refusal introduced in 0.12.1 lived in the read path only;
+  `calc_write_range` and `calc_comment` picked the prefix silently. Both now
+  refuse the contradiction, and an unknown sheet lists the sheets that exist
+  on writes as it already did on reads. Sheet names compare case-insensitively,
+  as Calc does. A single-cell read no longer echoes the address with an
+  upper-cased sheet prefix (`'DATA SHEET'.B2`): it returns `B2`, like a range
+
 - **Reading a Writer document's structure changed the document, and could
   save it behind the user's back** — `nav_tree`, `nav_heading_children`,
   `nav_heading` and `nav_surroundings` give every heading a hidden

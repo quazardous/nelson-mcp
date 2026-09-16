@@ -572,16 +572,12 @@ class CloseDocument(ToolBase):
                         log.debug("  frame %d: no model", i)
                         continue
                     frame_title = frame.getTitle()
-                    # Skip the document we're about to close
-                    # Use URL + title comparison (UNO proxy identity is unreliable)
-                    is_closing = False
+                    # Skip the document we're about to close. Two proxies of
+                    # the same UNO object are never `is`, but always `==`.
                     try:
-                        is_closing = (
-                            model.getURL() == closing_doc.getURL()
-                            and frame_title == closing_doc.getCurrentController().getFrame().getTitle()
-                        )
+                        is_closing = (model == closing_doc)
                     except Exception:
-                        is_closing = (model is closing_doc)
+                        is_closing = False
                     if is_closing:
                         log.debug("  frame %d: closing doc (%s)", i, frame_title)
                         continue
@@ -607,13 +603,32 @@ class CloseDocument(ToolBase):
         except Exception:
             log.info("Could not enumerate frames for next-doc activation", exc_info=True)
 
+        closed = _describe_document(closing_doc)
+
         # Close the document
         try:
             closing_doc.close(False)
-            log.info("doc_close: document closed successfully")
         except Exception as exc:
-            log.exception("CloseDocument failed: %s", exc)
-            return {"status": "error", "error": str(exc)}
+            # A CloseVetoException stringifies to "": say what happened.
+            reason = str(exc) or getattr(exc, "Message", "") or type(exc).__name__
+            log.warning("doc_close: %s refused to close: %s",
+                        closed.get("title"), reason)
+            return {"status": "error", "code": "document_not_closed",
+                    "message": "The document was not closed: %s" % reason,
+                    "document": closed, "retryable": False}
+
+        # close() can return without closing anything; an "ok" must mean the
+        # document is gone (#36).
+        if _is_still_open(desktop, closing_doc):
+            log.warning("doc_close: %s is still open after close()",
+                        closed.get("title"))
+            return {"status": "error", "code": "document_not_closed",
+                    "message": "LibreOffice did not close the document.",
+                    "document": closed, "retryable": False}
+        log.info("doc_close: closed %s", closed.get("title"))
+
+        result = {"status": "ok", "message": "Document closed.",
+                  "closed": closed}
 
         # Activate the next document so getCurrentComponent() returns it
         if next_frame is not None:
@@ -621,17 +636,43 @@ class CloseDocument(ToolBase):
                 next_frame.activate()
                 next_title = next_frame.getTitle()
                 log.info("doc_close: activated next doc: %s", next_title)
-                return {
-                    "status": "ok",
-                    "message": "Document closed.",
-                    "active_document": next_title,
-                }
+                # The document now active, not the one closed.
+                result["active_document"] = next_title
             except Exception:
                 log.warning("doc_close: failed to activate next frame", exc_info=True)
         else:
             log.info("doc_close: no next frame found")
 
-        return {"status": "ok", "message": "Document closed."}
+        return result
+
+
+def _describe_document(model):
+    """Title and URL of *model*, read before it is closed."""
+    info = {}
+    try:
+        info["title"] = model.getCurrentController().getFrame().getTitle()
+    except Exception:
+        pass
+    try:
+        info["url"] = model.getURL() or None
+    except Exception:
+        pass
+    return info
+
+
+def _is_still_open(desktop, model):
+    """True if *model* is still one of the desktop's components."""
+    try:
+        components = desktop.getComponents().createEnumeration()
+        while components.hasMoreElements():
+            try:
+                if components.nextElement() == model:
+                    return True
+            except Exception:
+                continue
+    except Exception:
+        log.debug("doc_close: could not enumerate components", exc_info=True)
+    return False
 
 
 class ListOpenDocuments(ToolBase):

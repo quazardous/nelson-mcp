@@ -11,7 +11,7 @@ Ported from core/calc_inspector.py for the plugin framework.
 import logging
 import re
 
-from plugin.modules.calc.address_utils import parse_address
+from plugin.modules.calc.address_utils import parse_address, split_sheet_prefix
 
 try:
     from com.sun.star.table.CellContentType import EMPTY, VALUE, TEXT, FORMULA
@@ -90,7 +90,8 @@ class CellInspector:
             formula = cell.getFormula() if cell_type == FORMULA else None
 
             return {
-                "address": address.upper(),
+                # The resolved address: no sheet prefix, like read_range (#33).
+                "address": split_sheet_prefix(address)[1].upper(),
                 "value": value,
                 "formula": formula,
                 "type": self._cell_type_name(cell_type),
@@ -129,7 +130,8 @@ class CellInspector:
                 value = cell.getString()
 
             return {
-                "address": address.upper(),
+                # The resolved address: no sheet prefix, like read_range (#33).
+                "address": split_sheet_prefix(address)[1].upper(),
                 "value": value,
                 "formula": cell.getFormula(),
                 "formula_local": self._safe_prop(cell, "FormulaLocal"),

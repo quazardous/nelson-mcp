@@ -264,6 +264,15 @@ class CreateChart(ToolBase):
                     "Is first row/column a label? Default: true"
                 ),
             },
+            "sheet_name": {
+                "type": "string",
+                "description": (
+                    "Sheet to place the chart on (default: the sheet named "
+                    "in position, else the active sheet). The data can be "
+                    "on another sheet: qualify data_range, e.g. "
+                    "'Data Sheet'.A1:B5."
+                ),
+            },
         },
         "required": ["data_range", "chart_type"],
     }
@@ -283,11 +292,18 @@ class CreateChart(ToolBase):
             result = manipulator.create_chart(
                 data_range, chart_type,
                 title=title, position=position, has_header=has_header,
+                sheet_name=kwargs.get("sheet_name"),
             )
-            return {"status": "ok", "message": result}
+            return {"status": "ok", **result}
         except Exception as e:
             logger.exception("calc_chart_create failed")
-            return {"status": "error", "error": str(e)}
+            return {"status": "error", "error": _error_text(e)}
+
+
+def _error_text(e):
+    """A non-empty message: UNO exceptions often stringify to "" (#32)."""
+    text = str(e) or getattr(e, "Message", "") or ""
+    return text or "%s raised with no message" % type(e).__name__
 
 
 class CalcSheet(ToolBase):

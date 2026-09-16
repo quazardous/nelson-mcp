@@ -80,6 +80,15 @@ def split_sheet_prefix(ref: str) -> tuple[str | None, str]:
     return name.strip(), match.group("rest").strip()
 
 
+def same_sheet_name(a: str, b: str) -> bool:
+    """True when two sheet names designate the same sheet.
+
+    Calc sheet names are case-insensitive: "summary" and "Summary" cannot
+    coexist, and either finds the sheet.
+    """
+    return a.casefold() == b.casefold()
+
+
 def parse_address(address: str) -> tuple[int, int]:
     """Convert cell address to column and row indices.
 
