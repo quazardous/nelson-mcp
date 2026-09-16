@@ -4,7 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.13.0] — 2026-09-16
+
+A browser origin that is not explicitly allowed can no longer reach the
+server. If you were calling Nelson from a web page, name that origin in
+**Allowed Browser Origins** — it is a minor version rather than a patch for
+that reason. MCP clients send no `Origin` header and are unaffected.
 
 ### Security
 
@@ -21,6 +26,48 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   exactly rather than answering `*`. **MCP clients are unaffected** — they send
   no `Origin` header, which remains allowed. `scripts/smoke_test.py` asserts
   both halves against a live server
+
+### Fixed
+
+- **Extension metadata changes never shipped** — `extension/description.xml.tpl`
+  was missing from `MANIFEST_SOURCES`, so editing it did not invalidate the
+  generated manifest: the manifest step was skipped, and the build bundled the
+  previous `description.xml` while reporting success. Any change to the
+  publisher, the minimum version or the description silently did not reach the
+  `.oxt`. A version bump touches `plugin/version.py`, which regenerates
+  everything, which is why releases picked metadata changes up anyway and hid
+  this. Caught by unzipping the built `.oxt` rather than trusting the build's
+  own output
+
+### Changed
+
+- **The extension says who publishes it, and what it is** — the publisher was
+  literally named "Developer" and linked to a personal mailbox; it is now
+  *David Berlioz*, pointing at the repository. There was no
+  `<extension-description>` at all, so the Extension Manager showed a bare
+  name; it now carries a description
+- **`LibreOffice-minimal-version` is no longer 4.1** — that release is from
+  2013 and predates the Python 3.6 the code needs for its f-strings, so the
+  declaration was simply false, and on the extensions site a false floor earns
+  bug reports that are not bugs. It is now 7.4: conservative rather than
+  derived, because nothing older than 26.2 has ever actually been run
+- **The docs no longer describe v0.7** — `docs/roadmap.md` still opened with
+  "Nelson MCP v0.7 exposes 148 tools" and presented the tool broker as the next
+  deliverable, five minor versions and one explicit refusal later; the README's
+  feature list claimed 160+ tools while its own table said 140. A reviewer read
+  both this week and came away with three wrong facts, including two bugs that
+  shipped fixed in 0.10.1 and 0.11.x. The roadmap now marks the broker refused
+  (pointing at `docs/analysis/tool-broker-decision.md`), marks integration tests
+  shipped as `make smoke`, and confirms CI/CD and the range coordinate fix still
+  open. `tier` keeps its declarations — `scripts/bench_broker.py` reads them, and
+  that script is what would measure the broker question if it is reopened — but
+  its docstring stopped promising a broker that does not exist
+
+### Added
+
+- **`server.json`** — the MCP registry manifest, describing Nelson as a
+  `streamable-http` remote. Its version string is hand-kept for now and will
+  drift from `plugin/version.py`
 
 ## [0.12.1] — 2026-07-25
 
