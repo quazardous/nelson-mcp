@@ -16,6 +16,16 @@ Nelson MCP runs an HTTP server inside LibreOffice and speaks the [Model Context 
 └─────────────────┘   tool results   └────────────────┘
 ```
 
+## What it looks like
+
+An agent wrote this report through Nelson: the content as Markdown, heading colours with `style_set`, a shaded table, a `Page {page} of {pages}` footer, and a comment on the hiring line. The **Nelson MCP** sidebar logs every call. Select a call to see its caller, status, duration and parameters.
+
+![A Writer report built by an agent, with the Nelson MCP sidebar listing each tool call](docs/img/panel-mcp-actions.png)
+
+Everything is set in **Tools > Options > Nelson**. For example, the HTTP page sets the port, the bind address and the access token:
+
+![Options > Nelson > Http: server port, bind address, access token, allowed browser origins](docs/img/options-http.png)
+
 ## Features
 
 - **145 document tools** — read content, edit text, manage styles, insert images, handle tables, charts, conditional formatting, hyperlinks, track changes, page headers/footers, navigate headings, search, and more. The list is filtered by the active document type, so a client sees only what applies (97 with a Writer document, 50 with Calc)
