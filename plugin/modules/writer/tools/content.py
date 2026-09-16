@@ -328,7 +328,8 @@ class ReadParagraphs(ToolBase):
     aliases = ["read_paragraphs"]
     description = (
         "Read a range of paragraphs by index or locator. "
-        "Useful for scanning text between headings."
+        "Useful for scanning text between headings. Each paragraph comes "
+        "with its paragraph style."
     )
     parameters = {
         "type": "object",
@@ -374,7 +375,12 @@ class ReadParagraphs(ToolBase):
         for i in range(start, end):
             p = para_ranges[i]
             text = p.getString() if hasattr(p, "getString") else "[Object]"
-            paragraphs.append({"index": i, "text": text})
+            entry = {"index": i, "text": text}
+            try:
+                entry["style"] = p.getPropertyValue("ParaStyleName")
+            except Exception:
+                pass                                # tables and the like
+            paragraphs.append(entry)
 
         return {
             "status": "ok",

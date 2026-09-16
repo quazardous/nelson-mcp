@@ -24,7 +24,9 @@ class SearchInDocument(ToolBase):
         "'index' (stemmed/fuzzy word matching with AND/OR/NOT/NEAR, faster on "
         "large docs, no regex). The default backend is configurable in Options "
         "and can be overridden per call. Text frames are always searched directly. "
-        "Returns matches with surrounding context."
+        "Returns matches with surrounding context and each body match's "
+        "paragraph style, so a heading can be told from a table-of-contents "
+        "entry with the same text; filter with style / exclude_style."
     )
     parameters = {
         "type": "object",
@@ -59,6 +61,22 @@ class SearchInDocument(ToolBase):
                 "type": "boolean",
                 "description": "Also search inside text frames (default: true).",
             },
+            "style": {
+                "type": "string",
+                "description": (
+                    "Only match paragraphs with this paragraph style, as "
+                    "reported in a match's 'style' (case-insensitive), "
+                    "e.g. 'Heading 1'. Searches the body only, with the "
+                    "direct backend."
+                ),
+            },
+            "exclude_style": {
+                "type": "string",
+                "description": (
+                    "Skip paragraphs with this paragraph style, e.g. a "
+                    "table-of-contents style. Same rules as style."
+                ),
+            },
             "backend": {
                 "type": "string",
                 "enum": ["direct", "index"],
@@ -84,6 +102,10 @@ class SearchInDocument(ToolBase):
         max_results = kwargs.get("max_results", 20)
         context_paragraphs = kwargs.get("context_paragraphs", 1)
         include_frames = kwargs.get("include_frames", True)
+        style = (kwargs.get("style") or "").strip().casefold() or None
+        exclude_style = (
+            (kwargs.get("exclude_style") or "").strip().casefold() or None)
+        styled = style is not None or exclude_style is not None
 
         doc = ctx.doc
 
@@ -102,6 +124,10 @@ class SearchInDocument(ToolBase):
             if use_regex:
                 backend = "direct"
                 backend_note = "regex requested — fell back to direct backend"
+            elif styled:
+                backend = "direct"
+                backend_note = ("style filter requested — fell back to "
+                                "direct backend")
             elif idx_svc is None:
                 backend = "direct"
                 backend_note = "index module unavailable — fell back to direct backend"
@@ -113,14 +139,18 @@ class SearchInDocument(ToolBase):
             else:
                 body = self._search_body_direct(
                     ctx, pattern, use_regex, case_sensitive,
-                    max_results, context_paragraphs)
+                    max_results, context_paragraphs,
+                    style=style, exclude_style=exclude_style)
             if body.get("status") == "error":
                 return body
             matches = body["matches"]
             total_count = body["total_count"]
+            _add_styles(ctx, matches)
 
             frame_count = 0
-            if include_frames:
+            # A style filter is about body paragraphs: frames would only add
+            # matches it cannot vouch for.
+            if include_frames and not styled:
                 frame_matches, frame_count = _search_frames(
                     ctx, pattern, use_regex, case_sensitive, max_results)
                 matches = matches + frame_matches
@@ -146,8 +176,13 @@ class SearchInDocument(ToolBase):
             return {"status": "error", "error": str(e)}
 
     def _search_body_direct(self, ctx, pattern, use_regex, case_sensitive,
-                            max_results, context_paragraphs):
-        """Exact literal/regex scan of body paragraphs (legacy behaviour)."""
+                            max_results, context_paragraphs,
+                            style=None, exclude_style=None):
+        """Exact literal/regex scan of body paragraphs (legacy behaviour).
+
+        *style* / *exclude_style* (casefolded) keep or skip paragraphs by
+        paragraph style.
+        """
         import re as re_mod
 
         doc = ctx.doc
@@ -165,6 +200,14 @@ class SearchInDocument(ToolBase):
             except Exception:
                 para_texts.append("")
 
+        def excluded(i):
+            if style is None and exclude_style is None:
+                return False
+            name = (_para_style(para_ranges[i]) or "").casefold()
+            if style is not None and name != style:
+                return True
+            return exclude_style is not None and name == exclude_style
+
         compiled = None
         if use_regex:
             flags = 0 if case_sensitive else re_mod.IGNORECASE
@@ -176,7 +219,7 @@ class SearchInDocument(ToolBase):
         matches = []
         total_count = 0
         for i, ptext in enumerate(para_texts):
-            if not ptext:
+            if not ptext or excluded(i):
                 continue
             if use_regex:
                 for m in compiled.finditer(ptext):
@@ -219,6 +262,25 @@ class SearchInDocument(ToolBase):
         for m in matches:
             m["source"] = "body"
         return {"matches": matches, "total_count": result.get("total_found", len(matches))}
+
+
+def _para_style(para):
+    try:
+        return para.getPropertyValue("ParaStyleName") or None
+    except Exception:
+        return None
+
+
+def _add_styles(ctx, matches):
+    """Give each body match its paragraph's style."""
+    wanted = [m for m in matches if m.get("paragraph_index") is not None]
+    if not wanted:
+        return
+    para_ranges = ctx.services.document.get_paragraph_ranges(ctx.doc)
+    for m in wanted:
+        i = m["paragraph_index"]
+        if 0 <= i < len(para_ranges):
+            m["style"] = _para_style(para_ranges[i])
 
 
 def _build_match(text, para_idx, ctx_paras, para_count, para_texts):

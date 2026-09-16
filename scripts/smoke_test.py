@@ -1040,6 +1040,41 @@ def check_caches_follow_the_document(h):
     return "30 doc churn: counts right; outside edit seen by nav_tree and index"
 
 
+def check_search_reports_styles(h):
+    """Search and read say which style a paragraph has, and filter on it.
+
+    A table of contents repeats every chapter title in body text: without
+    the style an agent cannot tell the entry from the heading, and restyles
+    both (#2642).
+    """
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full", content=(
+        "<p>CHAPTER 1. Loomings.</p><p>CHAPTER 2. The Carpet-Bag.</p>"
+        "<h1>CHAPTER 1. Loomings.</h1><p>Call me Ishmael.</p>"
+        "<h1>CHAPTER 2. The Carpet-Bag.</h1><p>I stuffed a shirt.</p>"))
+    hits = h.call("text_search", pattern="CHAPTER [0-9]+\\.", regex=True,
+                  max_results=10).get("matches", [])
+    styles = sorted({m.get("style") or "" for m in hits})
+    if len(hits) != 4 or len(styles) != 2 or not all(styles):
+        raise Fail("expected 4 matches in 2 named styles, got %s"
+                   % [(m.get("paragraph_index"), m.get("style")) for m in hits])
+    heading = next(st for st in styles if "1" in st)
+    toc = next(st for st in styles if st != heading)
+    only = h.call("text_search", pattern="CHAPTER", style=heading.lower())
+    if only.get("count") != 2 or any(m.get("style") != heading
+                                     for m in only.get("matches", [])):
+        raise Fail("style=%r did not keep just the headings: %s"
+                   % (heading, only))
+    skip = h.call("text_search", pattern="CHAPTER", exclude_style=toc)
+    if skip.get("count") != 2:
+        raise Fail("exclude_style=%r left %s matches" % (toc, skip.get("count")))
+    read = h.call("text_read", start_index=2, count=1).get("paragraphs", [])
+    if not read or read[0].get("style") != heading:
+        raise Fail("text_read does not report the style: %s" % read)
+    return "styles %s told apart; style and exclude_style filter" % styles
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -1069,6 +1104,7 @@ CHECKS = [
     ("heading bookmarks (#2644)", check_heading_bookmarks),
     ("heading content by path", check_heading_content_duplicates),
     ("caches follow the document", check_caches_follow_the_document),
+    ("search reports styles", check_search_reports_styles),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

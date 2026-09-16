@@ -146,6 +146,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`text_search` and `text_read` report each paragraph's style, and
+  `text_search` filters on it** (`style`, `exclude_style`). A table of
+  contents repeats every chapter title in body text; without the style an
+  agent searching for "CHAPTER" could not tell an entry from the heading, and
+  restyling the results restyled the table of contents too. A style filter
+  searches the body with the direct backend
 - **`make smoke-wbox` and the `wbox-*` targets** — run LibreOffice's real GUI
   inside a nested wbox compositor from make, offscreen by default and visible
   with `WBOX_VISIBLE=1`. Headless LibreOffice has no event loop and no Start
