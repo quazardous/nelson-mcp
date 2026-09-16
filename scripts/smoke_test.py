@@ -19,6 +19,7 @@ and was caught by hand:
     #21  .xlsx cell comments read back empty after a reopen
     #22  an MCP edit switched change recording on for the whole document
     #11  50 read-only tools were silently reclassified as mutations
+    CORS any web page could drive LibreOffice through the MCP endpoint
 
 Where it can, it checks something other than the tool's own answer — the
 bytes on disk, or the live document through the UNO socket. A tool
@@ -491,6 +492,59 @@ def check_sheet_qualified_refs(h):
     return "4 syntaxes resolve, write stays on its sheet, cross-sheet chart ok"
 
 
+def check_origin_rejected(h):
+    """A browser page must not be able to drive LibreOffice.
+
+    The server binds to localhost, which protects nothing by itself: a page
+    the user happens to be visiting can POST to the MCP endpoint. What stops
+    it is Origin validation plus never answering `Allow-Origin: *`, which the
+    MCP Streamable HTTP spec requires. A unit test cannot see this — it is a
+    property of the real HTTP response.
+    """
+    url = "http://localhost:%d/mcp" % h.port
+    evil = "https://evil.example"
+    body = json.dumps({"jsonrpc": "2.0", "id": 9001,
+                       "method": "tools/list", "params": {}}).encode("utf-8")
+
+    def send(method, origin):
+        req = urllib.request.Request(url, method=method)
+        if method == "POST":
+            req.data = body
+            req.add_header("Content-Type", "application/json")
+            req.add_header("Accept", "application/json, text/event-stream")
+        if origin:
+            req.add_header("Origin", origin)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return r.status, r.headers
+        except urllib.error.HTTPError as e:
+            return e.code, e.headers
+
+    status, headers = send("POST", evil)
+    if status != 403:
+        raise Fail("POST from %s returned %s, expected 403" % (evil, status))
+    if headers.get("Access-Control-Allow-Origin"):
+        raise Fail("refused origin still got Allow-Origin: %s"
+                   % headers.get("Access-Control-Allow-Origin"))
+
+    pre_status, pre_headers = send("OPTIONS", evil)
+    if pre_status != 403:
+        raise Fail("preflight from %s returned %s, expected 403"
+                   % (evil, pre_status))
+    if pre_headers.get("Access-Control-Allow-Origin"):
+        raise Fail("refused preflight still got Allow-Origin")
+
+    # The contrast that matters: an MCP client sends no Origin and is fine.
+    ok_status, ok_headers = send("POST", None)
+    if ok_status != 200:
+        raise Fail("POST without Origin returned %s, expected 200" % ok_status)
+    if ok_headers.get("Access-Control-Allow-Origin") == "*":
+        raise Fail("server still answers Allow-Origin: *")
+
+    h.expect_error("Rejected")
+    return "browser origin refused (403), MCP client unaffected"
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -511,6 +565,7 @@ CHECKS = [
     ("recording not forced", check_recording_not_forced),
     ("search backends agree", check_search_backends_agree),
     ("sheet-qualified refs", check_sheet_qualified_refs),
+    ("browser origin refused", check_origin_rejected),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

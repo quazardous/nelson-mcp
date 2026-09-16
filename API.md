@@ -2,6 +2,23 @@
 
 Base URL: `http://localhost:8766` (configurable via `http.port`)
 
+## Browser origins
+
+The server validates the `Origin` header on every request, as the MCP
+Streamable HTTP transport requires.
+
+- **No `Origin` header** — allowed. Every MCP client (Claude Code, OpenCode,
+  ollmcp, anything speaking plain HTTP) lands here, and nothing about it
+  changed.
+- **`Origin` on the `http.allowed_origins` list** — allowed. The response
+  echoes that exact origin; the server never answers `*`.
+- **Any other `Origin`** — `403`, with no CORS headers, preflight included.
+
+`http.allowed_origins` is a comma-separated list, **empty by default**, so no
+web page can call the server until you name one. This is what stops a page the
+user happens to be visiting from driving LibreOffice: binding to localhost does
+not, on its own, keep a browser out.
+
 ## Endpoints
 
 ### `GET /`

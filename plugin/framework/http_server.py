@@ -50,9 +50,57 @@ def send_json(handler, status, data):
         data, ensure_ascii=False, default=str).encode("utf-8"))
 
 
+# Browser origins allowed to call this server. Empty by default: a page
+# the user happens to be visiting must not be able to drive LibreOffice.
+# Non-browser MCP clients send no Origin header and are unaffected.
+_allowed_origins = frozenset()
+
+
+def set_allowed_origins(origins):
+    """Set the browser origins allowed to call this server.
+
+    Accepts a comma-separated string or an iterable. An empty value
+    blocks every browser origin, which is the default.
+    """
+    global _allowed_origins
+    if isinstance(origins, str):
+        origins = origins.split(",")
+    _allowed_origins = frozenset(
+        o.strip() for o in (origins or ()) if o and o.strip())
+    if _allowed_origins:
+        log.info("CORS: allowing browser origins %s",
+                 ", ".join(sorted(_allowed_origins)))
+    else:
+        log.info("CORS: no browser origin allowed (MCP clients unaffected)")
+
+
+def origin_allowed(handler):
+    """Return ``(allowed, origin)`` for this request.
+
+    A request with no ``Origin`` header is not browser-initiated — every
+    MCP client over stdio or plain HTTP lands here — and is allowed. A
+    request that carries one is allowed only if it is on the list.
+
+    The MCP Streamable HTTP spec requires validating Origin on all
+    incoming connections to prevent DNS rebinding attacks.
+    """
+    origin = handler.headers.get("Origin")
+    if not origin:
+        return True, None
+    return origin in _allowed_origins, origin
+
+
 def send_cors_headers(handler):
-    """Send standard CORS headers on an HTTP response."""
-    handler.send_header("Access-Control-Allow-Origin", "*")
+    """Send CORS headers, echoing only an allowed origin.
+
+    Never ``*``: that would let any page the user is visiting read the
+    response, which on a localhost-bound server is the whole attack.
+    """
+    handler.send_header("Vary", "Origin")
+    allowed, origin = origin_allowed(handler)
+    if not origin or not allowed:
+        return
+    handler.send_header("Access-Control-Allow-Origin", origin)
     handler.send_header("Access-Control-Allow-Methods",
                         "GET, POST, DELETE, OPTIONS")
     handler.send_header("Access-Control-Allow-Headers",
@@ -88,11 +136,33 @@ class GenericRequestHandler(BaseHTTPRequestHandler):
         self._dispatch("DELETE")
 
     def do_OPTIONS(self):
+        if not self._check_origin(preflight=True):
+            return
         self.send_response(204)
         self._send_cors_headers()
         self.end_headers()
 
+    def _check_origin(self, preflight=False):
+        """Reject a browser origin that is not on the list.
+
+        Returns True when the request may proceed. On rejection the
+        response is already sent, without CORS headers, so the browser
+        blocks it regardless of the status code.
+        """
+        allowed, origin = origin_allowed(self)
+        if allowed:
+            return True
+        log.warning("Rejected %srequest from origin %s (%s)",
+                    "preflight " if preflight else "", origin, self.path)
+        self.send_response(403)
+        self.send_header("Vary", "Origin")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+        return False
+
     def _dispatch(self, method):
+        if not self._check_origin():
+            return
         path = urlparse(self.path).path
         route = self.route_registry.match(method, path) if self.route_registry else None
 
@@ -140,13 +210,15 @@ class HttpServer:
     """Generic threaded HTTP server with optional TLS."""
 
     def __init__(self, route_registry, port=8766, host="localhost",
-                 use_ssl=False, ssl_cert="", ssl_key=""):
+                 use_ssl=False, ssl_cert="", ssl_key="",
+                 allowed_origins=""):
         self.route_registry = route_registry
         self.port = port
         self.host = host
         self.use_ssl = use_ssl
         self.ssl_cert = ssl_cert
         self.ssl_key = ssl_key
+        self.allowed_origins = allowed_origins
         self._server = None
         self._thread = None
         self._running = False
@@ -183,6 +255,7 @@ class HttpServer:
             return
 
         GenericRequestHandler.route_registry = self.route_registry
+        set_allowed_origins(self.allowed_origins)
 
         self._server = self._bind()
 

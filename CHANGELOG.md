@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Security
+
+- **Any web page could drive LibreOffice through the MCP endpoint** — the
+  server answered every request with `Access-Control-Allow-Origin: *` and
+  accepted every CORS preflight unconditionally, while validating the `Origin`
+  header nowhere. Binding to localhost did not help: a page the user was
+  visiting could POST to `http://localhost:8766/mcp`, and the wildcard let it
+  read the answer — list the open documents, read them, edit them, save them.
+  No DNS rebinding was needed, which is the attack the MCP Streamable HTTP spec
+  asks servers to prevent by validating `Origin`. The server now refuses any
+  browser origin that is not on the new `http.allowed_origins` list (empty by
+  default) with a `403` carrying no CORS headers, and echoes an allowed origin
+  exactly rather than answering `*`. **MCP clients are unaffected** — they send
+  no `Origin` header, which remains allowed. `scripts/smoke_test.py` asserts
+  both halves against a live server
+
 ## [0.12.1] — 2026-07-25
 
 ### Fixed

@@ -72,6 +72,11 @@ class HttpModule(ModuleBase):
         elif not enabled and self._server:
             self._stop_server()
 
+        # Browser origin list applies live — no restart needed
+        if key == "http.allowed_origins":
+            from plugin.framework.http_server import set_allowed_origins
+            set_allowed_origins(cfg.get("allowed_origins") or "")
+
         # Toggle config API routes
         if key == "http.enable_config_api":
             if cfg.get("enable_config_api") and not self._config_api_registered:
@@ -105,6 +110,7 @@ class HttpModule(ModuleBase):
             use_ssl=cfg.get("use_ssl") or False,
             ssl_cert=cfg.get("ssl_cert") or "",
             ssl_key=cfg.get("ssl_key") or "",
+            allowed_origins=cfg.get("allowed_origins") or "",
         )
         try:
             server.start()

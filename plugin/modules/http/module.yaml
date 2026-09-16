@@ -43,6 +43,14 @@ config:
     label: Bind Address
     public: true
 
+  allowed_origins:
+    type: string
+    default: ""
+    widget: text
+    label: Allowed Browser Origins
+    helper: "Comma-separated web origins allowed to call the server (e.g. https://example.com). Empty blocks every browser page. MCP clients are unaffected — they send no Origin header."
+    public: true
+
   enable_config_api:
     type: boolean
     default: false
