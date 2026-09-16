@@ -88,8 +88,19 @@ make release         # tags, pushes, creates the GitHub release with the .oxt
 ```
 
 Gates: on `main`, no uncommitted tracked changes, in sync with origin, tag free,
-CHANGELOG section present, and the built `.oxt` verified to carry the Windows
-payload. `make test` must be green before you start.
+CHANGELOG section present, `server.json` advertising the same version, and the
+built `.oxt` verified to carry the Windows payload. `make test` must be green
+before you start.
+
+Two things the script can only *remind* you of, because neither can be
+automated. It prints both after publishing:
+
+- the `.oxt` is never registration-tested on a non-UTF-8 / CJK Windows box,
+  which is the class of bug behind #16/#17;
+- **the listing on `extensions.libreoffice.org` does not update itself.** The
+  site runs Silverstripe behind TDF's SSO and exposes no API, so pushing a new
+  `.oxt` there is manual. Skip it and the public listing falls behind the
+  releases with nothing saying so — which is exactly what happened before 0.13.0.
 
 The remaining manual gate is Windows: the `.oxt` is never registration-tested on
 a non-UTF-8 / CJK Windows box, which is the class of bug behind #16/#17.

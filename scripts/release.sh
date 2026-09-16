@@ -123,6 +123,18 @@ if ! grep -q '[^[:space:]]' "$NOTES_FILE"; then
 fi
 ok "CHANGELOG section for ${VERSION} found"
 
+# ── Gate 8: server.json advertises this version ───────────────────────────────
+# The MCP registry manifest carries a version string that nothing generates, so
+# it drifts the moment a release forgets it — and the registry then advertises a
+# version that is no longer the latest, silently. Refusing here costs one line;
+# noticing months later costs the listing's credibility.
+if [ -f server.json ]; then
+    SERVER_JSON_VERSION="$("$PYTHON" -c 'import json; print(json.load(open("server.json")).get("version", ""))')"
+    [ "$SERVER_JSON_VERSION" = "$VERSION" ] || die \
+        "server.json says version '${SERVER_JSON_VERSION:-<missing>}', expected '${VERSION}'. Update it before releasing."
+    ok "server.json advertises ${VERSION}"
+fi
+
 # ── Build: fetch Windows sqlite payload, then build the .oxt ──────────────────
 step "Fetching Windows pysqlite3 payload (host-independent)"
 "$PYTHON" scripts/fetch_sqlite3.py --python-version "$LO_PYTHON_VERSION"
@@ -202,3 +214,7 @@ echo "  Verify: gh release view ${TAG}"
 echo
 warn "Windows check: this asset was not registration-tested on a non-UTF-8 / CJK Windows box."
 warn "If you can, smoke-test 'unopkg add' on Windows before announcing it as latest."
+echo
+warn "Extensions site: extensions.libreoffice.org does not update itself, and has no"
+warn "API to do it with — uploading ${ASSET##*/} there is a manual step. Skipped often"
+warn "enough, the public listing falls behind the releases without anything saying so."
