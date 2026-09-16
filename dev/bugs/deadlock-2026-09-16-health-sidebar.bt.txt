@@ -1,0 +1,374 @@
+# startup hang: Module start timed out (VCL not ready?) after wbox up with LANG=en_US, 2026-09-16 20:56
+# scenario=
+[New LWP 3175268]
+[New LWP 3171069]
+[New LWP 3171066]
+[New LWP 3171054]
+[New LWP 3171031]
+[New LWP 3170885]
+[New LWP 3170884]
+[New LWP 3169271]
+[New LWP 3169267]
+[New LWP 3169262]
+[New LWP 3169223]
+[New LWP 3169222]
+[New LWP 3169217]
+[New LWP 3169209]
+[New LWP 3169208]
+[New LWP 3169206]
+[New LWP 3169205]
+[New LWP 3169204]
+[New LWP 3169203]
+[New LWP 3169202]
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <ima:enforcing>
+  <https://debuginfod.fedoraproject.org/>
+  <ima:ignore>
+Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]
+Debuginfod has been disabled.
+To make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib64/libthread_db.so.1".
+0x00007fb186047aae in __lll_lock_wait () from /lib64/libc.so.6
+
+Thread 21 (Thread 0x7fb16d4196c0 (LWP 3169202) "configmgrWriter"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047877 in __futex_abstimed_wait_cancelable64 () from /lib64/libc.so.6
+#3  0x00007fb18604a0cc in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libc.so.6
+#4  0x00007fb185c475a0 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib64/libstdc++.so.6
+#5  0x00007fb16d48a234 in configmgr::Components::WriteThread::execute() () from /usr/lib64/libreoffice/program/../program/libconfigmgrlo.so
+#6  0x00007fb185a9e005 in salhelper::Thread::run() () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#7  0x00007fb185a9de06 in threadFunc () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#8  0x00007fb186326fbe in osl_thread_start_Impl(void*) () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#9  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#10 0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 20 (Thread 0x7fb16cc186c0 (LWP 3169203) "PipeIPC"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007fb1860cff2e in accept () from /lib64/libc.so.6
+#4  0x00007fb18631d7b0 in osl_acceptPipe () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#5  0x00007fb1862364c9 in desktop::PipeIpcThread::execute() () from /usr/lib64/libreoffice/program/libsofficeapp.so
+#6  0x00007fb185a9e005 in salhelper::Thread::run() () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#7  0x00007fb185a9de06 in threadFunc () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#8  0x00007fb186326fbe in osl_thread_start_Impl(void*) () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#9  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#10 0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 19 (Thread 0x7fb167fff6c0 (LWP 3169204) "[pango] fontcon"):
+#0  0x00007fb1860cc37d in syscall () from /lib64/libc.so.6
+#1  0x00007fb17eb9142b in g_cond_wait () from /lib64/libglib-2.0.so.0
+#2  0x00007fb17eb2354c in g_async_queue_pop_intern_unlocked () from /lib64/libglib-2.0.so.0
+#3  0x00007fb17eb235c5 in g_async_queue_pop () from /lib64/libglib-2.0.so.0
+#4  0x00007fb16e5ec74c in fc_thread_func () from /lib64/libpangoft2-1.0.so.0
+#5  0x00007fb17eb96c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#6  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#7  0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 18 (Thread 0x7fb1677fe6c0 (LWP 3169205) "pool-spawner"):
+#0  0x00007fb1860cc37d in syscall () from /lib64/libc.so.6
+#1  0x00007fb17eb9142b in g_cond_wait () from /lib64/libglib-2.0.so.0
+#2  0x00007fb17eb2354c in g_async_queue_pop_intern_unlocked () from /lib64/libglib-2.0.so.0
+#3  0x00007fb17eb97ca4 in g_thread_pool_spawn_thread () from /lib64/libglib-2.0.so.0
+#4  0x00007fb17eb96c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#5  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#6  0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 17 (Thread 0x7fb166ffd6c0 (LWP 3169206) "gmain"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007fb1860c1426 in ppoll () from /lib64/libc.so.6
+#4  0x00007fb17eb61125 in g_main_context_iterate_unlocked.isra () from /lib64/libglib-2.0.so.0
+#5  0x00007fb17eb611e3 in g_main_context_iteration () from /lib64/libglib-2.0.so.0
+#6  0x00007fb17eb61231 in glib_worker_main () from /lib64/libglib-2.0.so.0
+#7  0x00007fb17eb96c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#8  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#9  0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 16 (Thread 0x7fb165ffb6c0 (LWP 3169208) "gdbus"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007fb1860c1426 in ppoll () from /lib64/libc.so.6
+#4  0x00007fb17eb61125 in g_main_context_iterate_unlocked.isra () from /lib64/libglib-2.0.so.0
+#5  0x00007fb17eb612e7 in g_main_loop_run () from /lib64/libglib-2.0.so.0
+#6  0x00007fb17edcb9f2 in gdbus_shared_thread_func.lto_priv () from /lib64/libgio-2.0.so.0
+#7  0x00007fb17eb96c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#8  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#9  0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 15 (Thread 0x7fb1657fa6c0 (LWP 3169209) "dconf worker"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007fb1860c1426 in ppoll () from /lib64/libc.so.6
+#4  0x00007fb17eb61125 in g_main_context_iterate_unlocked.isra () from /lib64/libglib-2.0.so.0
+#5  0x00007fb17eb611e3 in g_main_context_iteration () from /lib64/libglib-2.0.so.0
+#6  0x00007fb16d44011d in dconf_gdbus_worker_thread () from /usr/lib64/gio/modules/libdconfsettings.so
+#7  0x00007fb17eb96c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#8  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#9  0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 14 (Thread 0x7fb164ff96c0 (LWP 3169217) "URP Acceptor"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007fb1860cff2e in accept () from /lib64/libc.so.6
+#4  0x00007fb186329e29 in osl_acceptConnectionOnSocket () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#5  0x00007fb16c0a5f32 in (anonymous namespace)::OAcceptor::accept(rtl::OUString const&) () from /usr/lib64/libreoffice/program/libiolo.so
+#6  0x00007fb16c26707e in offacc_workerfunc () from /usr/lib64/libreoffice/program/../program/liboffacclo.so
+#7  0x00007fb186326fbe in osl_thread_start_Impl(void*) () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#8  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#9  0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 13 (Thread 0x7fb1645cc6c0 (LWP 3169222) "gly-global-exec"):
+#0  0x00007fb16d937959 in async_io::reactor::ReactorLock::react () from /lib64/libglycin-2.so.0
+#1  0x00007fb16d9306b2 in async_global_executor::threading::thread_main_loop () from /lib64/libglycin-2.so.0
+#2  0x00007fb16d92eb79 in std::sys::backtrace::__rust_begin_short_backtrace () from /lib64/libglycin-2.so.0
+#3  0x00007fb16d92ea81 in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /lib64/libglycin-2.so.0
+#4  0x00007fb16da69eb0 in <std::sys::thread::unix::Thread>::new::thread_start () from /lib64/libglycin-2.so.0
+#5  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#6  0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 12 (Thread 0x7fb1643cb6c0 (LWP 3169223) "async-io"):
+#0  0x00007fb1860cc37d in syscall () from /lib64/libc.so.6
+#1  0x00007fb16d810a66 in <std::sys::sync::mutex::futex::Mutex>::lock_contended () from /lib64/libglycin-2.so.0
+#2  0x00007fb16d9371b4 in std::sys::backtrace::__rust_begin_short_backtrace () from /lib64/libglycin-2.so.0
+#3  0x00007fb16d936d9c in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /lib64/libglycin-2.so.0
+#4  0x00007fb16da69eb0 in <std::sys::thread::unix::Thread>::new::thread_start () from /lib64/libglycin-2.so.0
+#5  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#6  0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 11 (Thread 0x7fb1394e96c0 (LWP 3169262) "mcp-doctype-pol"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047877 in __futex_abstimed_wait_cancelable64 () from /lib64/libc.so.6
+#3  0x00007fb1860525e6 in __new_sem_wait_slow64 () from /lib64/libc.so.6
+#4  0x00007fb13a91cd4c in _PySemaphore_Wait () from /lib64/libpython3.14.so.1.0
+#5  0x00007fb13a91ca0c in _PyParkingLot_Park () from /lib64/libpython3.14.so.1.0
+#6  0x00007fb13a8bf2be in _PyMutex_LockTimed () from /lib64/libpython3.14.so.1.0
+#7  0x00007fb13a8f8fd7 in lock_PyThread_acquire_lock.lto_priv.0 () from /lib64/libpython3.14.so.1.0
+#8  0x00007fb13a7be663 in method_vectorcall_VARARGS_KEYWORDS.lto_priv.0 () from /lib64/libpython3.14.so.1.0
+#9  0x00007fb13a62af9e in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#10 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#11 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#12 0x00007fb13a91d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#13 0x00007fb13a62a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#14 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#15 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#16 0x00007fb13a91ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#17 0x00007fb13a91cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#18 0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#19 0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 10 (Thread 0x7fb123fff6c0 (LWP 3169267) "http-server"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007fb1860c0dfe in poll () from /lib64/libc.so.6
+#4  0x00007fb1396049d0 in select_poll_poll () from /usr/lib64/python3.14/lib-dynload/select.cpython-314-x86_64-linux-gnu.so
+#5  0x00007fb13a62c84b in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#6  0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#7  0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#8  0x00007fb13a629902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#9  0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#10 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#11 0x00007fb13a91d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#12 0x00007fb13a62a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#13 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#14 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#15 0x00007fb13a91ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#16 0x00007fb13a91cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#17 0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#18 0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 9 (Thread 0x7fb122ffd6c0 (LWP 3169271) "[pango] fontcon"):
+#0  0x00007fb1860cc37d in syscall () from /lib64/libc.so.6
+#1  0x00007fb17eb9142b in g_cond_wait () from /lib64/libglib-2.0.so.0
+#2  0x00007fb17eb2354c in g_async_queue_pop_intern_unlocked () from /lib64/libglib-2.0.so.0
+#3  0x00007fb17eb235c5 in g_async_queue_pop () from /lib64/libglib-2.0.so.0
+#4  0x00007fb16e5ec74c in fc_thread_func () from /lib64/libpangoft2-1.0.so.0
+#5  0x00007fb17eb96c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#6  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#7  0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 8 (Thread 0x7fb1237fe6c0 (LWP 3170884) "binaryurpWriter"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047877 in __futex_abstimed_wait_cancelable64 () from /lib64/libc.so.6
+#3  0x00007fb18604a0cc in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libc.so.6
+#4  0x00007fb185c475a0 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib64/libstdc++.so.6
+#5  0x00007fb1863185a4 in osl_waitCondition () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#6  0x00007fb16c129c4f in binaryurp::Writer::execute() () from /usr/lib64/libreoffice/program/libbinaryurplo.so
+#7  0x00007fb185a9e005 in salhelper::Thread::run() () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#8  0x00007fb185a9de06 in threadFunc () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#9  0x00007fb186326fbe in osl_thread_start_Impl(void*) () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#10 0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#11 0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 7 (Thread 0x7fb138b0b6c0 (LWP 3170885) "binaryurpReader"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007fb1860d018f in recv () from /lib64/libc.so.6
+#4  0x00007fb1863279cc in osl_receiveSocket () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#5  0x00007fb186327c3b in osl_readSocket () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#6  0x00007fb16c0a5495 in io_acceptor::(anonymous namespace)::SocketConnection::read(com::sun::star::uno::Sequence<signed char>&, int) () from /usr/lib64/libreoffice/program/libiolo.so
+#7  0x00007fb16c122b7a in binaryurp::(anonymous namespace)::read(com::sun::star::uno::Reference<com::sun::star::connection::XConnection> const&, unsigned int, bool) () from /usr/lib64/libreoffice/program/libbinaryurplo.so
+#8  0x00007fb16c124f8d in binaryurp::Reader::execute() () from /usr/lib64/libreoffice/program/libbinaryurplo.so
+#9  0x00007fb185a9e005 in salhelper::Thread::run() () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#10 0x00007fb185a9de06 in threadFunc () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#11 0x00007fb186326fbe in osl_thread_start_Impl(void*) () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#12 0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#13 0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 6 (Thread 0x7fb13a0ae6c0 (LWP 3171031) "cppu_threadpool"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047877 in __futex_abstimed_wait_cancelable64 () from /lib64/libc.so.6
+#3  0x00007fb1860525e6 in __new_sem_wait_slow64 () from /lib64/libc.so.6
+#4  0x00007fb13a91cd4c in _PySemaphore_Wait () from /lib64/libpython3.14.so.1.0
+#5  0x00007fb13a91ca0c in _PyParkingLot_Park () from /lib64/libpython3.14.so.1.0
+#6  0x00007fb13a8bf2be in _PyMutex_LockTimed () from /lib64/libpython3.14.so.1.0
+#7  0x00007fb13a8f8fd7 in lock_PyThread_acquire_lock.lto_priv.0 () from /lib64/libpython3.14.so.1.0
+#8  0x00007fb13a7be663 in method_vectorcall_VARARGS_KEYWORDS.lto_priv.0 () from /lib64/libpython3.14.so.1.0
+#9  0x00007fb13a62af9e in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#10 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#11 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#12 0x00007fb13adb6836 in pyuno::Adapter::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#13 0x00007fb16d4f56a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#14 0x00007fb16d4f4902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#15 0x00007fb16d4f514d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#16 0x00007fb164014977 in adapter_dispatch () from /usr/lib64/libreoffice/program/libinvocadaptlo.so
+#17 0x00007fb16d4f1198 in cpp2uno_call(bridges::cpp_uno::shared::CppInterfaceProxy*, _typelib_TypeDescription const*, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void**, void**, void**, unsigned long*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#18 0x00007fb16d4f1741 in cpp_vtable_call () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#19 0x00007fb16d4f9ad2 in privateSnippetExecutor () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#20 0x00007fb18492042c in sfx2::sidebar::SidebarController::CreatePanel(std::basic_string_view<char16_t, std::char_traits<char16_t> >, weld::Widget*, bool, sfx2::sidebar::Context const&, VclPtr<sfx2::sidebar::Deck> const&) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#21 0x00007fb184913556 in sfx2::sidebar::SidebarController::CreatePanels(std::basic_string_view<char16_t, std::char_traits<char16_t> >, sfx2::sidebar::Context const&) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#22 0x00007fb18491899f in sfx2::sidebar::SidebarController::CreateDeck(std::basic_string_view<char16_t, std::char_traits<char16_t> >, sfx2::sidebar::Context const&, bool) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#23 0x00007fb18491ddb9 in sfx2::sidebar::SidebarController::SwitchToDeck(sfx2::sidebar::DeckDescriptor const&, sfx2::sidebar::Context const&) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#24 0x00007fb184912454 in sfx2::sidebar::SidebarController::SwitchToDeck(std::basic_string_view<char16_t, std::char_traits<char16_t> >) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#25 0x00007fb184914830 in sfx2::sidebar::Sidebar::ShowDeck(std::basic_string_view<char16_t, std::char_traits<char16_t> >, SfxViewFrame*, bool) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#26 0x00007fb18498ee3b in SfxViewFrame::ChildWindowExecute(SfxRequest&) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#27 0x00007fb184733462 in SfxDispatcher::Call_Impl(SfxShell&, SfxSlot const&, SfxRequest&, bool) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#28 0x00007fb184734b6c in SfxDispatcher::Execute(unsigned short, SfxCallMode, SfxItemSet const*, SfxItemSet const*, unsigned short) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#29 0x00007fb18477e077 in SfxDispatchController_Impl::dispatch(com::sun::star::util::URL const&, com::sun::star::uno::Sequence<com::sun::star::beans::PropertyValue> const&, com::sun::star::uno::Reference<com::sun::star::frame::XDispatchResultListener> const&) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#30 0x00007fb18477e911 in SfxOfficeDispatch::dispatchWithNotification(com::sun::star::util::URL const&, com::sun::star::uno::Sequence<com::sun::star::beans::PropertyValue> const&, com::sun::star::uno::Reference<com::sun::star::frame::XDispatchResultListener> const&) () from /usr/lib64/libreoffice/program/libsfxlo.so
+#31 0x00007fb184f47a8c in framework::DispatchHelper::executeDispatch(com::sun::star::uno::Reference<com::sun::star::frame::XDispatch> const&, com::sun::star::util::URL const&, bool, com::sun::star::uno::Sequence<com::sun::star::beans::PropertyValue> const&) () from /usr/lib64/libreoffice/program/libfwklo.so
+#32 0x00007fb184f480a6 in framework::DispatchHelper::executeDispatch(com::sun::star::uno::Reference<com::sun::star::frame::XDispatchProvider> const&, rtl::OUString const&, rtl::OUString const&, int, com::sun::star::uno::Sequence<com::sun::star::beans::PropertyValue> const&) () from /usr/lib64/libreoffice/program/libfwklo.so
+#33 0x00007fb16d4f56a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#34 0x00007fb16d4f4902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#35 0x00007fb16d4f514d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#36 0x00007fb16c122f77 in request () from /usr/lib64/libreoffice/program/libbinaryurplo.so
+#37 0x00007fb185ef2c9b in cppu_threadpool::JobQueue::enter(void const*, bool) () from /usr/lib64/libreoffice/program/libuno_cppu.so.3
+#38 0x00007fb185ef3390 in cppu_threadpool::ORequestThread::run() () from /usr/lib64/libreoffice/program/libuno_cppu.so.3
+#39 0x00007fb185eee3e6 in threadFunc () from /usr/lib64/libreoffice/program/libuno_cppu.so.3
+
+Thread 5 (Thread 0x7fb10e51b6c0 (LWP 3171054) "[pango] fontcon"):
+#0  0x00007fb1860cc37d in syscall () from /lib64/libc.so.6
+#1  0x00007fb17eb9142b in g_cond_wait () from /lib64/libglib-2.0.so.0
+#2  0x00007fb17eb2354c in g_async_queue_pop_intern_unlocked () from /lib64/libglib-2.0.so.0
+#3  0x00007fb17eb235c5 in g_async_queue_pop () from /lib64/libglib-2.0.so.0
+#4  0x00007fb16e5ec74c in fc_thread_func () from /lib64/libpangoft2-1.0.so.0
+#5  0x00007fb17eb96c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#6  0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#7  0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 4 (Thread 0x7fb0d71fe6c0 (LWP 3171066) "nelson-autoboot"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047877 in __futex_abstimed_wait_cancelable64 () from /lib64/libc.so.6
+#3  0x00007fb186053220 in __new_sem_wait_slow64.constprop.0 () from /lib64/libc.so.6
+#4  0x00007fb13a91cce4 in _PySemaphore_Wait () from /lib64/libpython3.14.so.1.0
+#5  0x00007fb13a91ca0c in _PyParkingLot_Park () from /lib64/libpython3.14.so.1.0
+#6  0x00007fb13a8bf2be in _PyMutex_LockTimed () from /lib64/libpython3.14.so.1.0
+#7  0x00007fb13a8f8fd7 in lock_PyThread_acquire_lock.lto_priv.0 () from /lib64/libpython3.14.so.1.0
+#8  0x00007fb13a7be663 in method_vectorcall_VARARGS_KEYWORDS.lto_priv.0 () from /lib64/libpython3.14.so.1.0
+#9  0x00007fb13a62af9e in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#10 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#11 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#12 0x00007fb13a91d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#13 0x00007fb13a62a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#14 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#15 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#16 0x00007fb13a91ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#17 0x00007fb13a91cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#18 0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#19 0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 3 (Thread 0x7fb0d69fd6c0 (LWP 3171069) "mcp-doctype-pol"):
+#0  0x00007fb186053312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007fb18604752c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007fb186047877 in __futex_abstimed_wait_cancelable64 () from /lib64/libc.so.6
+#3  0x00007fb1860525e6 in __new_sem_wait_slow64 () from /lib64/libc.so.6
+#4  0x00007fb13a91cd4c in _PySemaphore_Wait () from /lib64/libpython3.14.so.1.0
+#5  0x00007fb13a91ca0c in _PyParkingLot_Park () from /lib64/libpython3.14.so.1.0
+#6  0x00007fb13a8bf2be in _PyMutex_LockTimed () from /lib64/libpython3.14.so.1.0
+#7  0x00007fb13a8f8fd7 in lock_PyThread_acquire_lock.lto_priv.0 () from /lib64/libpython3.14.so.1.0
+#8  0x00007fb13a7be663 in method_vectorcall_VARARGS_KEYWORDS.lto_priv.0 () from /lib64/libpython3.14.so.1.0
+#9  0x00007fb13a62af9e in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#10 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#11 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#12 0x00007fb13a91d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#13 0x00007fb13a62a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#14 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#15 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#16 0x00007fb13a91ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#17 0x00007fb13a91cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#18 0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#19 0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 2 (Thread 0x7fb1667fc6c0 (LWP 3175268) "Thread-7 (proce"):
+#0  0x00007fb186047aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007fb18604e4c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007fb18631d502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007fb185710e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007fb184e8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007fb184f3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007fb184f424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007fb184f43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007fb16d4f56a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007fb16d4f4902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007fb16d4f514d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007fb13ad32977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007fb13addee1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007fb13adae50a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007fb13a7840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007fb13a62b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007fb13a8137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007fb13a629902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007fb13a91d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007fb13a62a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007fb13a7c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007fb13a8138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007fb13a91ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007fb13a91cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007fb18604ac19 in start_thread () from /lib64/libc.so.6
+#28 0x00007fb1860ce5cc in __clone3 () from /lib64/libc.so.6
+
+Thread 1 (Thread 0x7fb17c8661c0 (LWP 3169184) "soffice.bin"):
+#0  0x00007fb186047aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007fb18604e4c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007fb18631d502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007fb185710e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007fb16e671a9d in GdkThreadsEnter () from /usr/lib64/libreoffice/program/libvclplug_gtk3lo.so
+#5  0x00007fb17c74bbd5 in gdk_threads_dispatch () from /lib64/libgdk-3.so.0
+#6  0x00007fb17eb60022 in g_timeout_dispatch () from /lib64/libglib-2.0.so.0
+#7  0x00007fb17eb5cf24 in g_main_context_dispatch_unlocked.lto_priv () from /lib64/libglib-2.0.so.0
+#8  0x00007fb17eb61038 in g_main_context_iterate_unlocked.isra () from /lib64/libglib-2.0.so.0
+#9  0x00007fb17eb611e3 in g_main_context_iteration () from /lib64/libglib-2.0.so.0
+#10 0x00007fb16e67624e in GtkInstance::DoYield(bool, bool) () from /usr/lib64/libreoffice/program/libvclplug_gtk3lo.so
+#11 0x00007fb1826ec1e6 in Application::Yield() () from /usr/lib64/libreoffice/program/libvcllo.so
+#12 0x00007fb1826ec448 in Application::Execute() () from /usr/lib64/libreoffice/program/libvcllo.so
+#13 0x00007fb186219a3d in desktop::Desktop::Main() () from /usr/lib64/libreoffice/program/libsofficeapp.so
+#14 0x00007fb1826fe122 in ImplSVMain() () from /usr/lib64/libreoffice/program/libvcllo.so
+#15 0x00007fb18624029c in soffice_main () from /usr/lib64/libreoffice/program/libsofficeapp.so
+#16 0x000055c8e65b4406 in main ()
+[Inferior 1 (process 3169184) detached]

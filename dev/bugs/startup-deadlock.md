@@ -173,3 +173,42 @@ Nelson threads must not run Python that can touch UNO objects — including
 destructors — outside the main thread. Concretely: route `_update_menu_icons`
 and `_prebuild_cache` through `post_to_main_thread`, start each poller once, and
 hoist the lazy imports out of functions that run on the main thread.
+
+
+## Second capture, 2026-09-16 20:57 — `/health` off the main thread
+
+Backtrace: `deadlock-2026-09-16-health-sidebar.bt.txt` (wbox, gtk3, LibreOffice
+26.2.6.3, Nelson at `a4aa1c4`+).
+
+Not a cold start this time, but the same shape, and it involves a Nelson HTTP
+thread touching UNO:
+
+```
+Thread 6  cppu_threadpool   holds SolarMutex (an external UNO client
+                            dispatching .uno:SidebarDeck.NelsonDeck),
+                            creating the Nelson panel -> into Python ->
+                            waits on a Python lock
+Thread 2  Thread-7 (process_request)   Nelson HTTP request thread ->
+                            pyuno -> Desktop::getCurrentComponent ->
+                            waits on SolarMutex
+Thread 1  main              GdkThreadsEnter -> waits on SolarMutex
+Threads 3, 4, 11            nelson-autoboot, mcp-doctype-pol x2: wait on
+                            Python locks
+```
+
+The request on thread 2 was a `GET /health` poll: `McpProtocol.handle_health`
+calls `doc_svc.get_active_document()` — a bare `desktop.getCurrentComponent()`
+— **on the HTTP thread**, then `detect_doc_type` and `get_doc_id` (which, since
+#2627, registers a document cache entry and a modify listener, also off the
+main thread). That is the exact call on the Nelson side of the #37 capture.
+
+Which Python lock threads 6/3/4/11 wait on is not visible without `py-bt`
+(needs python debuginfo). Two `mcp-doctype-pol` threads also suggest that
+poller is started twice.
+
+The trigger here (an external UNO dispatch) is a test harness, not a user
+action; but `/health` is polled by clients and launchers during startup, which
+is exactly the #35/#37 window. **Lead for #2625: `/health` must not touch UNO
+off the main thread** — answer from cached state, or marshal the document part
+to the main thread with a short timeout and report `document: unknown` when it
+cannot get it.
