@@ -458,7 +458,18 @@ def check_open_is_active(h):
     if "warning" in opened:
         raise Fail("doc_open says the document is not active: %s"
                    % opened["warning"])
-    return "first opened document is the active one on the next call"
+    # One document per answer: _resolved used to name whatever was active
+    # before the call, next to the new document's doc_id (#2626).
+    resolved = (opened.get("_resolved") or {}).get("doc_id")
+    if resolved is not None and resolved != opened.get("doc_id"):
+        raise Fail("doc_open names two documents: doc_id %s, _resolved %s"
+                   % (opened.get("doc_id"), resolved))
+    closed = h.call("doc_close")
+    if (closed.get("_resolved") or {}).get("doc_id") != info.get(
+            "_resolved", {}).get("doc_id"):
+        raise Fail("doc_close's _resolved is not the document it closed: %s"
+                   % closed.get("_resolved"))
+    return "first opened document is the active one; one document per answer"
 
 
 def check_save_as_keeps_original(h):
@@ -925,6 +936,35 @@ def check_close_reports_truth(h):
     return "closed the document aimed at, said so, refused a second close"
 
 
+def check_heading_content_duplicates(h):
+    """nav_heading_content reads the heading asked for, not its namesake.
+
+    It used to walk to the heading by path and then look its title up again,
+    so the second "Notes" section returned the first one's text (#2626).
+    """
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full", content=(
+        "<h1>Chapter 1</h1><h2>Notes</h2><p>first notes</p>"
+        "<h1>Chapter 2</h1><h2>Notes</h2><p>second notes</p>"))
+    out = h.call("nav_outline").get("outline", [])
+    try:
+        second = out[1]["children"][0]
+    except (IndexError, KeyError):
+        raise Fail("unexpected outline: %s" % out)
+    if second.get("path") != "2.1" or second.get("para_index") is None:
+        raise Fail("nav_outline gives no usable path/para_index: %s" % second)
+    got = h.call("nav_heading_content", heading_path=second["path"])
+    text = " ".join(got.get("paragraphs", []))
+    if "second notes" not in text or "first notes" in text:
+        raise Fail("path %s returned %r — the other 'Notes' section"
+                   % (second["path"], text))
+    amb = h.call("nav_heading_content", heading_path="Notes")
+    if amb.get("status") == "ok" or "2.1" not in json.dumps(amb):
+        raise Fail("an ambiguous title should list the paths: %s" % amb)
+    return "path 2.1 reads the second 'Notes'; ambiguous title lists paths"
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -952,6 +992,7 @@ CHECKS = [
     ("session semantics (#38)", check_session_semantics),
     ("access token", check_auth_token),
     ("heading bookmarks (#2644)", check_heading_bookmarks),
+    ("heading content by path", check_heading_content_duplicates),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

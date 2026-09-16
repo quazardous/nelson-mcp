@@ -30,6 +30,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **`nav_heading_content` could return the wrong section** — it walked the
+  outline to the heading, then looked the heading up again by its title, so
+  with two headings of the same title and level (a "Notes" section in every
+  chapter) it returned the first one's text, without an error. It now reads
+  from the heading's own paragraph index. `nav_outline` gives every heading
+  its `path` (`"2.4"`, what `nav_heading_content` takes) and `para_index`,
+  so an agent no longer counts positions by hand; `nav_heading_content` also
+  accepts an exact title when only one heading has it, lists the matching
+  paths when several do, and every lookup error states the expected format
+- **Responses named two documents at once** — `_resolved` was read after the
+  tool ran, from the document that was active before the call: `doc_open`
+  and `doc_create` returned the new document's `doc_id` next to a `_resolved`
+  naming the previous one, and `doc_close` a `_resolved` with no id, since
+  the document it described was gone. `_resolved` is now read before the
+  call, and only for tools that work on a document
+
 - **`doc_close` reported success whether or not it closed anything** (#36,
   fault 2). It returned "Document closed." whenever `close()` did not raise,
   and a close LibreOffice declined or ignored looked exactly like a real one.

@@ -276,14 +276,20 @@ class DocumentService(ServiceBase):
     def build_heading_tree(self, model):
         """Return the heading outline as a nested list of dicts.
 
-        Each entry: {"level": int, "title": str, "children": [...]}.
+        Each entry: {"level": int, "title": str, "path": "2.4",
+        "para_index": int, "children": [...]}. ``path`` is what
+        nav_heading_content takes; ``para_index`` counts the same body
+        elements as get_paragraph_ranges (tables included), so it addresses
+        the heading unambiguously even when titles repeat.
         """
         try:
             text = model.getText()
             enum = text.createEnumeration()
             headings = []
+            index = -1
             while enum.hasMoreElements():
                 para = enum.nextElement()
+                index += 1
                 try:
                     level = para.getPropertyValue("OutlineLevel")
                 except Exception:
@@ -292,7 +298,7 @@ class DocumentService(ServiceBase):
                     headings.append({
                         "level": level,
                         "title": para.getString().strip(),
-                        "children": [],
+                        "para_index": index,
                     })
             return self._nest_headings(headings)
         except Exception:
@@ -300,19 +306,23 @@ class DocumentService(ServiceBase):
             return []
 
     def _nest_headings(self, flat):
-        """Convert flat list of headings into nested tree."""
+        """Convert flat list of headings into nested tree, numbering paths."""
         if not flat:
             return []
         root = []
         stack = []  # (level, node)
         for h in flat:
-            node = {"level": h["level"], "title": h["title"], "children": []}
+            node = {"level": h["level"], "title": h["title"],
+                    "path": None, "para_index": h.get("para_index"),
+                    "children": []}
             while stack and stack[-1][0] >= h["level"]:
                 stack.pop()
-            if stack:
-                stack[-1][1]["children"].append(node)
-            else:
-                root.append(node)
+            siblings = stack[-1][1]["children"] if stack else root
+            siblings.append(node)
+            parent_path = stack[-1][1]["path"] if stack else None
+            position = str(len(siblings))
+            node["path"] = ("%s.%s" % (parent_path, position)
+                            if parent_path else position)
             stack.append((h["level"], node))
         return root
 

@@ -17,7 +17,11 @@ class GetDocumentOutline(ToolBase):
 
     name = "nav_outline"
     aliases = ["get_document_outline"]
-    description = "Returns the document outline (headings hierarchy)."
+    description = (
+        "Returns the document outline (headings hierarchy). Each heading "
+        "has a 'path' (e.g. '2.4') to pass to nav_heading_content, and a "
+        "'para_index' for the text_* tools."
+    )
     parameters = {
         "type": "object",
         "properties": {
@@ -41,6 +45,12 @@ class GetDocumentOutline(ToolBase):
         return {"status": "ok", "outline": tree}
 
 
+_PATH_FORMAT = (
+    "heading_path is the 'path' of a heading in nav_outline: dot-separated "
+    "1-based positions such as '2' or '2.4', or the exact title of a "
+    "heading that appears once.")
+
+
 class GetHeadingContent(ToolBase):
     """Return content under a heading identified by its path."""
 
@@ -48,15 +58,18 @@ class GetHeadingContent(ToolBase):
     aliases = ["get_heading_content"]
     intent = "navigate"
     description = (
-        "Returns content under a heading identified by its path "
-        "(e.g. '1.2' for the second child of the first heading)."
+        "Returns content under a heading. Identify it by the 'path' "
+        "nav_outline gives (e.g. '2.4' for the fourth child of the second "
+        "heading) or by its exact title when that title is unique."
     )
     parameters = {
         "type": "object",
         "properties": {
             "heading_path": {
                 "type": "string",
-                "description": "Dot-separated heading path, e.g. '1', '2.3'.",
+                "description": (
+                    "The heading's 'path' from nav_outline (e.g. '1', "
+                    "'2.3'), or its exact title if unique."),
             },
             "max_paragraphs": {
                 "type": "integer",
@@ -73,33 +86,19 @@ class GetHeadingContent(ToolBase):
         max_paragraphs = kwargs.get("max_paragraphs", 50)
         doc_svc = ctx.services.document
 
-        # Navigate the heading tree by path indices.
         tree = doc_svc.build_heading_tree(ctx.doc)
-        parts = _parse_path(heading_path)
-        if parts is None:
-            return {
-                "status": "error",
-                "message": "Invalid heading path: %s" % heading_path,
-            }
-
-        node = _walk_tree(tree, parts)
+        node, error = _find_heading(tree, heading_path)
         if node is None:
-            return {
-                "status": "error",
-                "message": "Heading '%s' not found." % heading_path,
-            }
+            return {"status": "error", "message": error,
+                    "hint": _PATH_FORMAT}
 
-        # Read paragraphs under that heading.
+        # Read paragraphs under that heading, starting from its own index —
+        # never by looking its title up again, which picks the first of two
+        # headings that share a title.
         para_ranges = doc_svc.get_paragraph_ranges(ctx.doc)
         heading_level = node.get("level", 1)
-        heading_title = node.get("title", "")
-
-        # Find the paragraph index of this heading by scanning for a
-        # matching title and level.
-        start_idx = _find_heading_para_index(
-            para_ranges, heading_title, heading_level
-        )
-        if start_idx is None:
+        start_idx = node.get("para_index")
+        if start_idx is None or start_idx >= len(para_ranges):
             return {
                 "status": "error",
                 "message": "Could not locate heading in paragraphs.",
@@ -124,8 +123,9 @@ class GetHeadingContent(ToolBase):
 
         return {
             "status": "ok",
-            "heading_path": heading_path,
-            "heading_title": heading_title,
+            "heading_path": node.get("path"),
+            "heading_title": node.get("title", ""),
+            "para_index": start_idx,
             "paragraphs": paragraphs,
             "sub_headings": node.get("children", []),
         }
@@ -175,15 +175,31 @@ def _walk_tree(tree, parts):
     return node
 
 
-def _find_heading_para_index(para_ranges, title, level):
-    """Scan paragraph ranges for a heading matching *title* and *level*."""
-    for i, p in enumerate(para_ranges):
-        if not hasattr(p, "getString"):
-            continue
-        try:
-            p_level = p.getPropertyValue("OutlineLevel")
-        except Exception:
-            continue
-        if p_level == level and p.getString().strip() == title:
-            return i
-    return None
+def _flatten(tree):
+    for node in tree:
+        yield node
+        yield from _flatten(node.get("children", []))
+
+
+def _find_heading(tree, heading_path):
+    """Return (node, None) or (None, error message).
+
+    A dotted path is walked; anything else is taken as an exact title,
+    accepted only when a single heading carries it.
+    """
+    parts = _parse_path(heading_path)
+    if parts is not None:
+        node = _walk_tree(tree, parts)
+        if node is None:
+            return None, "No heading at path '%s'." % heading_path
+        return node, None
+    title = (heading_path or "").strip()
+    matches = [n for n in _flatten(tree) if n.get("title") == title]
+    if len(matches) == 1:
+        return matches[0], None
+    if matches:
+        return None, ("%d headings are titled '%s', at paths %s — pass "
+                      "one of those paths." % (
+                          len(matches), title,
+                          ", ".join(n["path"] for n in matches)))
+    return None, "Invalid heading path: '%s'." % heading_path

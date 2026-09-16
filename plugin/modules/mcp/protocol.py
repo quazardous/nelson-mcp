@@ -598,6 +598,15 @@ class MCPProtocolHandler:
             caller="mcp",
         )
 
+        # _resolved names the document the tool worked on. Tools that need no
+        # document (doc_open, doc_create, doc_list_open) did not work on the
+        # one that happened to be active, and reporting it next to the new
+        # document's doc_id reads as a contradiction (#2626). Read before the
+        # call: doc_close leaves nothing to read afterwards.
+        resolved = None
+        if doc is not None and (tool is None or tool.requires_doc):
+            resolved = self._document_identity(doc, doc_svc, doc_type)
+
         t0 = time.perf_counter()
         result = registry.execute(tool_name, context, **arguments)
         elapsed = time.perf_counter() - t0
@@ -607,32 +616,32 @@ class MCPProtocolHandler:
             if doc_uri:
                 result["_document"] = doc_uri
             result["_session"] = _mcp_session_id
-            self._enrich_result(result, doc, doc_svc, doc_type)
+            if resolved is not None:
+                result["_resolved"] = resolved
+                self._enrich_result(result, doc, doc_svc, doc_type)
 
         return result
 
-    def _enrich_result(self, result, doc, doc_svc, doc_type):
-        """Add lightweight meta to every tool result. No scanning."""
-        if doc is None:
-            return
-
-        # Document identity
+    @staticmethod
+    def _document_identity(doc, doc_svc, doc_type):
+        """doc_id, type and title of *doc*, or None if it cannot be read."""
         try:
             doc_id = doc_svc.get_doc_id(doc)
-            title = ""
-            try:
-                title = (doc.getDocumentProperties().Title
-                         or doc.getCurrentController().getFrame()
-                         .getTitle())
-            except Exception:
-                pass
-            result["_resolved"] = {
-                "doc_id": doc_id,
-                "doc_type": doc_type,
-                "title": title or None,
-            }
+        except Exception:
+            return None
+        title = ""
+        try:
+            title = (doc.getDocumentProperties().Title
+                     or doc.getCurrentController().getFrame().getTitle())
         except Exception:
             pass
+        return {"doc_id": doc_id, "doc_type": doc_type,
+                "title": title or None}
+
+    def _enrich_result(self, result, doc, doc_svc, doc_type):
+        """Add lightweight view meta (sheet, page) to a result. No scanning."""
+        if doc is None:
+            return
 
         try:
             controller = doc.getCurrentController()
