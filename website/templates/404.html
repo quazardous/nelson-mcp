@@ -1,9 +1,0 @@
-{% extends "base.html" %}
-{% block title %}Page not found{% endblock %}
-
-{% block content %}
-<div class="wrap error-page">
-    <h1>Page not found</h1>
-    <p>That page doesn’t exist. <a href="{{ url_for('index') }}">Go back home</a> or visit <a href="{{ github_url }}" target="_blank" rel="noopener">GitHub</a>.</p>
-</div>
-{% endblock %}
