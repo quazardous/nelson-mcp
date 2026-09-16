@@ -84,7 +84,7 @@ OXT_NAME = $(EXTENSION_NAME)-$(EXTENSION_VERSION)$(BUILD_TAG)
 # ── Phony targets ────────────────────────────────────────────────────────────
 
 .PHONY: help build rebuild repack repack-deploy xcu clean dev-up dev-down smoke \
-        smoke-wbox wbox-up wbox-down wbox-deploy wbox-shot wbox-log \
+        smoke-wbox wbox-up wbox-down wbox-deploy wbox-shot wbox-click wbox-key wbox-log \
         install install-force uninstall cache \
         dev-deploy dev-deploy-remove \
         lo-start lo-start-full lo-kill lo-restart \
@@ -114,6 +114,8 @@ help:
 	@echo "  make wbox-deploy            Stop, build + install into the dev profile, start"
 	@echo "  make wbox-up / wbox-down    Start / stop the dev instance (port 8767)"
 	@echo "  make wbox-shot              Screenshot into dev/lo-wbox/screenshots/"
+	@echo "  make wbox-click X=.. Y=..   Click at a position (1280x800 screen)"
+	@echo "  make wbox-key K=alt+F12     Send a shortcut"
 	@echo "  make wbox-log               Last lines of the live Nelson log"
 	@echo "  WBOX_VISIBLE=1 make ...     Show the window instead of rendering offscreen"
 	@echo ""
@@ -454,8 +456,12 @@ smoke-wbox: build
 wbox-up:
 	$(WBOX_CTL) up $(WBOX_CONFIG)
 
+# wbox kills the compositor and the launcher it started (oosplash), but a hung
+# soffice.bin outlives both and keeps ports 8767/2002. Reap it by its profile,
+# which only ever matches the dev instance.
 wbox-down:
 	$(WBOX_CTL) down $(WBOX_CONFIG)
+	@pkill -9 -f 'UserInstallation=file:///tmp/lo_dev_profile' 2>/dev/null || true
 
 # Never install while soffice runs — see AGENTS.md on unopkg keeping the old code.
 wbox-deploy: wbox-down
@@ -464,6 +470,12 @@ wbox-deploy: wbox-down
 
 wbox-shot:
 	$(WBOX_CTL) shot $(WBOX_CONFIG)
+
+wbox-click:
+	$(WBOX_CTL) click $(WBOX_CONFIG) $(X) $(Y)
+
+wbox-key:
+	$(WBOX_CTL) key $(WBOX_CONFIG) $(K)
 
 wbox-log:
 	@tail -n 50 dev/lo-wbox/log/nelson.log

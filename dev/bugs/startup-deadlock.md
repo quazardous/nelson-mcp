@@ -113,3 +113,63 @@ Instrument before believing any of this: log thread name and identity at every
 the moment of the hang. If it is, the fix is to route `_prebuild_cache` through
 `post_to_main_thread` like `_attach_page_logger` already does — or to drop the
 poll entirely and build the cache on first use.
+
+
+## Update 2026-09-16 — a Nelson deadlock captured locally, second lock pair
+
+Reproduced **by accident, headless under wbox** (`make wbox-up`), while taking
+README screenshots: after a few MCP edits (`text_set`, `text_set_style`,
+`text_insert_batch`) and a sidebar interaction, LibreOffice froze — `/health`
+stopped answering. `ptrace_scope` was 0, so the full backtrace was taken
+without sudo: `deadlock-2026-09-16-import-lock.bt.txt` (all threads, 40 frames).
+
+This is **not** the lock pair of #35/#37, but the same class of defect:
+
+```
+soffice.bin (main)        holds SolarMutex, waits on Python's import lock
+                          _imp_acquire_lock <- import_find_and_load
+
+Thread-13 (_update_menu_icons)
+                          holds the import lock (inside PyImport_ImportModuleLevelObject,
+                          nested twice), and while tearing down frames destroys a
+                          Writer text cursor:
+                          SwXTextCursor::~SwXTextCursor -> SolarMutex::doAcquire  (blocked)
+
+nelson-prebuild           Desktop::getCurrentComponent -> SolarMutex::doAcquire  (blocked)
+Thread-14 (process_request?)  Desktop::getCurrentComponent -> SolarMutex         (blocked)
+2x mcp-doctype-pol        waiting on a Python lock                               (blocked)
+```
+
+Three things in Nelson line up to make this possible:
+
+1. **`_update_menu_icons` runs UNO off the main thread.** `notify_menu_update()`
+   (`plugin/main.py`) starts a fresh thread for it on *every* `menu:update`
+   event, and it does `import uno`, loads graphics and writes ImageManagers
+   there. Same rule violation as `nelson-prebuild`.
+2. **PyUNO proxies die on whatever thread drops them.** The text cursor was
+   created on the main thread by an MCP tool; its last reference went away — or
+   the cyclic GC collected it — inside the menu-icon thread. Its C++ destructor
+   needs the SolarMutex. So *any* background thread that runs Python can end up
+   needing the SolarMutex, even one that never calls UNO itself.
+3. **Lazy imports inside functions** mean the main thread takes the import lock
+   at runtime, not only at startup.
+
+Also seen: **two `mcp-doctype-pol` threads**. The `listChanged` poller was
+started twice — the same shape as the duplicate HTTP server start in
+`http-server-duplicate-start.md`.
+
+`nelson-prebuild` was still alive and blocked in `getCurrentComponent` here too:
+it is on the scene of both deadlocks.
+
+### Not yet known
+
+- Whether it reproduces on demand. One occurrence so far.
+- Which interaction fired `menu:update` (candidates: the MCP edits, a
+  document-type change, the sidebar deck being opened).
+
+### Direction for the fix
+
+Nelson threads must not run Python that can touch UNO objects — including
+destructors — outside the main thread. Concretely: route `_update_menu_icons`
+and `_prebuild_cache` through `post_to_main_thread`, start each poller once, and
+hoist the lazy imports out of functions that run on the main thread.

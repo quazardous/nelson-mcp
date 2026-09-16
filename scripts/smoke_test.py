@@ -190,6 +190,10 @@ class Harness:
     def stop(self):
         if self.wbox and self.wbox_config:
             self._wbox("down")
+            # A hung soffice.bin outlives the compositor that launched it.
+            subprocess.run(["pkill", "-9", "-f",
+                            "UserInstallation=file://%s" % self.profile],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         if self.proc and self.proc.poll() is None:
             self.proc.terminate()
             try:
