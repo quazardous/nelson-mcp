@@ -76,29 +76,45 @@ class SetTrackChanges(ToolBase):
             return False
 
 
-class GetTrackedChanges(ToolBase):
-    """List all tracked changes (redlines) in the document."""
+class ListTrackedChanges(ToolBase):
+    """List tracked changes (redlines) for review."""
 
     name = "change_list"
     aliases = ["get_tracked_changes"]
     intent = "review"
     description = (
-        "List all tracked changes (redlines) in the document, "
-        "including type, author, date, and comment. "
-        "Writer only: the Calc change track has no UNO API, and the "
+        "List tracked changes (redlines) so they can be reviewed: each with "
+        "its type, author, date, comment, the text inserted or deleted "
+        "(first 200 characters, plus its length) and the paragraph it is "
+        "in. A summary by type and by author covers every change; the list "
+        "is paged (offset, limit, default 100) and can be filtered by author "
+        "or type. Writer only: the Calc change track has no UNO API, and the "
         "Calc accept/reject commands open a dialog instead of running "
-        "headless, so spreadsheet revisions cannot be listed or "
-        "cleared through MCP."
+        "headless, so spreadsheet revisions cannot be listed or cleared "
+        "through MCP."
     )
     parameters = {
         "type": "object",
-        "properties": {},
+        "properties": {
+            "author": {"type": "string",
+                       "description": "Only changes by this author."},
+            "type": {"type": "string",
+                     "description": "Only this type, e.g. Insert, Delete, "
+                                    "Format."},
+            "offset": {"type": "integer",
+                       "description": "First change to return (default 0)."},
+            "limit": {"type": "integer",
+                      "description": "Changes per page (default 100, at most "
+                                     "500)."},
+        },
         "required": [],
     }
     doc_types = ["writer"]
     is_mutation = False
 
     def execute(self, ctx, **kwargs):
+        from plugin.modules.writer import change_review as cr
+
         doc = ctx.doc
         recording = False
         try:
@@ -115,35 +131,90 @@ class GetTrackedChanges(ToolBase):
                 "message": "Document does not expose redlines API.",
             }
 
-        redlines = doc.getRedlines()
-        enum = redlines.createEnumeration()
-        changes = []
+        redlines = []
+        enum = doc.getRedlines().createEnumeration()
         while enum.hasMoreElements():
-            redline = enum.nextElement()
-            entry = {}
-            for prop in (
-                "RedlineType", "RedlineAuthor",
-                "RedlineComment", "RedlineIdentifier",
-            ):
-                try:
-                    entry[prop] = redline.getPropertyValue(prop)
-                except Exception:
-                    pass
-            try:
-                dt = redline.getPropertyValue("RedlineDateTime")
+            redlines.append(enum.nextElement())
+        changes = []
+        for redline in redlines:
+            entry = {"type": _prop(redline, "RedlineType"),
+                     "author": _prop(redline, "RedlineAuthor"),
+                     "comment": _prop(redline, "RedlineComment") or None,
+                     "id": _prop(redline, "RedlineIdentifier")}
+            dt = _prop(redline, "RedlineDateTime")
+            if dt is not None:
                 entry["date"] = "%04d-%02d-%02d %02d:%02d" % (
-                    dt.Year, dt.Month, dt.Day, dt.Hours, dt.Minutes
-                )
-            except Exception:
-                pass
+                    dt.Year, dt.Month, dt.Day, dt.Hours, dt.Minutes)
+            entry["_redline"] = redline
             changes.append(entry)
 
-        return {
-            "status": "ok",
-            "recording": recording,
-            "changes": changes,
-            "count": len(changes),
-        }
+        try:
+            page = cr.review(changes, author=kwargs.get("author"),
+                             change_type=kwargs.get("type"),
+                             offset=kwargs.get("offset", 0),
+                             limit=kwargs.get("limit", cr.DEFAULT_LIMIT))
+        except ValueError as e:
+            return {"status": "error", "code": "invalid_params",
+                    "message": str(e), "retryable": False}
+
+        # Text and paragraph only for the page returned: both cost UNO calls.
+        locate = _paragraph_locator(ctx)
+        for entry in page["changes"]:
+            redline = entry.pop("_redline")
+            start = _prop(redline, "RedlineStart")
+            end = _prop(redline, "RedlineEnd")
+            text = ""
+            try:
+                cursor = start.getText().createTextCursorByRange(start)
+                cursor.gotoRange(end, True)
+                text = cursor.getString()
+            except Exception:
+                pass
+            entry["text"], entry["text_length"] = cr.clip(text)
+            entry["paragraph_index"] = locate(start)
+        for entry in changes:
+            entry.pop("_redline", None)
+
+        return {"status": "ok", "recording": recording,
+                "count": page["summary"]["total"], **page}
+
+
+def _prop(obj, name):
+    try:
+        return obj.getPropertyValue(name)
+    except Exception:
+        return None
+
+
+def _paragraph_locator(ctx):
+    """start range -> body paragraph index (binary search), or None for a
+    change outside the body text (table cell, frame, note)."""
+    from plugin.modules.writer.change_review import paragraph_of
+
+    doc = ctx.doc
+    body = doc.getText()
+    ranges = ctx.services.document.get_paragraph_ranges(doc)
+    starts, points = [], []
+    for i, element in enumerate(ranges):
+        try:
+            if element.supportsService("com.sun.star.text.Paragraph"):
+                points.append(element.getStart())
+                starts.append(i)
+        except Exception:
+            continue
+
+    def locate(point):
+        if point is None:
+            return None
+        try:
+            # compareRegionStarts(a, b) >= 0: a starts at or before b.
+            return paragraph_of(
+                starts,
+                lambda k: body.compareRegionStarts(points[k], point) >= 0)
+        except Exception:
+            return None
+
+    return locate
 
 
 class AcceptAllChanges(ToolBase):
