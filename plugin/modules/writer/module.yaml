@@ -12,6 +12,21 @@ config:
     widget: number
     label: Max Content Size
     public: true
+  change_author:
+    type: string
+    default: ""
+    widget: text
+    label: Sign the agent's tracked changes as
+    description: >
+      Name shown on changes an MCP agent makes while change recording is on,
+      e.g. "AI agent (Nelson)", so reviewers can tell its edits from yours.
+      Empty: they carry your own name (Tools > Options > User Data), like
+      anything else you record. While a call runs, Nelson puts this name in
+      your LibreOffice user profile and puts yours back right after.
+  change_author_restore:
+    type: string
+    default: ""
+    internal: true
   search_backend:
     type: string
     default: direct

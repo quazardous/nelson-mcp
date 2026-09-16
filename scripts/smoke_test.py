@@ -1755,6 +1755,56 @@ def check_review_changes(h):
            "filtered" % stats.get("page_count")
 
 
+def check_change_author(h):
+    """The agent's tracked changes carry writer.change_author (#2636).
+
+    Writer signs changes with the user's name, so an agent's edits looked
+    like the user's. Nelson swaps the profile name during the call; the
+    user's own name must be back afterwards.
+    """
+    profile = (
+        "from com.sun.star.beans import PropertyValue as P\n"
+        "a=P(); a.Name='nodepath'; a.Value='/org.openoffice.UserProfile/Data'\n"
+        "cp=c.ServiceManager.createInstanceWithContext("
+        "'com.sun.star.configuration.ConfigurationProvider',c)\n"
+        "d=cp.createInstanceWithArguments("
+        "'com.sun.star.configuration.ConfigurationUpdateAccess',(a,))\n")
+    user = h.uno_run(profile + "d.setPropertyValue('givenname','Smoke')\n"
+                     "d.setPropertyValue('sn','User'); d.commitChanges()\n"
+                     "print(json.dumps(d.getPropertyValue('givenname')))\n")
+    if user is None:
+        return "SKIPPED — uno module unavailable to set the user's name"
+    try:
+        h.reset()
+        h.call("doc_create", doc_type="writer")
+        h.set_config("writer.change_author", "AI agent (Nelson)")
+        on = h.call("change_set", enabled=True)
+        if on.get("author") != "AI agent (Nelson)":
+            raise Fail("change_set does not say who signs: %s" % on)
+        h.call("text_insert", paragraph_index=0, text="agent edit")
+        after = h.uno_run(profile + "print(json.dumps([d.getPropertyValue("
+                          "'givenname'), d.getPropertyValue('sn')]))\n")
+        if after != ["Smoke", "User"]:
+            raise Fail("user's name not restored after the call: %r" % after)
+        h.set_config("writer.change_author", "")
+        mine = h.call("change_set", enabled=True)
+        if mine.get("author") != "Smoke User":
+            raise Fail("without the setting, changes should carry the "
+                       "user's name: %s" % mine)
+        h.call("text_insert", paragraph_index=0, text="user-named edit")
+        authors = h.call("change_list").get("summary", {}).get("by_author", {})
+        if set(authors) != {"AI agent (Nelson)", "Smoke User"}:
+            raise Fail("authors in the document: %s" % authors)
+        h.call("change_set", enabled=False)
+        return "agent edit signed 'AI agent (Nelson)', user's name restored " \
+               "and used without the setting"
+    finally:
+        h.set_config("writer.change_author", "")
+        h.uno_run(profile + "d.setPropertyValue('givenname','')\n"
+                  "d.setPropertyValue('sn',''); d.commitChanges()\n"
+                  "print('null')\n")
+
+
 def check_formula_fill(h):
     """A single formula on a range shifts its relative references (#2633).
 
@@ -1832,6 +1882,7 @@ CHECKS = [
     ("chart legend and params (#2641)", check_chart_legend_and_params),
     ("text in tables (#2637)", check_table_text),
     ("review changes (#2636)", check_review_changes),
+    ("change author (#2636)", check_change_author),
     ("formula fill (#2633)", check_formula_fill),
     ("doc_close truthful (#36)", check_close_reports_truth),
     ("browser origin refused", check_origin_rejected),

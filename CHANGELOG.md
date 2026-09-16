@@ -256,6 +256,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`writer.change_author`: sign the agent's tracked changes with a name of
+  its own** (#2636). Writer signs a tracked change with the user's name
+  (Tools > Options > User Data), so an agent's edits could not be told
+  from the user's, or read "Unknown Author" on a profile without a name.
+  Set this option, e.g. to "AI agent (Nelson)", and Nelson puts that name
+  in the LibreOffice profile for the length of each editing call, then
+  puts the user's name back. If LibreOffice dies mid-call, the name is
+  restored at the next start. `change_set` now says who will sign, and
+  warns when that is "Unknown Author"
+
 - **ISO dates are written as dates, and `calc_columns` sizes columns and
   freezes panes** (#2632). `calc_write_range` and `calc_write_formula` stored
   "2026-10-01" as text, so a planning column neither sorted nor formatted as

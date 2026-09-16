@@ -13,3 +13,10 @@ class WriterModule(ModuleBase):
 
     def initialize(self, services):
         self.services = services
+        from plugin.modules.writer.change_author import ChangeAuthor
+        self._change_author = ChangeAuthor(services.config)
+        services.register_instance("change_author", self._change_author)
+
+    def start(self, services):
+        # A call that died mid-swap left the agent's name in the profile.
+        self._change_author.recover()

@@ -61,7 +61,18 @@ class SetTrackChanges(ToolBase):
             }
 
         ctx.doc.setPropertyValue("RecordChanges", enabled)
-        return {"status": "ok", "record_changes": enabled}
+        result = {"status": "ok", "record_changes": enabled}
+        signer = ctx.services.get("change_author") if enabled else None
+        if signer is not None and ctx.doc.supportsService(
+                "com.sun.star.text.TextDocument"):
+            from plugin.modules.writer.change_author import UNKNOWN_AUTHOR
+            result["author"] = signer.signing_name()
+            if result["author"] == UNKNOWN_AUTHOR:
+                result["warning"] = (
+                    "Changes will be signed 'Unknown Author': no name in "
+                    "Tools > Options > User Data, and no "
+                    "writer.change_author set.")
+        return result
 
     def _locked(self, ctx):
         """True when recording is on and the option forbids turning it off."""

@@ -288,8 +288,10 @@ class ToolRegistry:
                 except Exception:
                     undo_mgr = None
 
+        signer = self._services.get("change_author") \
+            if mutates and ctx.doc is not None else None
         try:
-            with _deferred_invalidation():
+            with _deferred_invalidation(), _signing(signer, ctx.doc):
                 result = tool.execute(ctx, **kwargs)
         except Exception as exc:
             if undo_mgr:
@@ -366,6 +368,14 @@ class ToolRegistry:
 
     def __len__(self):
         return len(self._tools)
+
+
+def _signing(signer, doc):
+    """Sign tracked changes as writer.change_author during a mutation (#2636)."""
+    if signer is None:
+        import contextlib
+        return contextlib.nullcontext()
+    return signer.signing(doc)
 
 
 def _deferred_invalidation():
