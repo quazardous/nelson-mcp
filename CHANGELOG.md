@@ -6,6 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Security
+
+- **Nelson could be exposed to the network or the internet with no
+  authentication at all** — there was no access control anywhere in the
+  server. Binding to `0.0.0.0`, or following the Tailscale guide, which runs
+  `tailscale funnel on` and publishes the server on the public internet, gave
+  whoever found the URL read and write access to every open document and
+  `doc_open` on any file the user can read — and the guide said none of that.
+  There is now an **access token** (`http.auth_token`, Options > Nelson MCP >
+  HTTP): once set, every request needs it, as `Authorization: Bearer <token>`
+  or `?token=<token>` for clients that can only be given a URL, compared in
+  constant time, applied without a restart. Nelson **refuses to bind to
+  anything but localhost, and refuses to start a tunnel, until a token is
+  set** — a tunnel's traffic arrives from localhost, so only a token can tell
+  it apart from a local client. The built-in launchers write the token into
+  the Claude Code, Gemini CLI and OpenCode configs they generate. Local use
+  with no token set is unchanged. The Tailscale guide now opens with what
+  exposing Nelson gives away, and the README has a Security section.
+  `make smoke` checks the token live: 401 without it, 200 with either form,
+  applied without a restart, and the server reopened to local clients once it
+  is cleared
+
 ### Fixed
 
 - **A LibreOffice restart left every MCP client silently dead** (#38) — a

@@ -2,6 +2,27 @@
 
 Base URL: `http://localhost:8766` (configurable via `http.port`)
 
+## Access token
+
+Off by default. Once `http.auth_token` is set, **every** request needs it — the
+MCP endpoints, `/health`, `/api/config`, everything — or gets `401` with
+`WWW-Authenticate: Bearer`:
+
+```
+Authorization: Bearer <token>
+```
+
+For clients that can only be given a URL, `?token=<token>` is accepted too. The
+header is preferable: a token in a URL is recorded wherever URLs are logged.
+The comparison is constant-time. CORS preflights (`OPTIONS`) never carry
+credentials and are not checked; the browser-origin rule below still applies to
+them.
+
+The server **refuses to start** on any host other than `localhost` /
+`127.0.0.1` / `::1` while no token is set, and the tunnel module refuses to
+start a tunnel. Clearing the token while bound elsewhere stops the server
+rather than leaving it open. Changing the token applies immediately.
+
 ## Browser origins
 
 The server validates the `Origin` header on every request, as the MCP

@@ -25,7 +25,7 @@ Nelson MCP runs an HTTP server inside LibreOffice and speaks the [Model Context 
 - **Built-in launchers** — launch Claude Code, Gemini CLI, or OpenCode directly from LibreOffice with one click. Nelson handles MCP config, prompt injection, and working directory setup automatically
 - **AI image generation** — generate and edit images from text prompts using Stable Diffusion (A1111/Forge), OpenAI, or AI Horde. One-click detect/install/launch for Automatic1111
 - **Beginner-friendly setup** — all tools come with install buttons, auto-detection of existing installations, and guided configuration. No manual config files to edit
-- **Tunnels** — expose the MCP server externally via ngrok, Cloudflare, bore, or Tailscale
+- **Tunnels** — expose the MCP server externally via ngrok, Cloudflare, bore, or Tailscale, behind an access token
 - **SSL** — optional HTTPS with auto-generated certificates
 - **Modular** — each feature is a self-contained module with its own config, services, and tools
 
@@ -54,6 +54,26 @@ Once installed, point your MCP client at the server:
 Open a document in LibreOffice, then ask your AI client to read or edit it.
 
 **For AI agents:** see [`QUICKSTART.md`](QUICKSTART.md) — a step-by-step guide for LLM agents on how to discover documents, navigate structure, and use tools effectively.
+
+## Security
+
+Whoever can talk to Nelson can read and edit every document open in
+LibreOffice, and open any file your account can read. What stands between that
+and other people:
+
+| Situation | Protection |
+|---|---|
+| **Default: local only** | The server binds to `localhost`. MCP clients on your machine need nothing. |
+| **Web pages in your browser** | Refused. A page you visit cannot call `localhost:8766`: browser origins are rejected unless you list them in **Allowed Browser Origins**. |
+| **An access token is set** | Every request must carry it — `Authorization: Bearer <token>`, or `?token=<token>` for clients that cannot set a header. The built-in launchers pass it for you. |
+| **Reachable from the network, or through a tunnel** | Nelson **refuses** to bind anywhere but `localhost`, and refuses to start a tunnel, **until a token is set**. |
+
+Set the token in **Options > Nelson MCP > HTTP > Access Token**; it applies
+without a restart. Keep **Enable Config API** and the debug API off on any
+machine that is reachable from elsewhere.
+
+Before exposing Nelson through a tunnel, read the warning at the top of
+[`docs/howto/connect-chatgpt-tailscale.md`](docs/howto/connect-chatgpt-tailscale.md).
 
 ## Modules
 

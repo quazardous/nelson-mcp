@@ -234,8 +234,14 @@ class LauncherModule(ModuleBase):
 
         # Auto-config: write MCP config into cwd
         if auto_config:
+            # When the server requires a token, the config written for the
+            # client has to carry it, or the CLI starts and every call is 401.
+            token = (self._services.config.proxy_for("http")
+                     .get("auth_token") or "").strip()
+            headers = {"Authorization": "Bearer %s" % token} if token else None
             try:
-                provider.setup_env(mcp_url, env, cwd, provider_cfg)
+                provider.setup_env(mcp_url, env, cwd, provider_cfg,
+                                   headers=headers)
             except Exception:
                 log.exception("Auto-config failed for %s", provider.name)
 

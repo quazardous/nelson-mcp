@@ -33,18 +33,14 @@ class ClaudeProvider:
     def get_args(self, mcp_url, config):
         return ["--resume"]
 
-    def setup_env(self, mcp_url, env, cwd, config):
+    def setup_env(self, mcp_url, env, cwd, config, headers=None):
         """Write .mcp.json, CLAUDE.md, and skills into the working directory."""
         # 1. .mcp.json — MCP server config
         config_path = os.path.join(cwd, ".mcp.json")
-        mcp_config = {
-            "mcpServers": {
-                "nelson": {
-                    "type": "http",
-                    "url": mcp_url + "/mcp",
-                }
-            }
-        }
+        server = {"type": "http", "url": mcp_url + "/mcp"}
+        if headers:
+            server["headers"] = dict(headers)
+        mcp_config = {"mcpServers": {"nelson": server}}
         try:
             with open(config_path, "w") as f:
                 json.dump(mcp_config, f, indent=2)

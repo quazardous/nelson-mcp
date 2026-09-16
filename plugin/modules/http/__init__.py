@@ -77,6 +77,21 @@ class HttpModule(ModuleBase):
             from plugin.framework.http_server import set_allowed_origins
             set_allowed_origins(cfg.get("allowed_origins") or "")
 
+        # So does the access token. Clearing it is refused while the server
+        # is bound off-loopback: that would reopen it to the network.
+        if key == "http.auth_token":
+            from plugin.framework.http_server import (
+                is_loopback_host, set_auth_token)
+            token = cfg.get("auth_token") or ""
+            host = cfg.get("host") or "localhost"
+            if not token.strip() and not is_loopback_host(host) and self._server:
+                log.error("Access token cleared while listening on %s: "
+                          "stopping the HTTP server rather than leaving it "
+                          "open to the network", host)
+                self._stop_server()
+            else:
+                set_auth_token(token)
+
         # Toggle config API routes
         if key == "http.enable_config_api":
             if cfg.get("enable_config_api") and not self._config_api_registered:
@@ -111,9 +126,15 @@ class HttpModule(ModuleBase):
             ssl_cert=cfg.get("ssl_cert") or "",
             ssl_key=cfg.get("ssl_key") or "",
             allowed_origins=cfg.get("allowed_origins") or "",
+            auth_token=cfg.get("auth_token") or "",
         )
+        from plugin.framework.http_server import ExposureRefused
         try:
             server.start()
+        except ExposureRefused as e:
+            # A deliberate refusal, not a crash: say why, without a traceback.
+            log.error("HTTP server not started: %s", e)
+            return
         except OSError as e:
             # Port taken (after the bind retries) — report it plainly and
             # keep self._server untouched rather than dropping a handle to

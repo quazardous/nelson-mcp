@@ -11,6 +11,7 @@ Route handlers are looked up from an HttpRouteRegistry instance.
 """
 
 import errno
+import hmac
 import json
 import logging
 import socketserver
@@ -90,6 +91,60 @@ def origin_allowed(handler):
     return origin in _allowed_origins, origin
 
 
+# Access token. Empty by default, which keeps the server open to local
+# clients as it always was. Once set it is required on every request, and it
+# must be set before the server can be reached from anywhere but this machine.
+_auth_token = ""
+
+_LOOPBACK_HOSTS = frozenset(("localhost", "127.0.0.1", "::1", "ip6-localhost"))
+
+
+def set_auth_token(token):
+    """Set the access token. An empty value turns authentication off."""
+    global _auth_token
+    _auth_token = (token or "").strip()
+    log.info("HTTP access token %s", "set: every request must carry it"
+             if _auth_token else "not set: local clients need none")
+
+
+def auth_required():
+    return bool(_auth_token)
+
+
+def is_loopback_host(host):
+    """True when binding to *host* keeps the server on this machine only."""
+    h = (host or "").strip().lower().strip("[]")
+    return h in _LOOPBACK_HOSTS or h.startswith("127.")
+
+
+def auth_ok(handler):
+    """Whether this request carries the access token, when one is set.
+
+    Accepted as ``Authorization: Bearer <token>``, or as a ``token`` query
+    parameter for MCP clients that cannot set a header — some hosted
+    connectors only take a URL. The query form puts the secret in the URL, so
+    it ends up wherever URLs are logged; the header is preferred whenever the
+    client allows it. Compared in constant time.
+    """
+    if not _auth_token:
+        return True
+    expected = _auth_token.encode("utf-8")
+    header = handler.headers.get("Authorization") or ""
+    scheme, _, value = header.partition(" ")
+    if scheme.lower() == "bearer" and value:
+        if hmac.compare_digest(value.strip().encode("utf-8"), expected):
+            return True
+    query = parse_qs(urlparse(handler.path).query)
+    for candidate in query.get("token", []):
+        if hmac.compare_digest(candidate.encode("utf-8"), expected):
+            return True
+    return False
+
+
+class ExposureRefused(RuntimeError):
+    """Raised instead of binding a reachable server that has no token."""
+
+
 def send_cors_headers(handler):
     """Send CORS headers, echoing only an allowed origin.
 
@@ -160,8 +215,36 @@ class GenericRequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         return False
 
+    def _check_auth(self):
+        """Reject a request without the access token, when one is set.
+
+        Returns True when the request may proceed. Checked after the origin,
+        so a refused browser origin gets 403 whatever it sends.
+        """
+        if auth_ok(self):
+            return True
+        log.warning("Rejected unauthenticated %s %s from %s", self.command,
+                    urlparse(self.path).path, self.client_address[0])
+        body = json.dumps({
+            "error": "unauthorized",
+            "message": ("This Nelson server requires an access token. Send "
+                        "'Authorization: Bearer <token>', or append "
+                        "?token=<token> for clients that cannot set a header. "
+                        "The token is in Options > Nelson MCP > HTTP."),
+        }).encode("utf-8")
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Bearer realm="nelson"')
+        send_cors_headers(self)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+        return False
+
     def _dispatch(self, method):
         if not self._check_origin():
+            return
+        if not self._check_auth():
             return
         path = urlparse(self.path).path
         route = self.route_registry.match(method, path) if self.route_registry else None
@@ -211,7 +294,7 @@ class HttpServer:
 
     def __init__(self, route_registry, port=8766, host="localhost",
                  use_ssl=False, ssl_cert="", ssl_key="",
-                 allowed_origins=""):
+                 allowed_origins="", auth_token=""):
         self.route_registry = route_registry
         self.port = port
         self.host = host
@@ -219,6 +302,7 @@ class HttpServer:
         self.ssl_cert = ssl_cert
         self.ssl_key = ssl_key
         self.allowed_origins = allowed_origins
+        self.auth_token = auth_token
         self._server = None
         self._thread = None
         self._running = False
@@ -254,8 +338,19 @@ class HttpServer:
             log.warning("HTTP server is already running")
             return
 
+        # Refuse before binding: a server reachable from the network with no
+        # token hands every open document, and doc_open on any path, to
+        # whoever finds the port.
+        if not is_loopback_host(self.host) and not (self.auth_token or "").strip():
+            raise ExposureRefused(
+                "Refusing to listen on %s:%s without an access token: anyone "
+                "who can reach that address could read and edit your open "
+                "documents. Set a token in Options > Nelson MCP > HTTP, or "
+                "bind to localhost." % (self.host, self.port))
+
         GenericRequestHandler.route_registry = self.route_registry
         set_allowed_origins(self.allowed_origins)
+        set_auth_token(self.auth_token)
 
         self._server = self._bind()
 

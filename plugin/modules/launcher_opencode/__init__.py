@@ -39,7 +39,7 @@ class OpenCodeProvider:
             "then doc_open to open it.",
         ]
 
-    def setup_env(self, mcp_url, env, cwd, config):
+    def setup_env(self, mcp_url, env, cwd, config, headers=None):
         """Write opencode.json and AGENTS.md into the working directory."""
         handle_config = config.get("handle_config", True)
 
@@ -54,6 +54,8 @@ class OpenCodeProvider:
                 }
             }
         }
+        if headers:
+            oc_config["mcp"]["nelson"]["headers"] = dict(headers)
 
         if handle_config:
             ollama_url = config.get("ollama_url") or "http://localhost:11434/v1"

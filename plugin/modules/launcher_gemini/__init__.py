@@ -29,17 +29,14 @@ class GeminiProvider:
     def get_args(self, mcp_url, config):
         return []
 
-    def setup_env(self, mcp_url, env, cwd, config):
+    def setup_env(self, mcp_url, env, cwd, config, headers=None):
         """Write settings.json into the working directory."""
         config_path = os.path.join(cwd, "settings.json")
 
-        gemini_config = {
-            "mcpServers": {
-                "nelson": {
-                    "uri": mcp_url + "/sse",
-                }
-            }
-        }
+        server = {"uri": mcp_url + "/sse"}
+        if headers:
+            server["headers"] = dict(headers)
+        gemini_config = {"mcpServers": {"nelson": server}}
 
         try:
             with open(config_path, "w") as f:

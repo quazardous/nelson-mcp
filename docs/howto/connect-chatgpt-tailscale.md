@@ -2,6 +2,25 @@
 
 This guide explains how to expose your Nelson MCP server to the internet using Tailscale Funnel, so that ChatGPT (or any remote MCP client) can control your LibreOffice documents.
 
+> [!WARNING]
+> **Read this before you start.** Tailscale **Funnel** publishes your machine on
+> the *public internet*, not just on your private tailnet. Whoever can reach the
+> URL gets what your MCP client gets:
+>
+> - read and write access to **every document open** in LibreOffice;
+> - `doc_open` on **any file your user account can read**;
+> - saving, exporting and closing documents.
+>
+> Nelson therefore **refuses to start a tunnel until an access token is set**
+> (step 2), and every request must carry it. Treat that token like a password.
+>
+> Also keep **Enable Config API** (HTTP page) and the **debug API** turned
+> **off** on an exposed machine: the first lets a caller rewrite Nelson's
+> settings, the second runs arbitrary code.
+>
+> If the only client is on your own devices, prefer `tailscale serve`, which
+> stays inside your tailnet, over Funnel.
+
 ## Prerequisites
 
 - Nelson MCP installed in LibreOffice
@@ -34,6 +53,12 @@ Go to the **HTTP** page and verify:
 - **Enabled**: checked
 - **Port**: 8766 (default)
 - **Host**: localhost
+- **Access Token**: set a long random value — for example the output of
+  `openssl rand -hex 32`. The tunnel will not start without one.
+- **Enable Config API**: unchecked
+
+Keep the host on `localhost`: the tunnel connects locally, and binding to
+`0.0.0.0` would expose the port on your network as well.
 
 You do not need to enable SSL — Tailscale Funnel handles HTTPS termination automatically.
 
@@ -61,10 +86,22 @@ The URL looks like: `https://your-machine.tail1234.ts.net`
 
 ## Step 4 — Connect ChatGPT
 
-In ChatGPT, configure a Custom GPT or use the API with:
+Every request must carry the access token. If your client lets you set a
+header, send it as:
 
-- **MCP endpoint**: `https://your-machine.tail1234.ts.net/mcp`
-- **SSE endpoint**: `https://your-machine.tail1234.ts.net/sse` (for streaming)
+```
+Authorization: Bearer <your token>
+```
+
+If it only accepts a URL — as some hosted connectors do — append it as a query
+parameter instead:
+
+- **MCP endpoint**: `https://your-machine.tail1234.ts.net/mcp?token=<your token>`
+- **SSE endpoint**: `https://your-machine.tail1234.ts.net/sse?token=<your token>` (for streaming)
+
+The header is the better option when you have it: a token in a URL ends up
+wherever that URL is logged. Either way, if the token leaks, change it in
+Options — it applies immediately, no restart needed.
 
 The MCP endpoint accepts JSON-RPC requests. The SSE endpoint provides Server-Sent Events for real-time streaming.
 
@@ -78,7 +115,7 @@ If it returns document names, the connection is working.
 
 ## Custom Endpoints
 
-If you want to expose only a subset of tools (recommended for ChatGPT which has a limited tool window), create a custom endpoint in **Options > Nelson MCP > MCP**:
+Exposing only a subset of tools is recommended for ChatGPT, which has a limited tool window — and it also narrows what a leaked token could do. A read-only list is the strongest version of that. Create a custom endpoint in **Options > Nelson MCP > MCP**:
 
 1. Click **Add** in Custom Endpoints
 2. Give it a name (e.g. "chatgpt")
@@ -89,6 +126,7 @@ The endpoint will be available at `https://your-machine.tail1234.ts.net/chatgpt/
 
 ## Troubleshooting
 
-- **Tunnel won't start**: Make sure `tailscale funnel on` was run and that Tailscale is connected
+- **Tunnel won't start**: Check that an **Access Token** is set (Nelson refuses to open a tunnel without one), that `tailscale funnel on` was run, and that Tailscale is connected
+- **401 Unauthorized**: The request did not carry the token, or carried a different one — check the header or the `?token=` parameter
 - **ChatGPT can't reach the URL**: Funnel can take a few seconds to propagate. Check `tailscale funnel status`
 - **Tools not showing**: Verify MCP is enabled and the preset includes the tools you need

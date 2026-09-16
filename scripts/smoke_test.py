@@ -126,8 +126,12 @@ class Harness:
         soffice = self._find("soffice")
         env = dict(os.environ)
         env["NELSON_LOG_PATH"] = self.log_path
+        # The config API lets check_auth_token turn the token on and off live
+        # on this throwaway instance, so every other check still runs against
+        # the default, token-less configuration most users have.
         env["NELSON_SET_CONFIG"] = (
-            "core.log_level=DEBUG,http.port=%d" % self.port)
+            "core.log_level=DEBUG,http.port=%d,http.enable_config_api=true"
+            % self.port)
         cmd = [
             soffice, "--nologo", "--norestore", "--nolockcheck",
             "-env:UserInstallation=file://%s" % self.profile,
@@ -663,6 +667,68 @@ def check_session_semantics(h):
     return "stale session 404, re-initialize 200, DELETE 405"
 
 
+def check_auth_token(h):
+    """Once an access token is set, nothing gets in without it.
+
+    Set live through the config API, so this also proves the token applies
+    without a restart. Restored at the end: the checks after this one, and the
+    default configuration, are token-less.
+    """
+    base = "http://localhost:%d" % h.port
+    token = "smoke-%s" % os.urandom(8).hex()
+    body = json.dumps({"jsonrpc": "2.0", "id": 9003, "method": "tools/list",
+                       "params": {}}).encode("utf-8")
+
+    def send(path, authorization=None, method="POST", data=body):
+        req = urllib.request.Request(base + path, method=method)
+        if data is not None:
+            req.data = data
+            req.add_header("Content-Type", "application/json")
+            req.add_header("Accept", "application/json, text/event-stream")
+        if authorization:
+            req.add_header("Authorization", authorization)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return r.status
+        except urllib.error.HTTPError as e:
+            return e.code
+
+    def set_token(value, authorization=None):
+        status = send("/api/config", authorization,
+                      data=json.dumps({"http.auth_token": value}).encode())
+        if status != 200:
+            raise Fail("setting http.auth_token through /api/config returned "
+                       "%s" % status)
+
+    if send("/mcp") != 200:
+        raise Fail("default configuration should need no token")
+
+    set_token(token)
+    try:
+        bearer = "Bearer %s" % token
+        results = {
+            "no token": send("/mcp"),
+            "wrong token": send("/mcp", "Bearer wrong"),
+            "bearer": send("/mcp", bearer),
+            "query token": send("/mcp?token=%s" % token),
+            "health, no token": send("/health", method="GET", data=None),
+        }
+        expected = {"no token": 401, "wrong token": 401, "bearer": 200,
+                    "query token": 200, "health, no token": 401}
+        wrong = {k: v for k, v in results.items() if v != expected[k]}
+        if wrong:
+            raise Fail("with a token set: %s (expected %s)"
+                       % (wrong, {k: expected[k] for k in wrong}))
+    finally:
+        set_token("", "Bearer %s" % token)
+
+    if send("/mcp") != 200:
+        raise Fail("clearing the token did not reopen the server to local "
+                   "clients")
+    h.expect_error("Rejected unauthenticated")
+    return "401 without it, 200 with header or ?token=, applied live"
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -685,6 +751,7 @@ CHECKS = [
     ("sheet-qualified refs", check_sheet_qualified_refs),
     ("browser origin refused", check_origin_rejected),
     ("session semantics (#38)", check_session_semantics),
+    ("access token", check_auth_token),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

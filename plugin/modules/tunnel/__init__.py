@@ -51,6 +51,8 @@ def get_provider_options(services):
 class TunnelManager:
     """Manages tunnel subprocess lifecycle using pluggable providers."""
 
+    last_error = None
+
     def __init__(self, config_svc, events):
         self.providers = {}
         self._process = None
@@ -223,8 +225,23 @@ class TunnelManager:
             if not self._check_binary(provider):
                 return
 
-            # Get HTTP port and scheme from config
+            # A tunnel publishes the server beyond this machine, and its
+            # traffic arrives from localhost, so loopback cannot tell it
+            # apart from a local client. Only a token protects it.
             http_cfg = self._config_svc.proxy_for("http")
+            if not (http_cfg.get("auth_token") or "").strip():
+                self.last_error = (
+                    "Tunnel not started: set an access token first.\n\n"
+                    "A tunnel makes this server reachable from outside your "
+                    "machine. Without a token, anyone who learns the URL could "
+                    "read and edit your open documents.\n\n"
+                    "Set one in Options > Nelson MCP > HTTP > Access Token.")
+                log.error("Tunnel not started: no HTTP access token is set")
+                self._emit_stopped("no access token")
+                return
+            self.last_error = None
+
+            # Get HTTP port and scheme from config
             port = http_cfg.get("port", 8766)
             scheme = "https" if http_cfg.get("use_ssl") else "http"
 
@@ -381,6 +398,8 @@ class TunnelModule(ModuleBase):
                 msgbox(ctx, "Nelson",
                        "Tunnel starting...\n"
                        "Use Tunnel Status to check when ready.")
+            elif self._manager.last_error:
+                msgbox(ctx, "Nelson", self._manager.last_error)
             else:
                 msgbox(ctx, "Nelson",
                        "Tunnel failed to start.\nCheck ~/nelson.log")

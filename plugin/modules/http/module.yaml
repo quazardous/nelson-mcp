@@ -43,6 +43,14 @@ config:
     label: Bind Address
     public: true
 
+  auth_token:
+    type: string
+    default: ""
+    widget: password
+    label: Access Token
+    helper: "Required on every request once set (Authorization: Bearer <token>). Mandatory before binding to anything but localhost or starting a tunnel. Built-in launchers pass it automatically."
+    public: true
+
   allowed_origins:
     type: string
     default: ""
