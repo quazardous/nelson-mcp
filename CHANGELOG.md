@@ -56,6 +56,39 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   changes on a reviewed contract. It now returns a summary by author and
   type, filters by `author` and `type`, pages with `offset`/`limit`, and gives
   each change its text and paragraph index
+- **Writing one formula into a range put the same formula in every cell**
+  (#2633) — `=C2+D2` written into E2:E9 referenced row 2 eight times. The
+  formula is now filled like Calc's fill handle: relative references shift,
+  `$` references stay
+- **Charts had no legend, and `chart_create` ignored `has_legend`** (#2641);
+  a chart with several series, or a pie, now gets one by default
+
+- **LibreOffice sometimes never came up when started with a document**
+  (GitHub #35, #37; #2625). Two threads waited on each other: the main
+  thread, opening the document, held LibreOffice's global lock and waited for
+  the menu configuration, which a Nelson background thread held while it
+  waited for the global lock to set menu icons. Reproduced on 5 of 20 cold
+  starts with `/health` polled during launch. Nelson now does all its UNO
+  work at startup on the main thread (menu icons, module start, cache
+  prebuild removed), the sidebar panel and menu commands wait for startup
+  instead of forcing it, and `/health` and `tools/list` answer from a
+  document-event watcher instead of querying LibreOffice from the HTTP
+  thread. 50 cold starts out of 50 came up. `make coldstart-wbox` repeats
+  the scenario and saves a gdb backtrace of any hang; `make smoke` fails
+  when UNO is used off the main thread
+- **A crash in a tool was reported as `retryable`** (#2637) — only
+  disconnections, timeouts and a disposed document now are. Parameters that
+  belong to another action of a merged tool are refused with the action and
+  the parameters it accepts, instead of being silently ignored
+- **`text_search` did not look inside tables, and `comment_add` could not
+  anchor there** (#2637). `text_search` searches table cells by default
+  (`include_tables`), reporting the table and cell of each match;
+  `comment_add` takes `occurrence`, anchors in cells, frames and footnotes,
+  says where it anchored, and refuses text it cannot find as not retryable
+- **`track_changes_list` returned every change in one block** (#2636) — 120
+  changes on a reviewed contract. It now returns a summary by author and
+  type, filters by `author` and `type`, pages with `offset`/`limit`, and gives
+  each change its text and paragraph index
 - **LibreOffice sometimes never came up when started with a document**
   (GitHub #35, #37; #2625). Two threads waited on each other: the main
   thread, opening the document, held LibreOffice's global lock and waited for

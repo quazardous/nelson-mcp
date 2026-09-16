@@ -105,6 +105,22 @@ class ArrayFormulaError(ValueError):
 _CLEAR_CONTENT = 1 | 2 | 4 | 16
 
 
+def chart_series_count(chart_type, columns, has_header):
+    """Data series a chart built from *columns* columns will show.
+
+    Series run down the columns; with a header, the first column holds the
+    categories (for a scatter chart, the X values) rather than a series.
+    """
+    first_is_labels = has_header or chart_type == "scatter"
+    return max(1, columns - (1 if first_is_labels and columns > 1 else 0))
+
+
+def default_legend(chart_type, series):
+    """Show a legend when the chart cannot be read without one (#2641): more
+    than one series, or a pie, whose slices only the legend names."""
+    return chart_type == "pie" or series > 1
+
+
 class DateWriter:
     """Writes ISO date strings as real dates in one document (#2632).
 
@@ -522,6 +538,9 @@ class CellManipulator:
                         range_str if self.bridge.split_prefix(range_str)[0]
                         else "'%s'.%s" % (sheet.getName(), range_str),
                         formula_or_values)
+                if formula_or_values.startswith("=") and total_cells > 1:
+                    return self._fill_formula(sheet, start, end,
+                                              formula_or_values)
 
             if isinstance(formula_or_values, (list, tuple)):
                 if len(formula_or_values) != total_cells:
@@ -570,6 +589,36 @@ class CellManipulator:
         except Exception as e:
             logger.error("Range formula write error (%s): %s", range_str, str(e))
             raise
+
+    # ── Formula fill (#2633) ───────────────────────────────────────────
+
+    def _fill_formula(self, sheet, start, end, formula):
+        """Enter *formula* in the top-left cell and fill it over the range.
+
+        Like typing it once and dragging the fill handle: LibreOffice shifts
+        relative references (C2 -> C3 -> C4) and keeps absolute ones ($C$2).
+        It used to copy the same text into every cell, so E2:E9 with
+        =C2+D2-1 computed row 2 eight times (#2633). XCellSeries.fillAuto
+        does the shifting, so sheet names, named ranges and functions are
+        LibreOffice's business, not a Python rewrite.
+        """
+        from com.sun.star.sheet.FillDirection import TO_BOTTOM, TO_RIGHT
+        from plugin.modules.calc.address_utils import index_to_column
+
+        (c1, r1), (c2, r2) = start, end
+        sheet.getCellByPosition(c1, r1).setFormula(formula)
+        if r2 > r1:
+            sheet.getCellRangeByPosition(c1, r1, c1, r2).fillAuto(
+                TO_BOTTOM, 1)
+        if c2 > c1:
+            sheet.getCellRangeByPosition(c1, r1, c2, r2).fillAuto(
+                TO_RIGHT, 1)
+        anchor = "%s%d" % (index_to_column(c1), r1 + 1)
+        area = "%s:%s%d" % (anchor, index_to_column(c2), r2 + 1)
+        last = sheet.getCellByPosition(c2, r2).getFormula()
+        return ("Formula filled from %s across %s, relative references "
+                "adjusted (last cell: %s). Use $ to keep a reference fixed."
+                % (anchor, area, last))
 
     # ── Array formulas (#2631) ─────────────────────────────────────────
 
@@ -766,6 +815,7 @@ class CellManipulator:
         position: str = None,
         has_header: bool = True,
         sheet_name: str = None,
+        has_legend: bool = None,
     ):
         """Create a chart from data.
 
@@ -855,12 +905,21 @@ class CellManipulator:
                 chart_title = chart.getTitle()
                 chart_title.setPropertyValue("String", title)
 
+            series = chart_series_count(
+                chart_type, range_address.EndColumn - range_address.StartColumn + 1,
+                has_header)
+            legend = default_legend(chart_type, series) \
+                if has_legend is None else bool(has_legend)
+            chart.setPropertyValue("HasLegend", legend)
+
             logger.info("Chart created: %s (%s)", chart_name, chart_type)
             return {
                 "message": f"{chart_type} type chart created.",
                 "chart_name": chart_name,
                 "sheet": chart_sheet.getName(),
                 "data_sheet": data_sheet.getName(),
+                "series": series,
+                "has_legend": legend,
             }
         except Exception as e:
             logger.error("Chart creation error: %s", str(e))

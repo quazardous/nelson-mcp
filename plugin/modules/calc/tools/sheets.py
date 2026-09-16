@@ -273,6 +273,12 @@ class CreateChart(ToolBase):
                     "'Data Sheet'.A1:B5."
                 ),
             },
+            "has_legend": {
+                "type": "boolean",
+                "description": (
+                    "Show the legend (default: yes for more than one series "
+                    "and for pie charts)."),
+            },
         },
         "required": ["data_range", "chart_type"],
     }
@@ -293,6 +299,7 @@ class CreateChart(ToolBase):
                 data_range, chart_type,
                 title=title, position=position, has_header=has_header,
                 sheet_name=kwargs.get("sheet_name"),
+                has_legend=kwargs.get("has_legend"),
             )
             return {"status": "ok", **result}
         except Exception as e:
