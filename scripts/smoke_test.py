@@ -1284,6 +1284,87 @@ def check_reads_are_capped(h):
             "apply; Calc 1000 + next_range = all 1500 rows, setting applies")
 
 
+def check_markdown_exchange(h):
+    """Markdown in, Markdown out, and the setting chooses the default (#2650).
+
+    Markdown given to text_apply_range went through the HTML filter and
+    landed as literal '#' and '**' (#2635); and the format setting was read
+    but never declared, so reads were always HTML.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    md = ("# Quarterly Report\n\nSales reached **4.2 million**.\n\n"
+          "## Regions\n\n- North\n- South\n\n"
+          "| Region | Sales |\n|---|---|\n| North | 3 |\n| South | 1 |\n")
+    applied = h.call("text_apply_range", target="full", content=md)
+    if applied.get("status") != "ok":
+        raise Fail("text_apply_range refused Markdown: %s" % applied)
+    outline = [n.get("title") for n in _flatten_outline(
+        h.call("nav_outline").get("outline", []))]
+    if outline[:2] != ["Quarterly Report", "Regions"]:
+        raise Fail("Markdown headings did not become headings: %s" % outline)
+    text = " ".join(p.get("text", "") for p in
+                    h.call("text_read", count=20).get("paragraphs", []))
+    if "**" in text or "# " in text:
+        raise Fail("Markdown syntax landed literally: %r" % text[:200])
+    bold = h.uno_run(
+        "d=desktop.getCurrentComponent()\n"
+        "import json\n"
+        "out=None\n"
+        "e=d.getText().createEnumeration()\n"
+        "while e.hasMoreElements():\n"
+        "    p=e.nextElement()\n"
+        "    if not p.supportsService('com.sun.star.text.Paragraph'): continue\n"
+        "    for r in p.createEnumeration():\n"
+        "        if '4.2 million' in r.getString():\n"
+        "            out=r.getPropertyValue('CharWeight')\n"
+        "print(json.dumps(out))\n")
+    if bold is not None and bold < 150:
+        raise Fail("**4.2 million** is not bold (CharWeight %s)" % bold)
+    tables = h.call("table_list").get("tables") or []
+
+    as_md = h.call("text_get_range", scope="full", format="markdown")
+    as_html = h.call("text_get_range", scope="full", format="html")
+    if as_md.get("format") != "markdown" or "# Quarterly Report" not in \
+            as_md.get("content", ""):
+        raise Fail("format=markdown did not return Markdown: %s"
+                   % as_md.get("content", "")[:120])
+    if as_html.get("format") != "html" or "<h1" not in as_html.get(
+            "content", "").lower():
+        raise Fail("format=html did not return HTML")
+
+    h.set_config("core.document_format", "markdown")
+    try:
+        default = h.call("text_get_range", scope="full")
+        if default.get("format") != "markdown":
+            raise Fail("the Document format setting did not change the "
+                       "default: %s" % default.get("format"))
+    finally:
+        h.set_config("core.document_format", "html")
+
+    # Round trip: read as Markdown, write it back, same structure.
+    h.call("text_apply_range", target="full", content=as_md["content"],
+           format="markdown")
+    again = [n.get("title") for n in _flatten_outline(
+        h.call("nav_outline").get("outline", []))]
+    tables_again = h.call("table_list").get("tables") or []
+    if again != outline or len(tables_again) != len(tables):
+        raise Fail("Markdown round trip changed the structure: headings "
+                   "%s -> %s, tables %d -> %d"
+                   % (outline, again, len(tables), len(tables_again)))
+    return ("Markdown imported as headings%s%s; formats and setting "
+            "apply; round trip keeps %d headings, %d table(s)"
+            % ("" if bold is None else ", bold",
+               ", table" if tables else " (no table: filter)",
+               len(again), len(tables_again)))
+
+
+def _flatten_outline(nodes):
+    for n in nodes:
+        yield n
+        yield from _flatten_outline(n.get("children", []))
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -1317,6 +1398,7 @@ CHECKS = [
     ("search reports styles", check_search_reports_styles),
     ("style_set (#2647)", check_style_set),
     ("reads are capped (#39)", check_reads_are_capped),
+    ("markdown exchange (#2635)", check_markdown_exchange),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

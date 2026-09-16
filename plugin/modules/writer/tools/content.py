@@ -48,6 +48,14 @@ class GetDocumentContent(ToolBase):
                     "Maximum characters to return (default: the Max Content "
                     "Size setting, 50000; at most 500000)."),
             },
+            "format": {
+                "type": "string",
+                "enum": ["markdown", "html"],
+                "description": (
+                    "Format of the returned content (default: the Document "
+                    "format setting). Markdown is lighter; HTML keeps more "
+                    "formatting."),
+            },
             "start": {
                 "type": "integer",
                 "description": "Start character offset (0-based). Required for scope 'range'.",
@@ -81,10 +89,12 @@ class GetDocumentContent(ToolBase):
             configured = None
         limit = content_limit.effective_limit(max_chars, configured)
 
+        fmt = format_support.resolve_export_format(
+            ctx.services.get("config"), kwargs.get("format"))
         content = format_support.document_to_content(
             ctx.doc, ctx.ctx, ctx.services,
             max_chars=None, scope=scope,
-            range_start=range_start, range_end=range_end,
+            range_start=range_start, range_end=range_end, fmt=fmt,
         )
         total = len(content)
         content, truncated = content_limit.cut(content, limit)
@@ -94,6 +104,7 @@ class GetDocumentContent(ToolBase):
             "content": content,
             "length": len(content),
             "document_length": doc_len,
+            "format": fmt,
             "truncated": truncated,
         }
         if truncated:
@@ -131,7 +142,17 @@ class ApplyDocumentContent(ToolBase):
         "properties": {
             "content": {
                 "type": "string",
-                "description": "The new content (Markdown or HTML).",
+                "description": (
+                    "The new content: Markdown or HTML, recognised "
+                    "automatically (set format to be explicit). Plain text "
+                    "replaces text and keeps its formatting."),
+            },
+            "format": {
+                "type": "string",
+                "enum": ["markdown", "html"],
+                "description": (
+                    "How to read content. Default: detected from the "
+                    "content itself."),
             },
             "target": {
                 "type": "string",
@@ -181,9 +202,13 @@ class ApplyDocumentContent(ToolBase):
         if not target:
             return {"status": "error", "message": "target is required."}
 
-        # Detect markup BEFORE any HTML wrapping.
+        # Detect markup BEFORE any HTML wrapping. An explicit format means
+        # markup, even if the content happens to look plain.
         raw_content = content
-        use_preserve = isinstance(content, str) and not format_support.content_has_markup(content)
+        fmt = kwargs.get("format")
+        use_preserve = (isinstance(content, str) and fmt is None
+                        and not format_support.content_has_markup(content))
+        import_fmt = format_support.resolve_import_format(content, fmt)
 
         config_svc = ctx.services.get("config")
 
@@ -206,7 +231,7 @@ class ApplyDocumentContent(ToolBase):
                         ctx.doc, ctx.ctx, content, search,
                         all_matches=all_matches,
                         case_sensitive=case_sensitive,
-                        config_svc=config_svc,
+                        config_svc=config_svc, fmt=import_fmt,
                     )
                 msg = "Replaced %d occurrence(s)." % count
                 if use_preserve and count > 0:
@@ -233,7 +258,8 @@ class ApplyDocumentContent(ToolBase):
                     return {"status": "ok", "message": "Replaced entire document. (formatting preserved)"}
                 else:
                     format_support.replace_full_document(
-                        ctx.doc, ctx.ctx, content, config_svc=config_svc
+                        ctx.doc, ctx.ctx, content, config_svc=config_svc,
+                        fmt=import_fmt,
                     )
                     return {"status": "ok", "message": "Replaced entire document."}
             except Exception as exc:
@@ -263,7 +289,7 @@ class ApplyDocumentContent(ToolBase):
                     format_support.apply_content_at_range(
                         ctx.doc, ctx.ctx, content,
                         int(start_val), int(end_val),
-                        config_svc=config_svc,
+                        config_svc=config_svc, fmt=import_fmt,
                     )
                     return {
                         "status": "ok",
@@ -277,7 +303,7 @@ class ApplyDocumentContent(ToolBase):
             try:
                 format_support.insert_content_at_position(
                     ctx.doc, ctx.ctx, content, target,
-                    config_svc=config_svc,
+                    config_svc=config_svc, fmt=import_fmt,
                 )
                 return {
                     "status": "ok",

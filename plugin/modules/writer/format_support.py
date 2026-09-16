@@ -33,9 +33,9 @@ TEMP_DIR = tempfile.gettempdir()
 
 
 def _get_format(config_svc=None):
-    """Return the active format name (``'html'`` or ``'markdown'``).
+    """Return the configured export format (``'markdown'`` or ``'html'``).
 
-    Reads from the config service when available, defaults to ``'html'``.
+    ``core.document_format`` in Options; ``'html'`` when unset or unknown.
     """
     if config_svc is not None:
         try:
@@ -47,11 +47,49 @@ def _get_format(config_svc=None):
     return "html"
 
 
-def _get_format_props(config_svc=None):
-    """Return ``(filter_name, file_extension)`` for the active format."""
-    fmt = _get_format(config_svc)
-    cfg = FORMAT_CONFIG.get(fmt, FORMAT_CONFIG["html"])
-    return cfg["filter"], cfg["extension"]
+def resolve_export_format(config_svc=None, requested=None):
+    """The format to read a document out in: the call's, else the setting."""
+    if requested in FORMAT_CONFIG:
+        return requested
+    return _get_format(config_svc)
+
+
+# HTML is recognised by its tags; a '<' in prose ("a < b") is not a tag.
+_HTML_TAG = re.compile(
+    r"<(?:!doctype|/?(?:html|body|head|p|br|hr|h[1-6]|ul|ol|li|table|thead|"
+    r"tbody|tr|td|th|div|span|b|i|u|s|strong|em|a|img|pre|code|blockquote|"
+    r"sup|sub|font|center)\b)[^>]*>", re.IGNORECASE)
+
+_MARKDOWN_LINE = re.compile(
+    r"^(?:#{1,6}\s|\s*[-*+]\s+\S|\s*\d+[.)]\s+\S|\s*>\s|\s*\|.*\||"
+    r"```|\s*[-*_]{3,}\s*$)", re.MULTILINE)
+_MARKDOWN_INLINE = re.compile(
+    r"\*\*[^*\n]+\*\*|__[^_\n]+__|`[^`\n]+`|\[[^\]\n]+\]\([^)\s]+\)")
+
+
+def detect_content_format(content):
+    """``'html'``, ``'markdown'`` or ``None`` (plain text) for *content*.
+
+    HTML wins when both appear: a '#' or '*' inside HTML is text, while
+    tags inside Markdown are rare and LibreOffice's Markdown import would
+    show them literally anyway.
+    """
+    if not isinstance(content, str) or not content.strip():
+        return None
+    if _HTML_TAG.search(content):
+        return "html"
+    if _MARKDOWN_LINE.search(content) or _MARKDOWN_INLINE.search(content):
+        return "markdown"
+    return None
+
+
+def resolve_import_format(content, requested=None):
+    """The filter to import *content* with: the call's format if given,
+    else what the content looks like. Plain text keeps the HTML path, which
+    turns blank lines into paragraphs (#2635: never the global setting)."""
+    if requested in FORMAT_CONFIG:
+        return requested
+    return detect_content_format(content) or "html"
 
 
 # ---------------------------------------------------------------------------
@@ -77,14 +115,14 @@ def _create_property_value(name, value):
 
 
 @contextlib.contextmanager
-def _with_temp_buffer(content=None, config_svc=None):
+def _with_temp_buffer(content=None, fmt="html"):
     """Context manager that yields ``(path, file_url)`` for a temp file
-    with the correct format extension.
+    with the extension of *fmt*.
 
     If *content* is not ``None`` it is written to the file.
     The file is deleted on exit.
     """
-    _, ext = _get_format_props(config_svc)
+    ext = FORMAT_CONFIG.get(fmt, FORMAT_CONFIG["html"])["extension"]
     fd, path = tempfile.mkstemp(suffix=ext, dir=TEMP_DIR)
     try:
         if content is not None:
@@ -169,8 +207,10 @@ def _ensure_html_linebreaks(content):
 _PARAGRAPH_BREAK = 0
 
 
-def _range_to_content_via_temp_doc(model, ctx, start, end, max_chars, config_svc):
+def _range_to_content_via_temp_doc(model, ctx, start, end, max_chars,
+                                   config_svc, fmt=None):
     """Export a character range to content via a hidden temp document."""
+    fmt = resolve_export_format(config_svc, fmt)
     temp_doc = None
     try:
         smgr = ctx.getServiceManager()
@@ -233,9 +273,8 @@ def _range_to_content_via_temp_doc(model, ctx, start, end, max_chars, config_svc
         if not added_any:
             return ""
 
-        filter_name, _ = _get_format_props(config_svc)
-        fmt = _get_format(config_svc)
-        with _with_temp_buffer(None, config_svc) as (path, file_url):
+        filter_name = FORMAT_CONFIG[fmt]["filter"]
+        with _with_temp_buffer(None, fmt) as (path, file_url):
             props = (_create_property_value("FilterName", filter_name),)
             temp_doc.storeToURL(file_url, props)
             with open(path, "r", encoding="utf-8", errors="replace") as f:
@@ -257,7 +296,8 @@ def _range_to_content_via_temp_doc(model, ctx, start, end, max_chars, config_svc
 
 
 def document_to_content(model, ctx, services, max_chars=None,
-                        scope="full", range_start=None, range_end=None):
+                        scope="full", range_start=None, range_end=None,
+                        fmt=None):
     """Export a Writer document (or part of it) as markdown/HTML.
 
     Args:
@@ -273,12 +313,13 @@ def document_to_content(model, ctx, services, max_chars=None,
         Content string.
     """
     config_svc = services.get("config") if services else None
+    fmt = resolve_export_format(config_svc, fmt)
 
     if scope == "selection":
         from plugin.modules.writer.ops import get_selection_range
         start, end = get_selection_range(model)
         return _range_to_content_via_temp_doc(
-            model, ctx, start, end, max_chars, config_svc
+            model, ctx, start, end, max_chars, config_svc, fmt
         )
 
     if scope == "range":
@@ -288,14 +329,13 @@ def document_to_content(model, ctx, services, max_chars=None,
         start = max(0, min(start, doc_len))
         end = min(end, doc_len)
         return _range_to_content_via_temp_doc(
-            model, ctx, start, end, max_chars, config_svc
+            model, ctx, start, end, max_chars, config_svc, fmt
         )
 
     # scope == "full"
     try:
-        filter_name, _ = _get_format_props(config_svc)
-        fmt = _get_format(config_svc)
-        with _with_temp_buffer(None, config_svc) as (path, file_url):
+        filter_name = FORMAT_CONFIG[fmt]["filter"]
+        with _with_temp_buffer(None, fmt) as (path, file_url):
             props = (_create_property_value("FilterName", filter_name),)
             model.storeToURL(file_url, props)
             with open(path, "r", encoding="utf-8", errors="replace") as f:
@@ -315,17 +355,17 @@ def document_to_content(model, ctx, services, max_chars=None,
 # ---------------------------------------------------------------------------
 
 def insert_content_at_position(model, ctx, content, position,
-                               config_svc=None):
+                               config_svc=None, fmt=None):
     """Insert formatted content at *position* (``'beginning'``,
     ``'end'``, or ``'selection'``) using ``insertDocumentFromURL``.
     """
-    fmt = _get_format(config_svc)
+    fmt = resolve_import_format(content, fmt)
     if fmt == "html":
         import html as html_mod
         content = html_mod.unescape(content)
         content = _ensure_html_linebreaks(content)
 
-    with _with_temp_buffer(content, config_svc) as (_path, file_url):
+    with _with_temp_buffer(content, fmt) as (_path, file_url):
         text = model.getText()
         cursor = text.createTextCursor()
 
@@ -349,33 +389,33 @@ def insert_content_at_position(model, ctx, content, position,
         else:
             raise ValueError("Unknown position: %s" % position)
 
-        filter_name, _ = _get_format_props(config_svc)
+        filter_name = FORMAT_CONFIG[fmt]["filter"]
         filter_props = (_create_property_value("FilterName", filter_name),)
         cursor.insertDocumentFromURL(file_url, filter_props)
 
 
-def replace_full_document(model, ctx, content, config_svc=None):
+def replace_full_document(model, ctx, content, config_svc=None, fmt=None):
     """Clear the document and insert *content*."""
-    fmt = _get_format(config_svc)
+    fmt = resolve_import_format(content, fmt)
     if fmt == "html":
         import html as html_mod
         content = html_mod.unescape(content)
         content = _ensure_html_linebreaks(content)
 
-    with _with_temp_buffer(content, config_svc) as (_path, file_url):
+    with _with_temp_buffer(content, fmt) as (_path, file_url):
         text = model.getText()
         cursor = text.createTextCursor()
         cursor.gotoStart(False)
         cursor.gotoEnd(True)
         cursor.setString("")
         cursor.gotoStart(False)
-        filter_name, _ = _get_format_props(config_svc)
+        filter_name = FORMAT_CONFIG[fmt]["filter"]
         filter_props = (_create_property_value("FilterName", filter_name),)
         cursor.insertDocumentFromURL(file_url, filter_props)
 
 
 def apply_content_at_range(model, ctx, content, start, end,
-                           config_svc=None):
+                           config_svc=None, fmt=None):
     """Replace character range ``[start, end)`` with rendered *content*."""
     from plugin.modules.writer.ops import get_text_cursor_at_range
 
@@ -385,35 +425,35 @@ def apply_content_at_range(model, ctx, content, start, end,
             "Invalid range or could not create cursor for (%d, %d)" % (start, end)
         )
 
-    fmt = _get_format(config_svc)
+    fmt = resolve_import_format(content, fmt)
     if fmt == "html":
         import html as html_mod
         content = html_mod.unescape(content)
         content = _ensure_html_linebreaks(content)
 
-    with _with_temp_buffer(content, config_svc) as (_path, file_url):
+    with _with_temp_buffer(content, fmt) as (_path, file_url):
         cursor.setString("")
-        filter_name, _ = _get_format_props(config_svc)
+        filter_name = FORMAT_CONFIG[fmt]["filter"]
         filter_props = (_create_property_value("FilterName", filter_name),)
         cursor.insertDocumentFromURL(file_url, filter_props)
 
 
 def apply_content_at_search(model, ctx, content, search,
                             all_matches=False, case_sensitive=True,
-                            config_svc=None):
+                            config_svc=None, fmt=None):
     """Find *search* in the document and replace with rendered *content*.
 
     Returns the number of replacements made.
     """
-    fmt = _get_format(config_svc)
+    fmt = resolve_import_format(content, fmt)
     prepared = content
     if fmt == "html":
         import html as html_mod
         prepared = html_mod.unescape(content)
         prepared = _ensure_html_linebreaks(prepared)
 
-    with _with_temp_buffer(prepared, config_svc) as (_path, file_url):
-        filter_name, _ = _get_format_props(config_svc)
+    with _with_temp_buffer(prepared, fmt) as (_path, file_url):
+        filter_name = FORMAT_CONFIG[fmt]["filter"]
         filter_props = (_create_property_value("FilterName", filter_name),)
 
         sd = model.createSearchDescriptor()
@@ -490,23 +530,9 @@ def find_text_ranges(model, ctx, search, start=0, limit=None,
 # Markup detection & format-preserving replacement
 # ---------------------------------------------------------------------------
 
-_MARKUP_PATTERNS = [
-    # Markdown
-    "**", "__", "``", "# ", "## ", "### ", "| ", "|---", "- [ ]",
-    # HTML
-    "<b>", "<i>", "<p>", "<h1", "<h2", "<h3", "<table", "<tr", "<td",
-    "<ul>", "<ol>", "<li>", "<div", "<span", "<br", "<img",
-    "<strong", "<em>", "</",
-    "<html", "<body", "<!DOCTYPE",
-]
-
-
 def content_has_markup(content):
     """Return ``True`` if *content* appears to contain Markdown or HTML."""
-    if not content or not isinstance(content, str):
-        return False
-    lower = content.lower()
-    return any(p.lower() in lower for p in _MARKUP_PATTERNS)
+    return detect_content_format(content) is not None
 
 
 def replace_preserving_format(model, target_range, new_text, ctx=None):

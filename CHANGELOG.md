@@ -30,6 +30,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Markdown given to `text_apply_range` landed as literal `#` and `**`**
+  (#2635). The tool says it takes Markdown or HTML, but the import filter came
+  from a global format setting, HTML in practice, so a Markdown report went
+  through the HTML filter and came out as plain text with its syntax showing —
+  with `status: ok`. The filter now follows the content: HTML when it has
+  HTML tags, Markdown when it has Markdown syntax (headings, lists, tables,
+  emphasis, code, links), using LibreOffice's own Markdown filter; `format`
+  forces one or the other
 - **The first full-text search on a long document took seconds** — building
   the index stemmed every word through the pure-Python Snowball stemmer, 90%
   of the time. Moby Dick is 213 000 words but 17 000 distinct ones: each is
@@ -187,6 +195,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Choose Markdown or HTML for reading Writer content** (#2650). The format
+  setting existed in the code but was never declared, so reads were always
+  HTML. It is now *Document format for agents* in Options (HTML by default
+  for now), and `text_get_range` takes `format` per call and says which
+  format it returned. Markdown costs about a third less than HTML on a
+  formatted document
 - **`style_set` — change a style** (#2647). "Change the font of the body
   text" had no answer: `style_list` and `style_info` only read. `style_set`
   changes a paragraph, character or page style through readable properties —
