@@ -13,6 +13,22 @@ from plugin.modules.writer.ops import find_paragraph_for_range
 log = logging.getLogger("nelson.writer")
 
 
+
+def _stamp_now(annotation):
+    """Date a new comment. A comment created over UNO has no date unless
+    it is given one, and LibreOffice shows it as "(no date)"."""
+    try:
+        import datetime
+        import uno
+        now = datetime.datetime.now()
+        dt = uno.createUnoStruct("com.sun.star.util.DateTime")
+        dt.Year, dt.Month, dt.Day = now.year, now.month, now.day
+        dt.Hours, dt.Minutes, dt.Seconds = now.hour, now.minute, now.second
+        annotation.setPropertyValue("DateTimeValue", dt)
+    except Exception:
+        log.debug("could not date the comment", exc_info=True)
+
+
 class ListComments(ToolBase):
     """List all comments (annotations) in the document."""
 
@@ -189,6 +205,7 @@ class AddComment(ToolBase):
         )
         annotation.setPropertyValue("Author", author)
         annotation.setPropertyValue("Content", content)
+        _stamp_now(annotation)
         # Insert through the text that contains the anchor: a range found in
         # a table cell, frame, note or header belongs to that XText, and the
         # body refuses it ("End of content node doesn't have the proper
@@ -347,6 +364,7 @@ class ResolveComment(ToolBase):
             reply.setPropertyValue("ParentName", comment_name)
             reply.setPropertyValue("Content", resolution)
             reply.setPropertyValue("Author", author)
+            _stamp_now(reply)
             anchor = target.getAnchor()
             cursor = doc_text.createTextCursorByRange(anchor.getStart())
             doc_text.insertTextContent(cursor, reply, False)
@@ -549,6 +567,7 @@ class SetWorkflowStatus(ToolBase):
             )
             annotation.setPropertyValue("Author", "MCP-WORKFLOW")
             annotation.setPropertyValue("Content", content)
+            _stamp_now(annotation)
             cursor = doc_text.createTextCursor()
             cursor.gotoStart(False)
             doc_text.insertTextContent(cursor, annotation, False)

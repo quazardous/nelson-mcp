@@ -1703,13 +1703,19 @@ def check_table_text(h):
     listed = h.call("comment_list").get("comments", [])
     if len([c for c in listed if c.get("author") == "smoke"]) != 2:
         raise Fail("comment_list does not show both comments: %s" % listed)
+    import datetime
+    today = datetime.date.today().isoformat()
+    if any(not (c.get("date") or "").startswith(today)
+           for c in listed if c.get("author") == "smoke"):
+        raise Fail("new comments are not dated today (LibreOffice shows "
+                   "'(no date)'): %s" % [c.get("date") for c in listed])
     missing = h.call("comment_add", search_text="not in this document",
                      content="x")
     if missing.get("code") != "text_not_found" or missing.get("retryable"):
         raise Fail("absent text should be text_not_found, not retryable: %s"
                    % missing)
-    return "3 matches incl. cells A1 and B2; comments in body and cell; " \
-           "absent text not retryable"
+    return "3 matches incl. cells A1 and B2; dated comments in body and " \
+           "cell; absent text not retryable"
 
 
 def check_review_changes(h):

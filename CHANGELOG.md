@@ -30,6 +30,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Comments added by an agent showed "(no date)"** — `comment_add`, the
+  reply of `comment_resolve` and the workflow status comment are now dated
+  when they are created
+
 - **LibreOffice sometimes never came up when started with a document**
   (GitHub #35, #37; #2625). Two threads waited on each other: the main
   thread, opening the document, held LibreOffice's global lock and waited for
