@@ -30,6 +30,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Listing documents marked them modified and wrote an id into them**
+  (#2627). `doc_id` was stored in each document as a `NelsonDocId` custom
+  property, written the first time Nelson touched it — `doc_list_open`, the
+  `_resolved` of any call, even resolving `id:` — so documents the agent had
+  only listed could ask "Save changes?" on close, and a saved `.odt`/`.docx`
+  carried the id, visible in File > Properties > Custom Properties to
+  whoever received it. The id now lives in memory: stable while the document
+  is open (Save and Save As included), distinct for every open document,
+  forgotten when it closes, and nothing is written into the document. A
+  `doc_id` therefore no longer survives a LibreOffice restart — use `path:`
+  to find a document again across sessions. `doc_save_as` keeps the
+  document's `doc_id` instead of minting a new one. Files saved by earlier
+  versions may still hold a `NelsonDocId` property; Nelson ignores it and
+  does not remove it (that would modify the document) — delete it from
+  File > Properties > Custom Properties if you want it gone. `make smoke`
+  opens a file outside Nelson, lists and addresses it, and checks over UNO
+  that it is neither modified nor carrying the property
 - **`make wbox-down` killed itself** — its `pkill -f` pattern matched the
   shell running `pkill`, whose command line contains the pattern, so make
   stopped there and `make wbox-deploy` never deployed. The pattern no longer

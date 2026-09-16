@@ -61,8 +61,7 @@ _mcp_session_id = str(uuid.uuid4())
 def _count_open_documents(doc_svc):
     """Count open office documents without touching them.
 
-    Deliberately does not go through get_doc_id(), which writes a property
-    into each document and marks it modified (#2627).
+    Enumerates components only: no cache entry, no listener, no id.
     """
     try:
         desktop = doc_svc._get_desktop()
@@ -684,7 +683,7 @@ class MCPProtocolHandler:
         """Resolve a document URI to a UNO model.
 
         Supported formats:
-            id:<nelson_doc_id>       — by NelsonDocId property
+            id:<doc_id>              — by the doc_id Nelson handed out
             path:<file_path>         — by file system path
             file:<file_url>          — by file:// URL
             title:<frame_title>      — by frame title (partial match)
@@ -719,7 +718,7 @@ class MCPProtocolHandler:
 
                 match = False
                 if scheme == "id":
-                    match = (doc_svc.get_doc_id(model) == value)
+                    match = (doc_svc.find_doc_id(model) == value)
                 elif scheme == "path":
                     try:
                         import uno as _uno

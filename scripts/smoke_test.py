@@ -328,6 +328,33 @@ class Harness:
             return False
         return r.returncode == 0
 
+    def uno_run(self, body):
+        """Run *body* in a Python connected to LibreOffice over UNO.
+
+        *body* sees ``desktop`` and prints one JSON line. Returns the parsed
+        value, or None when uno is unavailable or the script failed.
+        """
+        script = (
+            "import uno, json\n"
+            "from com.sun.star.beans import PropertyValue\n"
+            "l=uno.getComponentContext()\n"
+            "c=l.ServiceManager.createInstanceWithContext("
+            "'com.sun.star.bridge.UnoUrlResolver',l).resolve("
+            "'uno:socket,host=localhost,port=%d;urp;StarOffice.ComponentContext')\n"
+            "desktop=c.ServiceManager.createInstanceWithContext("
+            "'com.sun.star.frame.Desktop',c)\n" % self.uno_port) + body
+        self.uno_last_error = None
+        try:
+            r = subprocess.run([sys.executable, "-c", script],
+                               capture_output=True, text=True, timeout=60)
+            if r.returncode != 0:
+                self.uno_last_error = (r.stderr.strip().splitlines() or ["?"])[-1]
+                return None
+            return json.loads(r.stdout.strip().splitlines()[-1])
+        except Exception as e:
+            self.uno_last_error = str(e)
+            return None
+
     def log_errors(self):
         if not os.path.exists(self.log_path):
             return ["no log written at %s" % self.log_path]
@@ -1125,6 +1152,69 @@ def check_style_set(h):
                                 else "not warned (font list unavailable)")
 
 
+def check_listing_leaves_documents_alone(h):
+    """Nelson reads a document without marking it modified or writing to it.
+
+    get_doc_id stored a NelsonDocId property in every document it touched —
+    doc_list_open, _resolved, id: addressing — which set the modified flag on
+    documents the agent had only listed and left the id in the saved file
+    (#2627). The document is opened and checked from outside Nelson.
+    """
+    path = h.doc("untouched.odt")
+    h.reset()
+    h.call("doc_create", doc_type="writer", path=path)
+    h.call("text_insert", paragraph_index=0, text="leave me alone")
+    h.call("doc_save")
+    h.call("doc_close")
+
+    opened = h.uno_run(
+        "p=PropertyValue(); p.Name='Hidden'; p.Value=False\n"
+        "d=desktop.loadComponentFromURL(%r,'_blank',0,(p,))\n"
+        "print(json.dumps(bool(d.isModified())))\n"
+        % ("file://" + path))
+    if opened is None:
+        return "SKIPPED — uno module unavailable for the out-of-band check"
+
+    listed = h.call("doc_list_open").get("documents", [])
+    mine = [d for d in listed if (d.get("url") or "").endswith("untouched.odt")]
+    if not mine or not mine[0].get("doc_id"):
+        raise Fail("doc_list_open does not list the document: %s" % listed)
+    doc_id = mine[0]["doc_id"]
+    h.call("doc_info", _document="id:%s" % doc_id)
+    again = h.call("doc_list_open").get("documents", [])
+    if doc_id not in [d.get("doc_id") for d in again]:
+        raise Fail("doc_id changed between two doc_list_open calls")
+
+    modified = h.uno_run(
+        "e=desktop.getComponents().createEnumeration()\n"
+        "out=None\n"
+        "while e.hasMoreElements():\n"
+        "    d=e.nextElement()\n"
+        "    try:\n"
+        "        url=d.getURL()\n"
+        "    except Exception:\n"
+        "        continue\n"                    # Start Center and the like
+        "    if url.endswith('untouched.odt'):\n"
+        "        out=[bool(d.isModified()), "
+        "d.getDocumentProperties().getUserDefinedProperties()"
+        ".getPropertySetInfo().hasPropertyByName('NelsonDocId')]\n"
+        "print(json.dumps(out))\n")
+    if modified is None:
+        raise Fail("could not read the document back over UNO: %s"
+                   % h.uno_last_error)
+    if modified[0]:
+        raise Fail("listing and addressing the document marked it modified")
+    if modified[1]:
+        raise Fail("a NelsonDocId property was written into the document")
+
+    h.call("doc_save", _document="id:%s" % doc_id)
+    with zipfile.ZipFile(path) as z:
+        meta = z.read("meta.xml").decode("utf-8", "replace")
+    if "NelsonDocId" in meta:
+        raise Fail("the saved file carries NelsonDocId")
+    return "listed, addressed by id and saved: never modified, no NelsonDocId"
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -1143,6 +1233,7 @@ CHECKS = [
     ("open is active (#34)", check_open_is_active),
     ("save-as keeps original", check_save_as_keeps_original),
     ("doc_id uniqueness", check_doc_ids_distinct),
+    ("listing leaves documents alone", check_listing_leaves_documents_alone),
     ("recording not forced", check_recording_not_forced),
     ("search backends agree", check_search_backends_agree),
     ("sheet-qualified refs", check_sheet_qualified_refs),

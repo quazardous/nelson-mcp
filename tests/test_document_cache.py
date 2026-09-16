@@ -104,3 +104,43 @@ def test_disposed_document_is_dropped():
     assert DocumentCache._entries == []
     assert DocumentCache.get(Proxy(doc)).para_ranges is None
     assert len(seen) == 1
+
+
+def test_doc_id_is_stable_per_document_and_distinct_between_documents():
+    a, b = Model(), Model()
+    first = DocumentCache.doc_id(Proxy(a))
+    assert DocumentCache.doc_id(Proxy(a)) == first
+    assert DocumentCache.doc_id(Proxy(b)) != first
+    assert len(first) == 32
+
+
+def test_peek_never_creates_an_id():
+    doc = Model()
+    assert DocumentCache.peek_doc_id(Proxy(doc)) is None
+    assert DocumentCache._entries == []
+    DocumentCache.get(Proxy(doc))                 # cached, but no id handed out
+    assert DocumentCache.peek_doc_id(Proxy(doc)) is None
+    given = DocumentCache.doc_id(Proxy(doc))
+    assert DocumentCache.peek_doc_id(Proxy(doc)) == given
+
+
+def test_doc_id_is_forgotten_when_the_document_closes():
+    doc = Model()
+    old = DocumentCache.doc_id(Proxy(doc))
+    DocumentCache._disposed(DocumentCache._find(Proxy(doc)))
+    assert DocumentCache.peek_doc_id(Proxy(doc)) is None
+    assert DocumentCache.doc_id(Proxy(doc)) != old
+
+
+class Untouchable:
+    """A model whose document properties must never be reached."""
+
+    def getDocumentProperties(self):
+        raise AssertionError("get_doc_id touched the document's properties")
+
+
+def test_get_doc_id_does_not_touch_the_document():
+    from plugin.modules.core.services.document import DocumentService
+    svc = DocumentService()
+    model = Untouchable()
+    assert svc.get_doc_id(model) == svc.get_doc_id(model)

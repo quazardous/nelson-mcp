@@ -291,21 +291,15 @@ class SaveDocumentAs(ToolBase):
 
     def execute(self, ctx, **kwargs):
         target_path = kwargs["target_path"]
-        # Reassign the identity BEFORE writing, so the new file gets its own
-        # NelsonDocId baked in on disk (not the source file's) — otherwise a
-        # later reopen would still collide with the source (#20). Done first
-        # because _save_to_path persists the document to the target path.
-        new_doc_id = None
-        try:
-            new_doc_id = ctx.services.document.reassign_doc_id(ctx.doc)
-        except Exception:
-            pass
         file_url, err = _save_to_path(ctx.doc, target_path)
         if err:
             return err
         result = {"status": "ok", "file_url": file_url}
-        if new_doc_id:
-            result["doc_id"] = new_doc_id
+        # Still the same open document, so the same doc_id. The source file,
+        # if reopened, is a different document with an id of its own (#20).
+        doc_id = ctx.services.document.get_doc_id(ctx.doc)
+        if doc_id:
+            result["doc_id"] = doc_id
         return result
 
 
