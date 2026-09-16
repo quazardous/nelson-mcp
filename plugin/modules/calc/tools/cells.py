@@ -73,6 +73,15 @@ class ReadCellRange(ToolBase):
                     "ranges/cells for non-contiguous areas."
                 ),
             },
+            "format": {
+                "type": "string",
+                "enum": ["cells", "rows"],
+                "description": (
+                    "'cells' (default): one object per cell with address, "
+                    "value, formula and type. 'rows': compact — values as "
+                    "rows, formulas listed apart, about ten times smaller; "
+                    "allows 100000 cells per call instead of 20000."),
+            },
         },
         "required": ["range_name"],
     }
@@ -92,8 +101,12 @@ class ReadCellRange(ToolBase):
                     "max_rows_display", 1000))
             except Exception:
                 max_rows = 1000
-            plan = plan_reads(rn if isinstance(rn, list) else [rn], max_rows)
-            data = [inspector.read_range(read) for read, _ in plan["reads"]]
+            compact = kwargs.get("format") == "rows"
+            plan = plan_reads(rn if isinstance(rn, list) else [rn], max_rows,
+                              max_cells=100000 if compact else 20000)
+            reader = (inspector.read_range_rows if compact
+                      else inspector.read_range)
+            data = [reader(read) for read, _ in plan["reads"]]
 
             if isinstance(rn, list):
                 out = {"status": "ok", "result": data}
@@ -106,9 +119,10 @@ class ReadCellRange(ToolBase):
                     "rows_returned": plan["rows_returned"],
                     "ranges_returned": [read for read, _ in plan["reads"]],
                     "next_range": plan["next_range"],
-                    "hint": ("Capped at %d rows / 20000 cells per call "
+                    "hint": ("Capped at %d rows / %d cells per call "
                              "(Max Rows Display in Options). Read "
-                             "next_range next." % max_rows),
+                             "next_range next."
+                             % (max_rows, 100000 if compact else 20000)),
                 })
                 if plan["unread"]:
                     out["unread_ranges"] = plan["unread"]
@@ -523,6 +537,9 @@ class WriteCellRangeFromLists(ToolBase):
     intent = "edit"
     description = (
         "Write a 2D array of values to cells starting at a given cell. "
+        "ISO dates ('2026-10-01', '2026-10-01 14:30') are written as real "
+        "dates, formatted YYYY-MM-DD unless the cell already has a format; "
+        "prefix with an apostrophe to keep one as text. "
         "Each inner array is a row. Values can be strings, numbers, or "
         "formulas (starting with '='). "
         "Example: values=[[\"Name\",\"Age\"],[\"Alice\",30]] at start_cell='A1'."
@@ -596,6 +613,9 @@ class WriteCellRangeFromLists(ToolBase):
                                 **e.details}
                     return {"status": "ok", **result}
 
+            from plugin.modules.calc.manipulator import (
+                DateWriter, write_text_or_date)
+            dates = DateWriter(doc)
             rows_written = 0
             cols_written = 0
             for r_idx, row in enumerate(values):
@@ -618,17 +638,20 @@ class WriteCellRangeFromLists(ToolBase):
                         try:
                             cell.setValue(float(val))
                         except (ValueError, TypeError):
-                            cell.setString(str(val))
+                            write_text_or_date(cell, str(val), dates)
                     if c_idx + 1 > cols_written:
                         cols_written = c_idx + 1
                 rows_written = r_idx + 1
 
-            return {
+            result = {
                 "status": "ok",
                 "message": "Wrote %d rows, %d cols starting at %s." % (
                     rows_written, cols_written, start_cell
                 ),
             }
+            if dates.count:
+                result["dates"] = dates.count
+            return result
         except Exception as e:
             logger.exception("calc_write_range failed")
             return {"status": "error", "error": str(e)}

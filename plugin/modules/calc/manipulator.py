@@ -105,6 +105,85 @@ class ArrayFormulaError(ValueError):
 _CLEAR_CONTENT = 1 | 2 | 4 | 16
 
 
+class DateWriter:
+    """Writes ISO date strings as real dates in one document (#2632).
+
+    Looks up the document's NullDate and the date number formats once, and
+    formats a cell only while it still has the standard number format, so a
+    format the agent already set is never overwritten.
+    """
+
+    def __init__(self, doc):
+        self.doc = doc
+        self.count = 0
+        self._null = None
+        self._keys = {}
+        self._standard = None
+
+    def _null_date(self):
+        if self._null is None:
+            try:
+                d = self.doc.getPropertyValue("NullDate")
+                self._null = (d.Year, d.Month, d.Day)
+            except Exception:
+                self._null = (1899, 12, 30)
+        return self._null
+
+    def _locale(self):
+        import uno
+        return uno.createUnoStruct("com.sun.star.lang.Locale")
+
+    def _format_key(self, pattern):
+        if pattern not in self._keys:
+            formats = self.doc.getNumberFormats()
+            locale = self._locale()
+            key = formats.queryKey(pattern, locale, False)
+            if key == -1:
+                key = formats.addNew(pattern, locale)
+            self._keys[pattern] = key
+        return self._keys[pattern]
+
+    def _is_standard(self, cell):
+        try:
+            key = cell.getPropertyValue("NumberFormat")
+        except Exception:
+            return False
+        if self._standard is None:
+            try:
+                self._standard = self.doc.getNumberFormats().getStandardIndex(
+                    self._locale())
+            except Exception:
+                self._standard = 0
+        return key in (0, self._standard)
+
+    def write(self, cell, text):
+        """Write *text* as a date if it is an ISO date; return True if so."""
+        from plugin.modules.calc.iso_dates import (
+            DATE_FORMAT, DATETIME_FORMAT, parse_iso, serial)
+        parsed = parse_iso(text)
+        if parsed is None:
+            return False
+        value, has_time = parsed
+        standard = self._is_standard(cell)
+        cell.setValue(serial(value, self._null_date()))
+        if standard:
+            cell.setPropertyValue("NumberFormat", self._format_key(
+                DATETIME_FORMAT if has_time else DATE_FORMAT))
+        self.count += 1
+        return True
+
+
+def write_text_or_date(cell, text, dates):
+    """setString, unless *text* is an ISO date (-> date) or starts with an
+    apostrophe (-> the rest, kept as text, as Calc does)."""
+    from plugin.modules.calc.iso_dates import literal_text
+    literal = literal_text(text)
+    if literal is not None:
+        cell.setString(literal)
+    elif not dates.write(cell, text):
+        cell.setString(text)
+
+
 # ── Manipulator ────────────────────────────────────────────────────────
 
 
@@ -454,6 +533,7 @@ class CellManipulator:
             else:
                 values = [formula_or_values] * total_cells
 
+            dates = DateWriter(self.bridge.doc)
             cell_idx = 0
             for row in range(start[1], end[1] + 1):
                 for col in range(start[0], end[0] + 1):
@@ -468,7 +548,7 @@ class CellManipulator:
                                 num = float(value)
                                 cell.setValue(num)
                             except ValueError:
-                                cell.setString(value)
+                                write_text_or_date(cell, value, dates)
                     elif isinstance(value, (int, float)):
                         cell.setValue(value)
                     else:
@@ -479,7 +559,10 @@ class CellManipulator:
             logger.info(
                 "Range %s filled with %d values.", range_str.upper(), len(values),
             )
-            return f"Range {range_str} filled with {len(values)} values."
+            message = f"Range {range_str} filled with {len(values)} values."
+            if dates.count:
+                message += " %d written as dates." % dates.count
+            return message
         except ArrayFormulaError as e:
             # The caller's formula or target, not a fault: keep the log clean.
             logger.debug("Array formula refused (%s): %s", range_str, e)

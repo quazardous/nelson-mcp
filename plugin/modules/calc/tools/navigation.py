@@ -73,8 +73,11 @@ class GetSheetOverview(ToolBase):
     aliases = ["get_sheet_overview"]
     intent = "navigate"
     description = (
-        "Get an overview of a Calc sheet: used area, data regions, "
-        "charts, merged cells, and annotations count."
+        "Get an overview of a Calc sheet: used area, column headers with "
+        "each column's type and filled count, a few sample rows, data "
+        "regions, charts, merged cells, and annotations count. Start here "
+        "before reading a large sheet; use calc_query to filter or "
+        "aggregate it."
     )
     parameters = {
         "type": "object",
@@ -116,6 +119,13 @@ class GetSheetOverview(ToolBase):
                 result["used_cols"] = ra.EndColumn - ra.StartColumn + 1
             except Exception:
                 result["used_area"] = None
+                ra = None
+
+            if ra is not None:
+                try:
+                    result.update(_columns_profile(sheet, ra))
+                except Exception:
+                    pass
 
             # Charts
             try:
@@ -151,3 +161,49 @@ class GetSheetOverview(ToolBase):
             return result
         except Exception as e:
             return {"status": "error", "error": str(e)}
+
+
+_PROFILE_COLS = 79
+_PROFILE_ROWS = 10000
+_SAMPLE_ROWS = 5
+
+
+def _columns_profile(sheet, ra):
+    """Headers, per-column type and filled count, and sample rows (#2630).
+
+    Reads the first row of the used area as headers and profiles up to
+    10 000 rows below it, in one getDataArray call.
+    """
+    from plugin.modules.calc.address_utils import index_to_column
+
+    last_col = min(ra.EndColumn, ra.StartColumn + _PROFILE_COLS - 1)
+    last_row = min(ra.EndRow, ra.StartRow + _PROFILE_ROWS)
+    data = sheet.getCellRangeByPosition(
+        ra.StartColumn, ra.StartRow, last_col, last_row).getDataArray()
+    if not data:
+        return {}
+    headers, body = list(data[0]), data[1:]
+    columns = []
+    for i, header in enumerate(headers):
+        values = [row[i] for row in body if row[i] != ""]
+        numbers = sum(1 for v in values if isinstance(v, float))
+        kind = ("empty" if not values else
+                "number" if numbers == len(values) else
+                "text" if numbers == 0 else "mixed")
+        columns.append({
+            "column": index_to_column(ra.StartColumn + i),
+            "header": header if header != "" else None,
+            "type": kind,
+            "filled": len(values),
+        })
+    profile = {
+        "columns": columns,
+        "sample_rows": [[None if v == "" else v for v in row]
+                        for row in body[:_SAMPLE_ROWS]],
+    }
+    total_rows = ra.EndRow - ra.StartRow
+    if total_rows > _PROFILE_ROWS:
+        profile["profiled_rows"] = _PROFILE_ROWS
+    if ra.EndColumn > last_col:
+        profile["profiled_columns"] = _PROFILE_COLS
+    return profile

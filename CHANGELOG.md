@@ -30,6 +30,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **`calc_read_range` read cell by cell** (#2630) — four UNO calls per cell,
+  5.4 s on the main thread for A1:CA2000. It now reads a range in two calls
+  (`getDataArray`, `getFormulaArray`), with the same output. `format="rows"`
+  returns values as plain rows and formulas listed apart, about ten times
+  smaller than the per-cell objects, and allows 100 000 cells per call
 - **FILTER, SORT, UNIQUE and other array formulas returned one value with
   `status: ok`** (#2631). LibreOffice does not spill array results: written
   into a single cell, `=SORT(FILTER(...))` showed its first value and the
@@ -218,6 +223,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **ISO dates are written as dates, and `calc_columns` sizes columns and
+  freezes panes** (#2632). `calc_write_range` and `calc_write_formula` stored
+  "2026-10-01" as text, so a planning column neither sorted nor formatted as
+  dates. ISO dates and date-times (`2026-10-01`, `2026-10-01 14:30`) now
+  become real date values, counted from the document's own NullDate, and get
+  a YYYY-MM-DD format only if the cell still has the standard one; a leading
+  apostrophe keeps one as text. Nothing else changes: "1-2" stays text. The
+  new `calc_columns` sets a width in mm, auto-fits, hides or shows columns,
+  and freezes or unfreezes panes at a cell, answering with the widths before
+  and after
+- **`calc_query` — answer a question about a sheet without reading it all**
+  (#2630). Filters (`=`, `!=`, `<`…, `contains`, `in`, `empty`,
+  `not_empty`), column selection, sorting, `group_by` with `sum`, `avg`,
+  `min`, `max` and `count`, on columns named by header or letter; numbers
+  stored as text compare as numbers. It reads only the columns the query
+  uses, in bulk, and never changes the sheet. "Top 10 emitters of 2022" on a
+  50 000-row sheet is one call instead of megabytes of cells or sorting the
+  user's table in place. `calc_sheet_overview` now also gives each column's
+  header, type and filled count, and five sample rows
 - **Page numbers, tables of contents and page breaks for reports** (#2634).
   `header_footer_set` turns `{page}`, `{pages}`, `{date}` and `{title}` into
   real fields, so `Page {page} of {pages}` numbers pages instead of printing

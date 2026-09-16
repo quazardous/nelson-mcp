@@ -18,7 +18,7 @@ Nelson MCP runs an HTTP server inside LibreOffice and speaks the [Model Context 
 
 ## Features
 
-- **143 document tools** — read content, edit text, manage styles, insert images, handle tables, charts, conditional formatting, hyperlinks, track changes, page headers/footers, navigate headings, search, and more. The list is filtered by the active document type, so a client sees only what applies (97 with a Writer document, 48 with Calc)
+- **145 document tools** — read content, edit text, manage styles, insert images, handle tables, charts, conditional formatting, hyperlinks, track changes, page headers/footers, navigate headings, search, and more. The list is filtered by the active document type, so a client sees only what applies (97 with a Writer document, 50 with Calc)
 - **Custom MCP endpoints** — expose only the tools your agent needs. Built-in presets (minimal, writer-edit, writer-read, calc, gallery) or create your own filtered endpoints
 - **Writer, Calc, Draw, Impress** — tools adapt to the active document type
 - **Calc `=PROMPT()`** — call an LLM directly from a spreadsheet cell
@@ -105,7 +105,7 @@ the narrowing happens on its own. In order of how much they cut:
 
 | Lever | What it does | Where |
 |---|---|---|
-| **Document type** | The tool list follows the active document — about 97 tools for Writer, 48 for Calc, out of 143. Automatic, and clients are notified when it changes | nothing to configure |
+| **Document type** | The tool list follows the active document — about 97 tools for Writer, 50 for Calc, out of 145. Automatic, and clients are notified when it changes | nothing to configure |
 | **Unconfigured features hide themselves** | Gallery and AI-image tools disappear entirely until you configure a gallery or an image provider. Launchers and tunnels expose no tools at all | nothing to configure |
 | **Custom endpoints** | Expose exactly the tools you choose on their own URL, e.g. 8 tools on `/mcp/minimal`. The surest way to keep a small model on the rails | Options > Nelson MCP > MCP |
 | **Presets** | Ready-made endpoint tool lists: `minimal`, `writer-edit`, `writer-read`, `calc`, `gallery` | Options > Nelson MCP > MCP |

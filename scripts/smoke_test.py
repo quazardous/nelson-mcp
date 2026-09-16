@@ -1513,6 +1513,120 @@ def check_array_formulas(h):
             % len(expected))
 
 
+def check_sheet_analysis(h):
+    """Read compactly, profile a sheet, and query it without changing it (#2630).
+
+    Answering "top emitters of 2022" meant reading megabytes cell by cell,
+    sorting the user's table in place, or knowing AGGREGATE.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="calc")
+    table = [["country", "year", "iso_code", "co2"],
+             ["China", 2022, "CHN", 11711.808], ["World", 2022, "", 37149.8],
+             ["United States", 2022, "USA", 5055.403],
+             ["India", 2022, "IND", 2831.132], ["China", 2021, "CHN", 11472],
+             ["Japan", 2022, "JPN", 1029.645], ["Russia", 2022, "RUS", "=1675+0.461"]]
+    h.call("calc_write_range", start_cell="A1", values=table)
+
+    cells = h.call("calc_read_range", range_name="A1:D8")["result"]
+    rows = h.call("calc_read_range", range_name="A1:D8", format="rows")
+    compact = rows.get("result", {})
+    if [[c["value"] for c in r] for r in cells] != compact.get("rows"):
+        raise Fail("format=rows values differ from format=cells: %s"
+                   % compact)
+    if compact.get("formulas", {}).get("D8") != "=1675+0.461":
+        raise Fail("format=rows does not list the formula: %s" % compact)
+
+    overview = h.call("calc_sheet_overview")
+    headers = [c.get("header") for c in overview.get("columns", [])]
+    types = [c.get("type") for c in overview.get("columns", [])]
+    if headers != ["country", "year", "iso_code", "co2"] \
+            or types[1] != "number" or len(overview.get("sample_rows", [])) != 5:
+        raise Fail("calc_sheet_overview lacks headers/types/sample: %s"
+                   % {k: overview.get(k) for k in ("columns", "sample_rows")})
+
+    top = h.call("calc_query",
+                 where=[{"column": "year", "op": "=", "value": 2022},
+                        {"column": "iso_code", "op": "not_empty"}],
+                 select=["country", "co2"], order_by="co2 desc", limit=3)
+    if top.get("rows") != [["China", 11711.808], ["United States", 5055.403],
+                           ["India", 2831.132]] or top.get("matched") != 5:
+        raise Fail("calc_query top 3 wrong: %s" % top)
+    grouped = h.call("calc_query", group_by=["country"],
+                     aggregate=[{"column": "co2", "fn": "sum", "as": "total"}],
+                     order_by="total desc", limit=2)
+    if grouped.get("rows") != [["World", 37149.8], ["China", 23183.808]]:
+        raise Fail("calc_query group_by wrong: %s" % grouped)
+    bad = h.call("calc_query", where=[{"column": "nope", "op": "="}])
+    if bad.get("code") != "invalid_query" or "Headers" not in bad.get(
+            "message", ""):
+        raise Fail("an unknown column did not list the headers: %s" % bad)
+    after = h.call("calc_read_range", range_name="A2:A3", format="rows")
+    if after["result"]["rows"] != [["China"], ["World"]]:
+        raise Fail("calc_query changed the sheet")
+    return "rows format = cells, overview with headers, query top-N and " \
+           "group_by right, sheet untouched"
+
+
+def check_planning_sheet(h):
+    """ISO dates become dates; columns can be sized and panes frozen (#2632).
+
+    "2026-10-01" was stored as text, and nothing could widen a column or
+    freeze a header row.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="calc")
+    h.call("calc_set_style", range_name="C3", number_format="DD/MM/YYYY")
+    wrote = h.call("calc_write_range", start_cell="A1", values=[
+        ["Task", "Owner", "Start", "Days", "End", "Code"],
+        ["Kick-off meeting with every stakeholder", "Ana", "2026-10-01", 3,
+         "=C2+D2-1", "00123"],
+        ["Design", "Ben", "2026-10-06", 5, "=C3+D3-1", "'2026-10-06"],
+        ["Review", "Cy", "2026-02-30", 1, "", "1-2"],
+    ])
+    if wrote.get("dates") != 2:
+        raise Fail("expected 2 ISO dates converted, got %s" % wrote)
+    cells = h.call("calc_read_range", range_name="A2:F4")["result"]
+    start, end, code = cells[0][2], cells[0][4], cells[0][5]
+    if start.get("type") != "value" or start.get("value") != 46296.0:
+        raise Fail("2026-10-01 is not the date 46296: %s" % start)
+    if end.get("value") != 46298.0:
+        raise Fail("C2+D2-1 did not compute on a date: %s" % end)
+    # Numeric strings were already written as numbers, as typing them in
+    # Calc does: "00123" is 123. Only ISO dates are new.
+    if code.get("value") != 123.0:
+        raise Fail("00123 is not written as it was before (123): %s" % code)
+    if cells[1][5].get("value") != "2026-10-06" or cells[1][5].get(
+            "type") != "text":
+        raise Fail("an apostrophe did not keep text: %s" % cells[1][5])
+    if cells[2][2].get("type") != "text" or cells[2][5].get("value") != "1-2":
+        raise Fail("invalid date or 1-2 was converted: %s" % cells[2])
+    # Compare what Calc displays: format codes are shown in the profile's
+    # language (AAAA-MM-JJ in French), the rendered dates are not.
+    shown = h.uno_run(
+        "d=desktop.getCurrentComponent(); s=d.getSheets().getByIndex(0)\n"
+        "print(json.dumps([s.getCellRangeByName(n).getCellByPosition(0,0)"
+        ".getString() for n in ('C2','C3')]))\n")
+    if shown is not None and shown != ["2026-10-01", "06/10/2026"]:
+        raise Fail("dates display as %s: expected 2026-10-01 (ISO format "
+                   "set) and 06/10/2026 (the agent's DD/MM/YYYY kept)" % shown)
+
+    fit = h.call("calc_columns", action="autofit", columns="A")
+    if fit.get("status") != "ok" or fit["after_mm"]["A"] <= fit["before_mm"]["A"]:
+        raise Fail("autofit did not widen column A: %s" % fit)
+    width = h.call("calc_columns", action="width", columns="B:C", width_mm=30)
+    if width.get("after_mm") != {"B": 30.0, "C": 30.0}:
+        raise Fail("width not applied: %s" % width)
+    frozen = h.call("calc_columns", action="freeze", cell="B2")
+    if not frozen.get("frozen"):
+        raise Fail("panes not frozen: %s" % frozen)
+    bad = h.call("calc_columns", action="width", columns="A1:C3", width_mm=20)
+    if bad.get("code") != "invalid_params":
+        raise Fail("a cell range was accepted as columns: %s" % bad)
+    return ("2 ISO dates as dates (agent format kept), text left alone; "
+            "autofit, width and freeze applied")
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -1537,6 +1651,8 @@ CHECKS = [
     ("sheet-qualified refs", check_sheet_qualified_refs),
     ("calc sheet targets (#31-33)", check_calc_sheet_targets),
     ("array formulas (#2631)", check_array_formulas),
+    ("sheet analysis (#2630)", check_sheet_analysis),
+    ("planning sheet (#2632)", check_planning_sheet),
     ("doc_close truthful (#36)", check_close_reports_truth),
     ("browser origin refused", check_origin_rejected),
     ("session semantics (#38)", check_session_semantics),

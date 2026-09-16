@@ -173,51 +173,84 @@ class CellInspector:
             if ":" not in range_name:
                 return [[self.read_cell(range_name)]]
 
-            sheet, range_name = self.bridge.resolve(range_name)
-
-            cell_range = self.bridge.get_cell_range(sheet, range_name)
-            addr = cell_range.getRangeAddress()
-
+            sheet, addr, data, formulas = self._read_block(range_name)
+            covered = _array_cover(sheet, addr, formulas)
             result = []
-            for row in range(addr.StartRow, addr.EndRow + 1):
+            for r, (data_row, formula_row) in enumerate(zip(data, formulas)):
                 row_data = []
-                for col in range(addr.StartColumn, addr.EndColumn + 1):
-                    cell = sheet.getCellByPosition(col, row)
-                    cell_type = cell.getType()
-
-                    if cell_type == EMPTY:
-                        value = None
-                    elif cell_type == VALUE:
-                        value = cell.getValue()
-                    elif cell_type == TEXT:
-                        value = cell.getString()
-                    elif cell_type == FORMULA:
-                        value = cell.getValue() if cell.getValue() != 0 else cell.getString()
-                    else:
-                        value = cell.getString()
-
-                    col_letter = self.bridge._index_to_column(col)
-                    cell_address = f"{col_letter}{row + 1}"
-                    formula = cell.getFormula() if cell_type == FORMULA else None
-
+                for c, (value, formula) in enumerate(zip(data_row,
+                                                         formula_row)):
+                    col, row = addr.StartColumn + c, addr.StartRow + r
+                    kind = _kind(value, formula)
+                    in_array = covered.get((col, row))
+                    if in_array:
+                        # Only an array formula's top-left cell carries the
+                        # formula in getFormulaArray; the rest are its cells.
+                        kind, formula = "formula", in_array[1]
                     entry = {
-                        "address": cell_address,
-                        "value": value,
-                        "formula": formula,
-                        "type": self._cell_type_name(cell_type),
+                        "address": "%s%d" % (self.bridge._index_to_column(col),
+                                             row + 1),
+                        "value": None if kind == "empty" else value,
+                        "formula": formula if kind == "formula" else None,
+                        "type": kind,
                     }
-                    if cell_type == FORMULA:
-                        block = _array_block(sheet, col, row)
-                        if block:
-                            entry["array_range"] = block
+                    if in_array:
+                        entry["array_range"] = in_array[0]
                     row_data.append(entry)
                 result.append(row_data)
-
             return result
         except Exception as e:
             level = logger.debug if isinstance(e, ValueError) else logger.error
             level("Range reading error (%s): %s", range_name, str(e))
             raise
+
+    def read_range_rows(self, range_name: str) -> dict:
+        """Compact read: values as rows, formulas listed apart (#2630).
+
+        Returns {"range", "rows": [[value or None]], "formulas": {addr: f},
+        "array_ranges": {addr: "E1:G4"}} — no per-cell address or type, so a
+        cell costs a few bytes instead of ~86.
+        """
+        try:
+            sheet, addr, data, formulas = self._read_block(range_name)
+            covered = _array_cover(sheet, addr, formulas)
+            rows, found, arrays = [], {}, {}
+            for r, (data_row, formula_row) in enumerate(zip(data, formulas)):
+                out = []
+                for c, (value, formula) in enumerate(zip(data_row,
+                                                         formula_row)):
+                    kind = _kind(value, formula)
+                    out.append(None if kind == "empty" else value)
+                    if kind == "formula":
+                        col, row = addr.StartColumn + c, addr.StartRow + r
+                        name = "%s%d" % (self.bridge._index_to_column(col),
+                                         row + 1)
+                        found[name] = formula
+                        if (col, row) in covered:
+                            arrays[name] = covered[(col, row)][0]
+                rows.append(out)
+            result = {"range": _address_name(self.bridge, addr), "rows": rows}
+            if found:
+                result["formulas"] = found
+            if arrays:
+                result["array_ranges"] = arrays
+            return result
+        except Exception as e:
+            level = logger.debug if isinstance(e, ValueError) else logger.error
+            level("Range reading error (%s): %s", range_name, str(e))
+            raise
+
+    def _read_block(self, range_name):
+        """(sheet, RangeAddress, values, formulas), read in two UNO calls.
+
+        getDataArray / getFormulaArray return the whole range at once;
+        reading cell by cell cost four UNO calls per cell (5.4 s for
+        A1:CA2000 on the main thread).
+        """
+        sheet, address = self.bridge.resolve(range_name)
+        cell_range = self.bridge.get_cell_range(sheet, address)
+        return (sheet, cell_range.getRangeAddress(),
+                cell_range.getDataArray(), cell_range.getFormulaArray())
 
     def get_all_formulas(self, sheet_name: str = None) -> list[dict]:
         """List all formulas in a sheet.
@@ -286,3 +319,68 @@ def _array_block(sheet, col, row):
     from plugin.modules.calc.address_utils import index_to_column
     return "%s%d:%s%d" % (index_to_column(a.StartColumn), a.StartRow + 1,
                           index_to_column(a.EndColumn), a.EndRow + 1)
+
+
+def _array_cover(sheet, addr, formulas):
+    """{(col, row): (block name, formula)} for cells inside array formulas.
+
+    Array blocks are found from the formula cells of the range (the anchor,
+    or any cell of a block that starts above or left of it) — one cursor per
+    formula cell, none for plain values.
+    """
+    from plugin.modules.calc.address_utils import index_to_column
+
+    cover, seen = {}, set()
+    for r, row in enumerate(formulas):
+        for c, formula in enumerate(row):
+            col, rw = addr.StartColumn + c, addr.StartRow + r
+            # Only array formula cells carry braces; plain formulas need no
+            # cursor at all.
+            if not (isinstance(formula, str) and formula.startswith("{=")):
+                continue
+            if (col, rw) in cover:
+                continue
+            try:
+                cursor = sheet.createCursorByRange(
+                    sheet.getCellRangeByPosition(col, rw, col, rw))
+                cursor.collapseToCurrentArray()
+                a = cursor.getRangeAddress()
+                block = sheet.getCellRangeByPosition(
+                    a.StartColumn, a.StartRow, a.EndColumn, a.EndRow)
+                array_formula = block.getArrayFormula()
+            except Exception:
+                continue
+            if not array_formula:
+                continue
+            key = (a.StartColumn, a.StartRow, a.EndColumn, a.EndRow)
+            if key in seen:
+                continue
+            seen.add(key)
+            name = "%s%d:%s%d" % (index_to_column(a.StartColumn),
+                                  a.StartRow + 1, index_to_column(a.EndColumn),
+                                  a.EndRow + 1)
+            for cc in range(a.StartColumn, a.EndColumn + 1):
+                for rr in range(a.StartRow, a.EndRow + 1):
+                    cover[(cc, rr)] = (name, array_formula)
+    return cover
+
+
+def _kind(value, formula):
+    """Cell type from a data-array value and a formula-array entry.
+
+    Every cell of an array formula reports it in braces, "{=SORT(...)}".
+    """
+    if isinstance(formula, str) and (formula.startswith("=")
+                                     or formula.startswith("{=")):
+        return "formula"
+    if value == "" and formula in ("", None):
+        return "empty"
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return "value"
+    return "text"
+
+
+def _address_name(bridge, a):
+    return "%s%d:%s%d" % (bridge._index_to_column(a.StartColumn),
+                          a.StartRow + 1,
+                          bridge._index_to_column(a.EndColumn), a.EndRow + 1)
