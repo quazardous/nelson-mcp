@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.14.0] — 2026-09-16
+
+**Writer content is now exchanged as Markdown by default.** An agent that
+parses the HTML of `text_get_range` must pass `format: "html"`, or set
+Options > Nelson > Document format back to HTML. That change, the access token,
+and the new tools (`calc_query`, `calc_columns`, `style_set`, `doc_insert_toc`,
+`writer.change_author`) make this a minor version. It also fixes the
+cold-start deadlock of GitHub #35/#37: LibreOffice could hang for good when
+started with a document.
 
 ### Security
 

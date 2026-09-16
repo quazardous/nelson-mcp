@@ -3,7 +3,7 @@
   "name": "io.github.quazardous/nelson-mcp",
   "title": "Nelson MCP — LibreOffice",
   "description": "Turn your open LibreOffice documents into tools for an AI client. Runs an MCP server inside LibreOffice so Writer, Calc, Draw and Impress documents can be read and edited in place, with no copy-paste and no export.",
-  "version": "0.13.0",
+  "version": "0.14.0",
   "repository": {
     "url": "https://github.com/quazardous/nelson-mcp",
     "source": "github"
