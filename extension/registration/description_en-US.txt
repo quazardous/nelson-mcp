@@ -1,0 +1,13 @@
+Turn your open LibreOffice documents into tools for an AI client.
+
+Nelson MCP runs a Model Context Protocol server inside LibreOffice, so Claude
+Code, ChatGPT, Gemini CLI, OpenCode and any other MCP client can read and edit
+the document you have open — no copy-paste, no export, no round trip through a
+file on disk.
+
+Writer, Calc, Draw and Impress are supported, and the tool list follows the
+active document, so a client only sees what applies to it. Custom endpoints let
+you expose a chosen subset of tools on their own URL.
+
+The server listens on localhost only, and no browser origin may reach it unless
+you allow it explicitly.

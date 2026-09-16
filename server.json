@@ -1,0 +1,17 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.quazardous/nelson-mcp",
+  "title": "Nelson MCP — LibreOffice",
+  "description": "Turn your open LibreOffice documents into tools for an AI client. Runs an MCP server inside LibreOffice so Writer, Calc, Draw and Impress documents can be read and edited in place, with no copy-paste and no export.",
+  "version": "0.12.1",
+  "repository": {
+    "url": "https://github.com/quazardous/nelson-mcp",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "http://localhost:8766/mcp"
+    }
+  ]
+}

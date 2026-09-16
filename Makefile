@@ -275,9 +275,15 @@ repack-deploy: repack
 	@$(MAKE) log
 
 # Manifest sources: all module.yaml + plugin.yaml + version.py
+# description.xml.tpl belongs here: generate_manifest.py renders it into
+# extension/description.xml, so leaving it out means an edit to the extension's
+# publisher, minimum version or description silently does not ship — the build
+# reports success and bundles the previous file. Version bumps touch
+# version.py, which is why releases picked it up anyway and hid this.
 MANIFEST_SOURCES = $(wildcard plugin/modules/*/module.yaml) \
                    $(wildcard plugin/modules/*/*/module.yaml) \
-                   plugin/plugin.yaml plugin/version.py
+                   plugin/plugin.yaml plugin/version.py \
+                   extension/description.xml.tpl
 
 manifest: build/generated/Addons.xcu
 build/generated/Addons.xcu: $(MANIFEST_SOURCES) $(SCRIPTS)/generate_manifest.py
