@@ -370,7 +370,10 @@ class Harness:
         if not os.path.exists(self.log_path):
             return ["no log written at %s" % self.log_path]
         with open(self.log_path, encoding="utf-8", errors="replace") as f:
-            errors = [l.rstrip() for l in f if "[ERROR]" in l]
+            # UNO touched from a Nelson thread is a deadlock waiting to happen
+            # (GitHub #35/#37, #2625): as fatal here as an error.
+            errors = [l.rstrip() for l in f
+                      if "[ERROR]" in l or "UNO off the main thread" in l]
         return [e for e in errors
                 if not any(x in e for x in self._expected_errors)]
 
@@ -1627,6 +1630,179 @@ def check_planning_sheet(h):
             "autofit, width and freeze applied")
 
 
+def check_chart_legend_and_params(h):
+    """Legends by default for several series; foreign parameters refused (#2641).
+
+    has_legend was accepted by calc_chart create and silently dropped: it
+    belongs to edit, and merged tools passed any action's parameter along.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="calc")
+    h.call("calc_write_range", start_cell="A1", values=[
+        ["Year", "China", "USA", "India", "Russia", "Japan"],
+        [2020, 10.9, 4.7, 2.4, 1.6, 1.0], [2021, 11.5, 5.0, 2.7, 1.7, 1.0],
+        [2022, 11.7, 5.1, 2.8, 1.7, 1.0]])
+
+    def legend(name):
+        return h.call("calc_chart", action="info",
+                      chart_name=name).get("has_legend")
+
+    five = h.call("calc_chart", action="create", chart_type="line",
+                  data_range="A1:F4", position="H2")
+    if five.get("series") != 5 or not five.get("has_legend") \
+            or legend(five.get("chart_name")) is not True:
+        raise Fail("5 series should get a legend by default: %s" % five)
+    off = h.call("calc_chart", action="create", chart_type="line",
+                 data_range="A1:F4", position="H20", has_legend=False)
+    if legend(off.get("chart_name")) is not False:
+        raise Fail("has_legend=false was not applied: %s" % off)
+    one = h.call("calc_chart", action="create", chart_type="bar",
+                 data_range="A1:B4", position="H40")
+    if one.get("series") != 1 or legend(one.get("chart_name")) is not False:
+        raise Fail("a single series should have no legend: %s" % one)
+    foreign = h.call("calc_chart", action="create", chart_type="bar",
+                     data_range="A1:B4", chart_name="Chart_0")
+    if foreign.get("code") != "invalid_params" \
+            or "chart_name" not in foreign.get("message", ""):
+        raise Fail("a parameter of another action was not refused: %s"
+                   % foreign)
+    return "legend on 5 series, off on request and for 1 series; " \
+           "another action's parameter refused by name"
+
+
+def check_table_text(h):
+    """Text in table cells is searchable and commentable (#2637).
+
+    text_search skipped table cells, and comment_add failed on text found in
+    one ("End of content node...") with retryable: true.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full", content=(
+        "<p>Article 17: the right to be forgotten.</p>"
+        "<table><tr><td>right to be forgotten</td><td>other</td></tr>"
+        "<tr><td>none</td><td>the right to be forgotten applies</td></tr>"
+        "</table><p>End.</p>"))
+    found = h.call("text_search", pattern="right to be forgotten",
+                   backend="direct", max_results=10)
+    cells = sorted((m.get("table"), m.get("cell")) for m in
+                   found.get("matches", []) if m.get("source") == "table_cell")
+    if found.get("count") != 3 or found.get("table_count") != 2 \
+            or [c for _, c in cells] != ["A1", "B2"]:
+        raise Fail("expected 1 body + 2 cell matches (A1, B2): %s"
+                   % {k: found.get(k) for k in
+                      ("count", "body_count", "table_count")})
+    first = h.call("comment_add", search_text="right to be forgotten",
+                   content="body note", author="smoke")
+    second = h.call("comment_add", search_text="right to be forgotten",
+                    occurrence=2, content="cell note", author="smoke")
+    if first.get("status") != "ok" or second.get("status") != "ok":
+        raise Fail("comments not added: %s / %s" % (first, second))
+    if (second.get("anchor") or {}).get("in") != "table_cell":
+        raise Fail("the second occurrence is in a cell: %s" % second)
+    listed = h.call("comment_list").get("comments", [])
+    if len([c for c in listed if c.get("author") == "smoke"]) != 2:
+        raise Fail("comment_list does not show both comments: %s" % listed)
+    missing = h.call("comment_add", search_text="not in this document",
+                     content="x")
+    if missing.get("code") != "text_not_found" or missing.get("retryable"):
+        raise Fail("absent text should be text_not_found, not retryable: %s"
+                   % missing)
+    return "3 matches incl. cells A1 and B2; comments in body and cell; " \
+           "absent text not retryable"
+
+
+def check_review_changes(h):
+    """Tracked changes can be read and paged; page count is known (#2636).
+
+    change_list gave type, author and date but not what changed, all at once;
+    doc_stats reported page_count 0 on a long document.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    para = "<p>The supervisory authority shall act. %s</p>" % ("filler " * 60)
+    h.call("text_apply_range", target="full", content=para * 60)
+    stats = h.call("doc_stats")
+    if not stats.get("page_count"):
+        raise Fail("doc_stats page_count is %r on a ~60-paragraph document"
+                   % stats.get("page_count"))
+    h.call("change_set", enabled=True)
+    replaced = h.call("text_replace", search="supervisory authority",
+                      replace="data protection authority", replace_all=True)
+    if replaced.get("status") != "ok":
+        raise Fail("tracked replace failed: %s" % replaced)
+    page = h.call("change_list", limit=5)
+    summary = page.get("summary", {})
+    if summary.get("total") != 120 or page.get("returned") != 5 \
+            or page.get("next_offset") != 5:
+        raise Fail("expected 120 changes paged by 5: %s"
+                   % {k: page.get(k) for k in
+                      ("summary", "returned", "next_offset")})
+    texts = {c.get("type"): c.get("text") for c in page.get("changes", [])}
+    if not any("supervisory authority" in (t or "") or
+               "data protection authority" in (t or "")
+               for t in texts.values()):
+        raise Fail("changes do not carry their text: %s" % page["changes"][:2])
+    if any(c.get("paragraph_index") is None for c in page["changes"]):
+        raise Fail("changes lack their paragraph: %s" % page["changes"][:2])
+    deletes = h.call("change_list", type="delete", limit=500)
+    if deletes.get("matched") != 60 or any(
+            c.get("type", "").lower() != "delete"
+            for c in deletes.get("changes", [])):
+        raise Fail("type filter wrong: matched %s" % deletes.get("matched"))
+    h.call("change_set", enabled=False)
+    return "page_count %s; 120 changes with text and paragraph, paged and " \
+           "filtered" % stats.get("page_count")
+
+
+def check_formula_fill(h):
+    """A single formula on a range shifts its relative references (#2633).
+
+    E2:E9 with =C2+D2-1 used to put =C2+D2-1 in all eight cells: every row
+    computed row 2.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="calc")
+    h.call("calc_sheet", action="create", sheet_name="Data Sheet")
+    h.call("calc_write_range", start_cell="C2", values=[
+        [i * 10, i] for i in range(1, 9)])
+    res = h.call("calc_write_formula", range_name="E2:E9",
+                 formula_or_values="=C2+D2-1")
+    if res.get("status") != "ok":
+        raise Fail("fill failed: %s" % res)
+    cells = h.call("calc_read_range", range_name="E2:E9")["result"]
+    formulas = [row[0].get("formula") for row in cells]
+    values = [row[0].get("value") for row in cells]
+    if formulas[3] != "=C5+D5-1" or values != [i * 11 - 1.0
+                                               for i in range(1, 9)]:
+        raise Fail("references not shifted: %s / %s" % (formulas, values))
+
+    h.call("calc_write_range", start_cell="A1", values=[[100]])
+    h.call("calc_write_formula", range_name="F2:G3",
+           formula_or_values="=$A$1+C2")
+    block = h.call("calc_read_range", range_name="F2:G3")["result"]
+    if block[1][1].get("formula") != "=$A$1+D3":
+        raise Fail("absolute kept, relative shifted in both directions "
+                   "expected =$A$1+D3, got %s" % block[1][1].get("formula"))
+
+    h.call("calc_write_formula", range_name="H2:H4", formula_or_values="7")
+    sevens = [r[0].get("value") for r in
+              h.call("calc_read_range", range_name="H2:H4")["result"]]
+    if sevens != [7.0, 7.0, 7.0]:
+        raise Fail("a constant was incremented: %s" % sevens)
+
+    h.call("calc_write_range", start_cell="'Data Sheet'.A1",
+           values=[[1], [2], [3]])
+    h.call("calc_write_formula", range_name="'Data Sheet'.B1:B3",
+           formula_or_values="=A1*2")
+    other = [r[0].get("value") for r in h.call(
+        "calc_read_range", range_name="'Data Sheet'.B1:B3")["result"]]
+    if other != [2.0, 4.0, 6.0]:
+        raise Fail("fill on a qualified range wrong: %s" % other)
+    return "E2:E9 shifted (E5 = =C5+D5-1), $A$1 kept, constants copied, " \
+           "qualified range filled"
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -1653,6 +1829,10 @@ CHECKS = [
     ("array formulas (#2631)", check_array_formulas),
     ("sheet analysis (#2630)", check_sheet_analysis),
     ("planning sheet (#2632)", check_planning_sheet),
+    ("chart legend and params (#2641)", check_chart_legend_and_params),
+    ("text in tables (#2637)", check_table_text),
+    ("review changes (#2636)", check_review_changes),
+    ("formula fill (#2633)", check_formula_fill),
     ("doc_close truthful (#36)", check_close_reports_truth),
     ("browser origin refused", check_origin_rejected),
     ("session semantics (#38)", check_session_semantics),
