@@ -150,7 +150,9 @@ class MCPModule(ModuleBase):
         routes.add("POST", "/messages", p.handle_sse_post, raw=True)
         routes.add("GET", "/sse", p.handle_sse_stream, raw=True)
 
-        # Health / readiness probe (raw — custom JSON response)
+        # Health / readiness probe (raw — custom JSON response), replacing
+        # the http module's plain one.
+        routes.remove("GET", "/health")
         routes.add("GET", "/health", p.handle_health, raw=True)
 
         # Tool reference page (HTML)

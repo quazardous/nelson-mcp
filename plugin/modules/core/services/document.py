@@ -384,7 +384,7 @@ class DocumentService(ServiceBase):
         try:
             comp = desktop.getCurrentComponent()
             if comp is None:
-                log.warning("get_active_document: getCurrentComponent() returned None")
+                log.debug("get_active_document: getCurrentComponent() returned None")
             elif not hasattr(comp, "supportsService"):
                 log.warning(
                     "get_active_document: getCurrentComponent() returned "
