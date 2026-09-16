@@ -57,7 +57,10 @@ class ReadCellRange(ToolBase):
     aliases = ["read_cell_range"]
     description = (
         "Reads values from the specified cell range(s). "
-        "Supports lists for non-contiguous areas."
+        "Supports lists for non-contiguous areas. At most Max Rows Display "
+        "rows (Options, default 1000) and 20000 cells per call: a capped "
+        "result says truncated: true and gives next_range, the exact range "
+        "to read next."
     )
     parameters = {
         "type": "object",
@@ -83,12 +86,33 @@ class ReadCellRange(ToolBase):
         rn = kwargs["range_name"]
 
         try:
+            from plugin.modules.calc.read_limit import plan_reads
+            try:
+                max_rows = int(ctx.services.config.proxy_for("calc").get(
+                    "max_rows_display", 1000))
+            except Exception:
+                max_rows = 1000
+            plan = plan_reads(rn if isinstance(rn, list) else [rn], max_rows)
+            data = [inspector.read_range(read) for read, _ in plan["reads"]]
+
             if isinstance(rn, list):
-                results = [inspector.read_range(r) for r in rn]
-                return {"status": "ok", "result": results}
+                out = {"status": "ok", "result": data}
             else:
-                result = inspector.read_range(rn)
-                return {"status": "ok", "result": result}
+                out = {"status": "ok", "result": data[0] if data else []}
+            out["truncated"] = plan["truncated"]
+            if plan["truncated"]:
+                out.update({
+                    "rows_total": plan["rows_total"],
+                    "rows_returned": plan["rows_returned"],
+                    "ranges_returned": [read for read, _ in plan["reads"]],
+                    "next_range": plan["next_range"],
+                    "hint": ("Capped at %d rows / 20000 cells per call "
+                             "(Max Rows Display in Options). Read "
+                             "next_range next." % max_rows),
+                })
+                if plan["unread"]:
+                    out["unread_ranges"] = plan["unread"]
+            return out
         except ValueError as e:
             # Invalid address or unknown sheet — the caller's mistake.
             logger.debug("calc_read_range rejected input: %s", e)

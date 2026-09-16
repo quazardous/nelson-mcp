@@ -25,7 +25,10 @@ class GetDocumentContent(ToolBase):
     description = (
         "Get document (or selection/range) content. "
         "Result includes document_length. "
-        "scope: full, selection, or range (requires start, end)."
+        "scope: full, selection, or range (requires start, end). "
+        "Content is capped (max_chars, default from Options, at most "
+        "500000); a capped result says truncated: true. For a long document "
+        "read by section instead: nav_outline, then nav_heading_content."
     )
     parameters = {
         "type": "object",
@@ -41,7 +44,9 @@ class GetDocumentContent(ToolBase):
             },
             "max_chars": {
                 "type": "integer",
-                "description": "Maximum characters to return.",
+                "description": (
+                    "Maximum characters to return (default: the Max Content "
+                    "Size setting, 50000; at most 500000)."),
             },
             "start": {
                 "type": "integer",
@@ -67,18 +72,39 @@ class GetDocumentContent(ToolBase):
         if scope == "range" and (range_start is None or range_end is None):
             return {"status": "error", "message": "scope 'range' requires start and end."}
 
+        from plugin.modules.writer import content_limit
+
+        try:
+            configured = ctx.services.config.proxy_for("writer").get(
+                "max_content_chars")
+        except Exception:
+            configured = None
+        limit = content_limit.effective_limit(max_chars, configured)
+
         content = format_support.document_to_content(
             ctx.doc, ctx.ctx, ctx.services,
-            max_chars=max_chars, scope=scope,
+            max_chars=None, scope=scope,
             range_start=range_start, range_end=range_end,
         )
+        total = len(content)
+        content, truncated = content_limit.cut(content, limit)
         doc_len = ctx.services.document.get_document_length(ctx.doc)
         result = {
             "status": "ok",
             "content": content,
             "length": len(content),
             "document_length": doc_len,
+            "truncated": truncated,
         }
+        if truncated:
+            result["content_total_length"] = total
+            result["limit"] = limit
+            result["hint"] = (
+                "Content was cut at %d of %d characters. Read the rest by "
+                "section (nav_outline, then nav_heading_content), or with "
+                "scope='range' and start/end in document characters (0 to "
+                "%d); max_chars raises the limit up to %d."
+                % (limit, total, doc_len, content_limit.HARD_MAX))
         if scope == "range" and range_start is not None:
             result["start"] = int(range_start)
             result["end"] = int(range_end)

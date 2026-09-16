@@ -30,6 +30,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Reads had no size limit, and the two settings meant to set one were
+  never read** (#39). `text_get_range` returned Moby Dick as 1.36 MB of HTML
+  in one result, and `calc_read_range` 13 MB for A1:CA2000, while
+  `writer.max_content_chars` and `calc.max_rows_display` sat in Options with
+  no effect. `text_get_range` now stops at `max_chars`, or the Max Content
+  Size setting (50 000 characters), never above 500 000, cutting on a clean
+  boundary rather than inside a tag; `calc_read_range` stops at the Max Rows
+  Display setting (1 000 rows) and 20 000 cells per call, across all the
+  ranges asked for. A capped result is never silent: `truncated: true`, the
+  totals, a `hint` on reading the rest, and for Calc `next_range`, the exact
+  range to read next. Both settings take effect without a restart. `make
+  smoke` reads a 65 000-character document and 1 500 rows, follows
+  `next_range` to the last row, and changes both settings live
 - **Listing documents marked them modified and wrote an id into them**
   (#2627). `doc_id` was stored in each document as a `NelsonDocId` custom
   property, written the first time Nelson touched it — `doc_list_open`, the

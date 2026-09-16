@@ -355,6 +355,16 @@ class Harness:
             self.uno_last_error = str(e)
             return None
 
+    def set_config(self, key, value):
+        """Change a setting live through /api/config (smoke enables it)."""
+        req = urllib.request.Request(
+            "http://localhost:%d/api/config" % self.port, method="POST",
+            data=json.dumps({key: value}).encode())
+        req.add_header("Content-Type", "application/json")
+        with urllib.request.urlopen(req, timeout=30) as r:
+            if r.status != 200:
+                raise Fail("setting %s returned %s" % (key, r.status))
+
     def log_errors(self):
         if not os.path.exists(self.log_path):
             return ["no log written at %s" % self.log_path]
@@ -1215,6 +1225,65 @@ def check_listing_leaves_documents_alone(h):
     return "listed, addressed by id and saved: never modified, no NelsonDocId"
 
 
+def check_reads_are_capped(h):
+    """Large reads are capped by the settings and say so (#2628, GH #39).
+
+    writer.max_content_chars and calc.max_rows_display were shown in Options
+    and never read: a 60 000-character document came back whole, and a
+    spreadsheet read had no limit at all.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    para = "<p>%s</p>" % ("lorem ipsum dolor sit amet " * 4)
+    h.call("text_apply_range", target="full", content=para * 600)
+    full = h.call("text_get_range", scope="full")
+    if not full.get("truncated") or full["length"] > 50000 + 40:
+        raise Fail("a ~65 000-character document was not capped at 50 000: "
+                   "length %s, truncated %s"
+                   % (full.get("length"), full.get("truncated")))
+    if full["content"].rstrip().endswith("<p") or not full.get("hint"):
+        raise Fail("capped content is cut badly or gives no hint")
+    whole = h.call("text_get_range", scope="full", max_chars=200000)
+    if whole.get("truncated") or whole["length"] != full.get(
+            "content_total_length"):
+        raise Fail("max_chars=200000 did not return the whole content: %s"
+                   % {k: whole.get(k) for k in ("length", "truncated")})
+    h.set_config("writer.max_content_chars", 20000)
+    try:
+        small = h.call("text_get_range", scope="full")
+        if small.get("length", 0) > 20000 + 40:
+            raise Fail("changing Max Content Size had no effect: length %s"
+                       % small.get("length"))
+    finally:
+        h.set_config("writer.max_content_chars", 50000)
+
+    h.reset()
+    h.call("doc_create", doc_type="calc")
+    rows = [["r%d" % i, i] for i in range(1, 1501)]
+    h.call("calc_write_range", start_cell="A1", values=rows)
+    first = h.call("calc_read_range", range_name="A1:B1500")
+    if not first.get("truncated") or len(first["result"]) != 1000:
+        raise Fail("1500 rows were not capped at 1000: %s rows, truncated %s"
+                   % (len(first.get("result", [])), first.get("truncated")))
+    if first.get("next_range") != "A1001:B1500":
+        raise Fail("next_range is %r, expected A1001:B1500"
+                   % first.get("next_range"))
+    rest = h.call("calc_read_range", range_name=first["next_range"])
+    got = [[c["value"] for c in row] for row in first["result"] + rest["result"]]
+    if rest.get("truncated") or got != [[r[0], float(r[1])] for r in rows]:
+        raise Fail("reading next_range did not complete the data exactly")
+    h.set_config("calc.max_rows_display", 200)
+    try:
+        few = h.call("calc_read_range", range_name="A1:B1500")
+        if len(few.get("result", [])) != 200:
+            raise Fail("changing Max Rows Display had no effect: %s rows"
+                       % len(few.get("result", [])))
+    finally:
+        h.set_config("calc.max_rows_display", 1000)
+    return ("Writer capped at 50 000 with hint, max_chars and the setting "
+            "apply; Calc 1000 + next_range = all 1500 rows, setting applies")
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -1247,6 +1316,7 @@ CHECKS = [
     ("caches follow the document", check_caches_follow_the_document),
     ("search reports styles", check_search_reports_styles),
     ("style_set (#2647)", check_style_set),
+    ("reads are capped (#39)", check_reads_are_capped),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 
