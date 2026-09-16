@@ -461,7 +461,8 @@ wbox-up:
 # which only ever matches the dev instance.
 wbox-down:
 	$(WBOX_CTL) down $(WBOX_CONFIG)
-	@pkill -9 -f 'UserInstallation=file:///tmp/lo_dev_profile' 2>/dev/null || true
+	@# [U] keeps the pattern from matching this shell's own command line.
+	@pkill -9 -f '[U]serInstallation=file:///tmp/lo_dev_profile' 2>/dev/null || true
 
 # Never install while soffice runs — see AGENTS.md on unopkg keeping the old code.
 wbox-deploy: wbox-down

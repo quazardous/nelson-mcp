@@ -30,6 +30,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **`make wbox-down` killed itself** — its `pkill -f` pattern matched the
+  shell running `pkill`, whose command line contains the pattern, so make
+  stopped there and `make wbox-deploy` never deployed. The pattern no longer
+  matches its own text
 - **A read could return another document's paragraphs, and edits made in
   the GUI were invisible to navigation and search** — two faults in the
   document caches. The paragraph cache was keyed by the `id()` of a pyuno
