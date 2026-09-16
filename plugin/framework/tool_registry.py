@@ -303,8 +303,8 @@ class ToolRegistry:
             return {
                 "status": "error",
                 "code": "execution_error",
-                "message": str(exc),
-                "retryable": True,
+                "message": str(exc) or type(exc).__name__,
+                "retryable": _is_retryable(exc),
             }
 
         if undo_mgr:
@@ -376,3 +376,16 @@ def _deferred_invalidation():
     except Exception:
         import contextlib
         return contextlib.nullcontext()
+
+
+# Failures that can pass on their own: the document or LibreOffice was busy
+# or going away. Everything else — a bad argument, an illegal range, a UNO
+# RuntimeException like "End of content node doesn't have the proper start
+# node" — fails the same way again, and an agent told to retry loops (#2637).
+_TRANSIENT = ("DisposedException", "TimeoutError", "ConnectionError",
+              "InterruptedException")
+
+
+def _is_retryable(exc):
+    names = {cls.__name__ for cls in type(exc).__mro__}
+    return any(name in names for name in _TRANSIENT)

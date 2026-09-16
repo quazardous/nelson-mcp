@@ -61,6 +61,12 @@ class SearchInDocument(ToolBase):
                 "type": "boolean",
                 "description": "Also search inside text frames (default: true).",
             },
+            "include_tables": {
+                "type": "boolean",
+                "description": (
+                    "Also search inside table cells (default: true). Cell "
+                    "matches carry the table and cell names."),
+            },
             "style": {
                 "type": "string",
                 "description": (
@@ -102,6 +108,7 @@ class SearchInDocument(ToolBase):
         max_results = kwargs.get("max_results", 20)
         context_paragraphs = kwargs.get("context_paragraphs", 1)
         include_frames = kwargs.get("include_frames", True)
+        include_tables = kwargs.get("include_tables", True)
         style = (kwargs.get("style") or "").strip().casefold() or None
         exclude_style = (
             (kwargs.get("exclude_style") or "").strip().casefold() or None)
@@ -147,13 +154,19 @@ class SearchInDocument(ToolBase):
             total_count = body["total_count"]
             _add_styles(ctx, matches)
 
-            frame_count = 0
-            # A style filter is about body paragraphs: frames would only add
-            # matches it cannot vouch for.
+            frame_count = table_count = 0
+            # A style filter is about body paragraphs: frames and cells would
+            # only add matches it cannot vouch for.
             if include_frames and not styled:
                 frame_matches, frame_count = _search_frames(
                     ctx, pattern, use_regex, case_sensitive, max_results)
                 matches = matches + frame_matches
+            # The direct backend used to skip table cells, so it found fewer
+            # matches than the index, which covers them (#28, #2637).
+            if include_tables and not styled and backend == "direct":
+                cell_matches, table_count = _search_tables(
+                    ctx, pattern, use_regex, case_sensitive, max_results)
+                matches = matches + cell_matches
 
             # Enrich with nearest-heading context where a paragraph is known.
             tree_svc = getattr(ctx.services, "writer_tree", None)
@@ -167,9 +180,10 @@ class SearchInDocument(ToolBase):
                 "status": "ok",
                 "backend": backend,
                 "matches": matches,
-                "count": total_count + frame_count,
+                "count": total_count + frame_count + table_count,
                 "body_count": total_count,
                 "frame_count": frame_count,
+                "table_count": table_count,
                 **({"backend_note": backend_note} if backend_note else {}),
             }
         except Exception as e:
@@ -308,6 +322,65 @@ def _frame_snippet(text, pos, length, window=60):
     if hi < len(text):
         snippet = snippet + "…"
     return snippet
+
+
+def _find_hits(text, pattern, compiled, case_sensitive):
+    """(matched_text, position) pairs of *pattern* in *text*."""
+    if compiled is not None:
+        return [(m.group(), m.start()) for m in compiled.finditer(text)]
+    haystack = text if case_sensitive else text.lower()
+    needle = pattern if case_sensitive else pattern.lower()
+    hits, pos = [], 0
+    while needle:
+        pos = haystack.find(needle, pos)
+        if pos == -1:
+            break
+        hits.append((text[pos:pos + len(pattern)], pos))
+        pos += len(needle)
+    return hits
+
+
+def _search_tables(ctx, pattern, use_regex, case_sensitive, max_results):
+    """Search every table cell. Returns (matches, total_count)."""
+    import re as re_mod
+
+    doc = ctx.doc
+    if not hasattr(doc, "getTextTables"):
+        return [], 0
+    compiled = None
+    if use_regex:
+        try:
+            compiled = re_mod.compile(
+                pattern, 0 if case_sensitive else re_mod.IGNORECASE)
+        except re_mod.error:
+            return [], 0
+    tables = doc.getTextTables()
+    matches, total = [], 0
+    for name in tables.getElementNames():
+        try:
+            table = tables.getByName(name)
+            cell_names = table.getCellNames()
+        except Exception:
+            continue
+        for cell_name in cell_names:
+            try:
+                text = table.getCellByName(cell_name).getString()
+            except Exception:
+                continue
+            if not text:
+                continue
+            for matched, pos in _find_hits(text, pattern, compiled,
+                                           case_sensitive):
+                total += 1
+                if len(matches) < max_results:
+                    matches.append({
+                        "source": "table_cell",
+                        "table": name,
+                        "cell": cell_name,
+                        "text": matched,
+                        "snippet": _frame_snippet(text, pos, len(matched)),
+                    })
+    return matches, total
 
 
 def _search_frames(ctx, pattern, use_regex, case_sensitive, max_results):

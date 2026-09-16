@@ -136,8 +136,9 @@ class TestExecute:
         assert result["status"] == "error"
         assert result["code"] == "execution_error"
         assert "intentional failure" in result["message"]
-        # A crash inside a tool may be transient, unlike a bad request.
-        assert result["retryable"] is True
+        # A tool failure repeats on retry unless LibreOffice was busy or the
+        # document went away; telling an agent to retry made it loop (#2637).
+        assert result["retryable"] is False
 
 
 class TestSchemas:
@@ -333,3 +334,24 @@ def test_undo_context_only_for_tools_that_want_one(tool, expected):
                       services=ServiceRegistry(), caller="test")
     assert reg.execute(tool.name, ctx)["status"] == "ok"
     assert doc.log == expected
+
+
+class DisposedException(Exception):
+    """Stands in for com.sun.star.lang.DisposedException."""
+
+
+class RuntimeException(Exception):
+    """Stands in for com.sun.star.uno.RuntimeException."""
+
+
+@pytest.mark.parametrize("exc, retryable", [
+    (DisposedException("gone"), True),
+    (TimeoutError("busy"), True),
+    (RuntimeException("End of content node doesn't have the proper start "
+                      "node"), False),
+    (ValueError("bad"), False),
+    (KeyError("x"), False),
+])
+def test_only_transient_failures_are_retryable(exc, retryable):
+    from plugin.framework.tool_registry import _is_retryable
+    assert _is_retryable(exc) is retryable

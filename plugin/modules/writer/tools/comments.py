@@ -93,7 +93,15 @@ class AddComment(ToolBase):
             },
             "search_text": {
                 "type": "string",
-                "description": "Anchor the comment to text containing this string.",
+                "description": (
+                    "Anchor the comment to this text, wherever it is: body, "
+                    "table cells, frames, notes, headers."),
+            },
+            "occurrence": {
+                "type": "integer",
+                "description": (
+                    "Which occurrence of search_text to comment (1-based, "
+                    "default 1) — the first may be a table of contents."),
             },
             "locator": {
                 "type": "string",
@@ -133,14 +141,30 @@ class AddComment(ToolBase):
         anchor_range = None
 
         if search_text:
+            occurrence = kwargs.get("occurrence", 1)
+            if not isinstance(occurrence, int) or isinstance(
+                    occurrence, bool) or occurrence < 1:
+                return {"status": "error", "code": "invalid_params",
+                        "message": "occurrence must be 1 or more.",
+                        "retryable": False}
             sd = doc.createSearchDescriptor()
             sd.SearchString = search_text
             sd.SearchRegularExpression = False
             found = doc.findFirst(sd)
+            seen = 1 if found is not None else 0
+            while found is not None and seen < occurrence:
+                found = doc.findNext(found.getEnd(), sd)
+                if found is not None:
+                    seen += 1
             if found is None:
                 return {
-                    "status": "not_found",
-                    "message": "Text '%s' not found." % search_text,
+                    "status": "error",
+                    "code": "text_not_found",
+                    "message": ("Text '%s' not found." % search_text
+                                if seen == 0 else
+                                "Text '%s' occurs %d time(s), not %d."
+                                % (search_text, seen, occurrence)),
+                    "retryable": False,
                 }
             anchor_range = found.getStart()
         elif locator is not None or para_index is not None:
@@ -165,10 +189,16 @@ class AddComment(ToolBase):
         )
         annotation.setPropertyValue("Author", author)
         annotation.setPropertyValue("Content", content)
-        cursor = doc_text.createTextCursorByRange(anchor_range)
-        doc_text.insertTextContent(cursor, annotation, False)
+        # Insert through the text that contains the anchor: a range found in
+        # a table cell, frame, note or header belongs to that XText, and the
+        # body refuses it ("End of content node doesn't have the proper
+        # start node", #2637).
+        owner = anchor_range.getText()
+        cursor = owner.createTextCursorByRange(anchor_range)
+        owner.insertTextContent(cursor, annotation, False)
 
-        return {"status": "ok", "message": "Comment added.", "author": author}
+        return {"status": "ok", "message": "Comment added.", "author": author,
+                "anchor": _anchor_kind(anchor_range)}
 
 
 class DeleteComment(ToolBase):
@@ -631,3 +661,37 @@ def _read_annotation(field, para_ranges, text_obj):
         entry["anchor_preview"] = ""
 
     return entry
+
+
+def _anchor_kind(text_range):
+    """Where a range lives: body, table_cell (with table and cell), frame,
+    footnote, header_footer or other."""
+    try:
+        cell = text_range.getPropertyValue("Cell")
+        table = text_range.getPropertyValue("TextTable")
+        if cell is not None and table is not None:
+            return {"in": "table_cell", "table": table.getName(),
+                    "cell": cell.getPropertyValue("CellName")}
+    except Exception:
+        pass
+    try:
+        frame = text_range.getPropertyValue("TextFrame")
+        if frame is not None:
+            return {"in": "frame", "frame": frame.getName()}
+    except Exception:
+        pass
+    try:
+        if text_range.getPropertyValue("Footnote") is not None:
+            return {"in": "footnote"}
+    except Exception:
+        pass
+    try:
+        owner = text_range.getText()
+        if owner.supportsService("com.sun.star.text.Text") and \
+                owner.supportsService("com.sun.star.text.TextDocument"):
+            return {"in": "body"}
+        if owner.getImplementationName() == "SwXHeadFootText":
+            return {"in": "header_footer"}
+    except Exception:
+        pass
+    return {"in": "body"}
