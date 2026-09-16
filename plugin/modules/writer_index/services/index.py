@@ -202,6 +202,31 @@ class _DocIndex:
         return result
 
 
+class _MemoStemmer:
+    """Remember each word's stem.
+
+    snowballstemmer is pure Python and was 90% of building an index: Moby
+    Dick is 213 000 words but only 17 000 distinct ones, so stemming each
+    word once took the build from 5.6 s to 1 s, same index (#2626). The
+    table is per language and emptied when it grows past MAX words, so a
+    long session over many documents cannot grow it without bound.
+    """
+
+    MAX = 200000
+
+    def __init__(self, stemmer):
+        self._stemmer = stemmer
+        self._stems = {}
+
+    def stemWord(self, word):
+        stem = self._stems.get(word)
+        if stem is None:
+            if len(self._stems) >= self.MAX:
+                self._stems.clear()
+            stem = self._stems[word] = self._stemmer.stemWord(word)
+        return stem
+
+
 # ── Service ───────────────────────────────────────────────────────────
 
 class IndexService:
@@ -235,7 +260,7 @@ class IndexService:
             if lib_dir not in sys.path:
                 sys.path.insert(0, lib_dir)
             import snowballstemmer
-            s = snowballstemmer.stemmer(lang)
+            s = _MemoStemmer(snowballstemmer.stemmer(lang))
             self._stemmers[lang] = s
             return s
         except (ImportError, KeyError):

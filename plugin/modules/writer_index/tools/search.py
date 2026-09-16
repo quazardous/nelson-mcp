@@ -17,7 +17,10 @@ class SearchFulltext(ToolBase):
         "AND (default), OR, NOT, NEAR/N. "
         "Language auto-detected from document locale. "
         "Returns matching paragraphs with context and nearest heading bookmark. "
-        "Use around_page to restrict results near a specific page."
+        "Use around_page to restrict results near a specific page. "
+        "The first search on a document builds its index (about 1 s for a "
+        "novel); right after opening a long document, LibreOffice is still "
+        "laying it out and the first call can take several seconds more."
     )
     parameters = {
         "type": "object",

@@ -30,6 +30,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **The first full-text search on a long document took seconds** — building
+  the index stemmed every word through the pure-Python Snowball stemmer, 90%
+  of the time. Moby Dick is 213 000 words but 17 000 distinct ones: each is
+  now stemmed once, same index: in LibreOffice the build logs 0.6 s instead
+  of several seconds. A first call right after opening a long document can
+  still wait a few seconds while LibreOffice lays the document out on the
+  thread tools run on; the tool description now says so
 - **Reads had no size limit, and the two settings meant to set one were
   never read** (#39). `text_get_range` returned Moby Dick as 1.36 MB of HTML
   in one result, and `calc_read_range` 13 MB for A1:CA2000, while
