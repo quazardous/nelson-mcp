@@ -1,0 +1,1408 @@
+# cold start run 11: no document after 90s (health at None)
+[New LWP 3425590]
+[New LWP 3425375]
+[New LWP 3425169]
+[New LWP 3424960]
+[New LWP 3424782]
+[New LWP 3424578]
+[New LWP 3424340]
+[New LWP 3424060]
+[New LWP 3423817]
+[New LWP 3423642]
+[New LWP 3423392]
+[New LWP 3423153]
+[New LWP 3422954]
+[New LWP 3422760]
+[New LWP 3422557]
+[New LWP 3422383]
+[New LWP 3422194]
+[New LWP 3421995]
+[New LWP 3421760]
+[New LWP 3421561]
+[New LWP 3421263]
+[New LWP 3421099]
+[New LWP 3420880]
+[New LWP 3420649]
+[New LWP 3420473]
+[New LWP 3420230]
+[New LWP 3420024]
+[New LWP 3419872]
+[New LWP 3419728]
+[New LWP 3419537]
+[New LWP 3419352]
+[New LWP 3419097]
+[New LWP 3418927]
+[New LWP 3418760]
+[New LWP 3418545]
+[New LWP 3418327]
+[New LWP 3418304]
+[New LWP 3418303]
+[New LWP 3418301]
+[New LWP 3418297]
+[New LWP 3418262]
+[New LWP 3418261]
+[New LWP 3418260]
+[New LWP 3418258]
+[New LWP 3418257]
+[New LWP 3418255]
+[New LWP 3418254]
+[New LWP 3418253]
+[New LWP 3418252]
+[New LWP 3418251]
+
+This GDB supports auto-downloading debuginfo from the following URLs:
+  <ima:enforcing>
+  <https://debuginfod.fedoraproject.org/>
+  <ima:ignore>
+Enable debuginfod for this session? (y or [n]) [answered N; input not from terminal]
+Debuginfod has been disabled.
+To make this setting permanent, add 'set debuginfod enabled off' to .gdbinit.
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib64/libthread_db.so.1".
+0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+
+Thread 51 (Thread 0x7f4d7ef176c0 (LWP 3418251) "configmgrWriter"):
+#0  0x00007f4d97b55312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007f4d97b4952c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007f4d97b49877 in __futex_abstimed_wait_cancelable64 () from /lib64/libc.so.6
+#3  0x00007f4d97b4c0cc in pthread_cond_wait@@GLIBC_2.3.2 () from /lib64/libc.so.6
+#4  0x00007f4d976475a0 in std::condition_variable::wait(std::unique_lock<std::mutex>&) () from /lib64/libstdc++.so.6
+#5  0x00007f4d7ef69234 in configmgr::Components::WriteThread::execute() () from /usr/lib64/libreoffice/program/../program/libconfigmgrlo.so
+#6  0x00007f4d9742f005 in salhelper::Thread::run() () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#7  0x00007f4d9742ee06 in threadFunc () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#8  0x00007f4d97e28fbe in osl_thread_start_Impl(void*) () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#9  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#10 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 50 (Thread 0x7f4d7e7166c0 (LWP 3418252) "PipeIPC"):
+#0  0x00007f4d97b55312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007f4d97b4952c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007f4d97b49574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007f4d97bd1f2e in accept () from /lib64/libc.so.6
+#4  0x00007f4d97e1f7b0 in osl_acceptPipe () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#5  0x00007f4d97d384c9 in desktop::PipeIpcThread::execute() () from /usr/lib64/libreoffice/program/libsofficeapp.so
+#6  0x00007f4d9742f005 in salhelper::Thread::run() () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#7  0x00007f4d9742ee06 in threadFunc () from /usr/lib64/libreoffice/program/libuno_salhelpergcc3.so.3
+#8  0x00007f4d97e28fbe in osl_thread_start_Impl(void*) () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#9  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#10 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 49 (Thread 0x7f4d7def06c0 (LWP 3418253) "[pango] fontcon"):
+#0  0x00007f4d97bce37d in syscall () from /lib64/libc.so.6
+#1  0x00007f4d9069c42b in g_cond_wait () from /lib64/libglib-2.0.so.0
+#2  0x00007f4d9062e54c in g_async_queue_pop_intern_unlocked () from /lib64/libglib-2.0.so.0
+#3  0x00007f4d9062e5c5 in g_async_queue_pop () from /lib64/libglib-2.0.so.0
+#4  0x00007f4d801ec74c in fc_thread_func () from /lib64/libpangoft2-1.0.so.0
+#5  0x00007f4d906a1c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#6  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#7  0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 48 (Thread 0x7f4d7d6ef6c0 (LWP 3418254) "pool-spawner"):
+#0  0x00007f4d97bce37d in syscall () from /lib64/libc.so.6
+#1  0x00007f4d9069c42b in g_cond_wait () from /lib64/libglib-2.0.so.0
+#2  0x00007f4d9062e54c in g_async_queue_pop_intern_unlocked () from /lib64/libglib-2.0.so.0
+#3  0x00007f4d906a2ca4 in g_thread_pool_spawn_thread () from /lib64/libglib-2.0.so.0
+#4  0x00007f4d906a1c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#5  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#6  0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 47 (Thread 0x7f4d7ceee6c0 (LWP 3418255) "gmain"):
+#0  0x00007f4d97b55312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007f4d97b4952c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007f4d97b49574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007f4d97bc3426 in ppoll () from /lib64/libc.so.6
+#4  0x00007f4d9066c125 in g_main_context_iterate_unlocked.isra () from /lib64/libglib-2.0.so.0
+#5  0x00007f4d9066c1e3 in g_main_context_iteration () from /lib64/libglib-2.0.so.0
+#6  0x00007f4d9066c231 in glib_worker_main () from /lib64/libglib-2.0.so.0
+#7  0x00007f4d906a1c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#8  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#9  0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 46 (Thread 0x7f4d677fe6c0 (LWP 3418257) "gdbus"):
+#0  0x00007f4d97b55312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007f4d97b4952c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007f4d97b49574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007f4d97bc3426 in ppoll () from /lib64/libc.so.6
+#4  0x00007f4d9066c125 in g_main_context_iterate_unlocked.isra () from /lib64/libglib-2.0.so.0
+#5  0x00007f4d9066c2e7 in g_main_loop_run () from /lib64/libglib-2.0.so.0
+#6  0x00007f4d908d69f2 in gdbus_shared_thread_func.lto_priv () from /lib64/libgio-2.0.so.0
+#7  0x00007f4d906a1c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#8  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#9  0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 45 (Thread 0x7f4d66ffd6c0 (LWP 3418258) "dconf worker"):
+#0  0x00007f4d97b55312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007f4d97b4952c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007f4d97b49574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007f4d97bc3426 in ppoll () from /lib64/libc.so.6
+#4  0x00007f4d9066c125 in g_main_context_iterate_unlocked.isra () from /lib64/libglib-2.0.so.0
+#5  0x00007f4d9066c1e3 in g_main_context_iteration () from /lib64/libglib-2.0.so.0
+#6  0x00007f4d7c6a211d in dconf_gdbus_worker_thread () from /usr/lib64/gio/modules/libdconfsettings.so
+#7  0x00007f4d906a1c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#8  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#9  0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 44 (Thread 0x7f4d667fc6c0 (LWP 3418260) "URP Acceptor"):
+#0  0x00007f4d97b55312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007f4d97b4952c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007f4d97b49574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007f4d97bd1f2e in accept () from /lib64/libc.so.6
+#4  0x00007f4d97e2be29 in osl_acceptConnectionOnSocket () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#5  0x00007f4d7c350f32 in (anonymous namespace)::OAcceptor::accept(rtl::OUString const&) () from /usr/lib64/libreoffice/program/libiolo.so
+#6  0x00007f4d7c52207e in offacc_workerfunc () from /usr/lib64/libreoffice/program/../program/liboffacclo.so
+#7  0x00007f4d97e28fbe in osl_thread_start_Impl(void*) () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#8  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#9  0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 43 (Thread 0x7f4d65e146c0 (LWP 3418261) "gly-global-exec"):
+#0  0x00007f4d7f337959 in async_io::reactor::ReactorLock::react () from /lib64/libglycin-2.so.0
+#1  0x00007f4d7f3306b2 in async_global_executor::threading::thread_main_loop () from /lib64/libglycin-2.so.0
+#2  0x00007f4d7f32eb79 in std::sys::backtrace::__rust_begin_short_backtrace () from /lib64/libglycin-2.so.0
+#3  0x00007f4d7f32ea81 in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /lib64/libglycin-2.so.0
+#4  0x00007f4d7f469eb0 in <std::sys::thread::unix::Thread>::new::thread_start () from /lib64/libglycin-2.so.0
+#5  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#6  0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 42 (Thread 0x7f4d65c136c0 (LWP 3418262) "async-io"):
+#0  0x00007f4d97bce37d in syscall () from /lib64/libc.so.6
+#1  0x00007f4d7f210a66 in <std::sys::sync::mutex::futex::Mutex>::lock_contended () from /lib64/libglycin-2.so.0
+#2  0x00007f4d7f3371b4 in std::sys::backtrace::__rust_begin_short_backtrace () from /lib64/libglycin-2.so.0
+#3  0x00007f4d7f336d9c in core::ops::function::FnOnce::call_once{{vtable.shim}} () from /lib64/libglycin-2.so.0
+#4  0x00007f4d7f469eb0 in <std::sys::thread::unix::Thread>::new::thread_start () from /lib64/libglycin-2.so.0
+#5  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#6  0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 41 (Thread 0x7f4d3ed986c0 (LWP 3418297) "mcp-doctype-pol"):
+#0  0x00007f4d97b55312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007f4d97b4952c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007f4d97b49877 in __futex_abstimed_wait_cancelable64 () from /lib64/libc.so.6
+#3  0x00007f4d97b545e6 in __new_sem_wait_slow64 () from /lib64/libc.so.6
+#4  0x00007f4d3fb1cd4c in _PySemaphore_Wait () from /lib64/libpython3.14.so.1.0
+#5  0x00007f4d3fb1ca0c in _PyParkingLot_Park () from /lib64/libpython3.14.so.1.0
+#6  0x00007f4d3fabf2be in _PyMutex_LockTimed () from /lib64/libpython3.14.so.1.0
+#7  0x00007f4d3faf8fd7 in lock_PyThread_acquire_lock.lto_priv.0 () from /lib64/libpython3.14.so.1.0
+#8  0x00007f4d3f9be663 in method_vectorcall_VARARGS_KEYWORDS.lto_priv.0 () from /lib64/libpython3.14.so.1.0
+#9  0x00007f4d3f82af9e in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#10 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#11 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#12 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#13 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#14 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#19 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 40 (Thread 0x7f4d3e3ba6c0 (LWP 3418301) "nelson-prebuild"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 39 (Thread 0x7f4d3d9526c0 (LWP 3418303) "http-server"):
+#0  0x00007f4d97b55312 in __syscall_cancel_arch () from /lib64/libc.so.6
+#1  0x00007f4d97b4952c in __internal_syscall_cancel () from /lib64/libc.so.6
+#2  0x00007f4d97b49574 in __syscall_cancel () from /lib64/libc.so.6
+#3  0x00007f4d97bc2dfe in poll () from /lib64/libc.so.6
+#4  0x00007f4d3fec79d0 in select_poll_poll () from /usr/lib64/python3.14/lib-dynload/select.cpython-314-x86_64-linux-gnu.so
+#5  0x00007f4d3f82c84b in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#6  0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#7  0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#8  0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#9  0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#10 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#11 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#12 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#13 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#14 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#18 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 38 (Thread 0x7f4d3d14d6c0 (LWP 3418304) "Thread-1 (_upda"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96b81696 in (anonymous namespace)::ModuleUIConfigurationManager::ModuleUIConfigurationManager(com::sun::star::uno::Reference<com::sun::star::uno::XComponentContext> const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&) [clone .isra.0] () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b84195 in com_sun_star_comp_framework_ModuleUIConfigurationManager_get_implementation () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d9717d740 in cppuhelper::ServiceManager::Data::Implementation::doCreateInstanceWithArguments(com::sun::star::uno::Reference<com::sun::star::uno::XComponentContext> const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&) () from /usr/lib64/libreoffice/program/libuno_cppuhelpergcc3.so.3
+#7  0x00007f4d9717d92c in cppuhelper::ServiceManager::Data::Implementation::createInstanceWithArguments(com::sun::star::uno::Reference<com::sun::star::uno::XComponentContext> const&, bool, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&) () from /usr/lib64/libreoffice/program/libuno_cppuhelpergcc3.so.3
+#8  0x00007f4d9717dd25 in cppuhelper::ServiceManager::createInstanceWithArgumentsAndContext(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Reference<com::sun::star::uno::XComponentContext> const&) () from /usr/lib64/libreoffice/program/libuno_cppuhelpergcc3.so.3
+#9  0x00007f4d96b7f751 in (anonymous namespace)::ModuleUIConfigurationManagerSupplier::getUIConfigurationManager(rtl::OUString const&) [clone .lto_priv.0] () from /usr/lib64/libreoffice/program/libfwklo.so
+#10 0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#12 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#13 0x00007f4d643f82f5 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#14 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#15 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#16 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#27 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 37 (Thread 0x7f4d25ba46c0 (LWP 3418327) "[pango] fontcon"):
+#0  0x00007f4d97bce37d in syscall () from /lib64/libc.so.6
+#1  0x00007f4d9069c42b in g_cond_wait () from /lib64/libglib-2.0.so.0
+#2  0x00007f4d9062e54c in g_async_queue_pop_intern_unlocked () from /lib64/libglib-2.0.so.0
+#3  0x00007f4d9062e5c5 in g_async_queue_pop () from /lib64/libglib-2.0.so.0
+#4  0x00007f4d801ec74c in fc_thread_func () from /lib64/libpangoft2-1.0.so.0
+#5  0x00007f4d906a1c52 in g_thread_proxy () from /lib64/libglib-2.0.so.0
+#6  0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#7  0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 36 (Thread 0x7f4d3c9486c0 (LWP 3418545) "Thread-2 (proce"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9ce671 in slot_tp_init.lto_priv () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3f98401a in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829637 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#28 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#29 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#30 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#31 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 35 (Thread 0x7f4d3f7ff6c0 (LWP 3418760) "Thread-3 (proce"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 34 (Thread 0x7f4d24b526c0 (LWP 3418927) "Thread-4 (proce"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 33 (Thread 0x7f4d1fc816c0 (LWP 3419097) "Thread-5 (proce"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 32 (Thread 0x7f4d1f4806c0 (LWP 3419352) "Thread-6 (proce"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 31 (Thread 0x7f4d1ec7f6c0 (LWP 3419537) "Thread-7 (proce"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 30 (Thread 0x7f4d67fff6c0 (LWP 3419728) "Thread-8 (proce"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 29 (Thread 0x7f4d1e47e6c0 (LWP 3419872) "Thread-9 (proce"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 28 (Thread 0x7f4d1dc7d6c0 (LWP 3420024) "Thread-10 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 27 (Thread 0x7f4d1d47c6c0 (LWP 3420230) "Thread-11 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 26 (Thread 0x7f4d1cc7b6c0 (LWP 3420473) "Thread-12 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 25 (Thread 0x7f4d07fff6c0 (LWP 3420649) "Thread-13 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 24 (Thread 0x7f4d077fe6c0 (LWP 3420880) "Thread-14 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 23 (Thread 0x7f4d06ffd6c0 (LWP 3421099) "Thread-15 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 22 (Thread 0x7f4d067fc6c0 (LWP 3421263) "Thread-16 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 21 (Thread 0x7f4d05ffb6c0 (LWP 3421561) "Thread-17 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 20 (Thread 0x7f4d057fa6c0 (LWP 3421760) "Thread-18 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 19 (Thread 0x7f4d04ff96c0 (LWP 3421995) "Thread-19 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 18 (Thread 0x7f4cebfff6c0 (LWP 3422194) "Thread-20 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 17 (Thread 0x7f4ceb7fe6c0 (LWP 3422383) "Thread-21 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 16 (Thread 0x7f4ceaffd6c0 (LWP 3422557) "Thread-22 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 15 (Thread 0x7f4cea7fc6c0 (LWP 3422760) "Thread-23 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 14 (Thread 0x7f4ce9ffb6c0 (LWP 3422954) "Thread-24 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 13 (Thread 0x7f4ce97fa6c0 (LWP 3423153) "Thread-25 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 12 (Thread 0x7f4ce8ff96c0 (LWP 3423392) "Thread-26 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 11 (Thread 0x7f4cc7fff6c0 (LWP 3423642) "Thread-27 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 10 (Thread 0x7f4cc77fe6c0 (LWP 3423817) "Thread-28 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 9 (Thread 0x7f4cc6ffd6c0 (LWP 3424060) "Thread-29 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 8 (Thread 0x7f4cc67fc6c0 (LWP 3424340) "Thread-30 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 7 (Thread 0x7f4cc5ffb6c0 (LWP 3424578) "Thread-31 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 6 (Thread 0x7f4cc57fa6c0 (LWP 3424782) "Thread-32 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 5 (Thread 0x7f4cc4ff96c0 (LWP 3424960) "Thread-33 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 4 (Thread 0x7f4ca7fff6c0 (LWP 3425169) "Thread-34 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 3 (Thread 0x7f4ca77fe6c0 (LWP 3425375) "Thread-35 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 2 (Thread 0x7f4ca6ffd6c0 (LWP 3425590) "Thread-36 (proc"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b504c9 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d97e1f502 in osl_acquireMutex () from /usr/lib64/libreoffice/program/libuno_sal.so.3
+#3  0x00007f4d97510e4a in comphelper::SolarMutex::doAcquire(unsigned int) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#4  0x00007f4d96a8689d in framework::FrameContainer::getActive() const () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b3ffc4 in framework::Desktop::getActiveFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b424f6 in framework::Desktop::getCurrentFrame() () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d96b43169 in framework::Desktop::getCurrentComponent() () from /usr/lib64/libreoffice/program/libfwklo.so
+#8  0x00007f4d7f6576a0 in gcc3::callVirtualMethod(void*, unsigned int, void*, _typelib_TypeDescriptionReference*, bool, unsigned long*, unsigned int, unsigned long*, double*) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#9  0x00007f4d7f656902 in cpp_call(bridges::cpp_uno::shared::UnoInterfaceProxy*, bridges::cpp_uno::shared::VtableSlot, _typelib_TypeDescriptionReference*, int, _typelib_MethodParameter*, void*, void**, _uno_Any**) () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#10 0x00007f4d7f65714d in unoInterfaceProxyDispatch () from /usr/lib64/libreoffice/program/libgcc3_uno.so
+#11 0x00007f4d643f8977 in stoc_corefl::(anonymous namespace)::IdlInterfaceMethodImpl::invoke(com::sun::star::uno::Any const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libreflectionlo.so
+#12 0x00007f4d646a4e1d in stoc_inv::(anonymous namespace)::Invocation_Impl::invoke(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::uno::Any> const&, com::sun::star::uno::Sequence<short>&, com::sun::star::uno::Sequence<com::sun::star::uno::Any>&) () from /usr/lib64/libreoffice/program/libinvocationlo.so
+#13 0x00007f4d6467450a in pyuno::PyUNO_callable_call(_object*, _object*, _object*) () from /usr/lib64/libreoffice/program/../program/libpyuno.so
+#14 0x00007f4d3f9840eb in _PyObject_MakeTpCall.constprop.0 () from /lib64/libpython3.14.so.1.0
+#15 0x00007f4d3f82b181 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#16 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#17 0x00007f4d3fa137aa in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#18 0x00007f4d3f829902 in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#19 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#20 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#21 0x00007f4d3fb1d524 in context_run.lto_priv () from /lib64/libpython3.14.so.1.0
+#22 0x00007f4d3f82a72a in _PyEval_EvalFrameDefault.cold () from /lib64/libpython3.14.so.1.0
+#23 0x00007f4d3f9c3164 in _PyFunction_Vectorcall () from /lib64/libpython3.14.so.1.0
+#24 0x00007f4d3fa138a2 in method_vectorcall.lto_priv () from /lib64/libpython3.14.so.1.0
+#25 0x00007f4d3fb1ce03 in thread_run () from /lib64/libpython3.14.so.1.0
+#26 0x00007f4d3fb1cd8c in pythread_wrapper () from /lib64/libpython3.14.so.1.0
+#27 0x00007f4d97b4cc19 in start_thread () from /lib64/libc.so.6
+#28 0x00007f4d97bd05cc in __clone3 () from /lib64/libc.so.6
+
+Thread 1 (Thread 0x7f4d8e3691c0 (LWP 3418244) "soffice.bin"):
+#0  0x00007f4d97b49aae in __lll_lock_wait () from /lib64/libc.so.6
+#1  0x00007f4d97b50454 in pthread_mutex_lock@@GLIBC_2.2.5 () from /lib64/libc.so.6
+#2  0x00007f4d96b7f2f6 in (anonymous namespace)::ModuleUIConfigurationManagerSupplier::getUIConfigurationManager(rtl::OUString const&) [clone .lto_priv.0] () from /usr/lib64/libreoffice/program/libfwklo.so
+#3  0x00007f4d96b0bd12 in framework::LayoutManager::implts_reset(bool) () from /usr/lib64/libreoffice/program/libfwklo.so
+#4  0x00007f4d96b14e4e in framework::LayoutManager::frameAction(com::sun::star::frame::FrameActionEvent const&) () from /usr/lib64/libreoffice/program/libfwklo.so
+#5  0x00007f4d96b52ad2 in (anonymous namespace)::XFrameImpl::implts_sendFrameActionEvent(com::sun::star::frame::FrameAction const&) [clone .lto_priv.0] () from /usr/lib64/libreoffice/program/libfwklo.so
+#6  0x00007f4d96b4dcb9 in (anonymous namespace)::XFrameImpl::setComponent(com::sun::star::uno::Reference<com::sun::star::awt::XWindow> const&, com::sun::star::uno::Reference<com::sun::star::frame::XController> const&) [clone .lto_priv.0] () from /usr/lib64/libreoffice/program/libfwklo.so
+#7  0x00007f4d965601b0 in (anonymous namespace)::SfxFrameLoader_Impl::load(com::sun::star::uno::Sequence<com::sun::star::beans::PropertyValue> const&, com::sun::star::uno::Reference<com::sun::star::frame::XFrame> const&) [clone .lto_priv.0] () from /usr/lib64/libreoffice/program/libsfxlo.so
+#8  0x00007f4d96b32c32 in framework::LoadEnv::startLoading(rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::beans::PropertyValue> const&, com::sun::star::uno::Reference<com::sun::star::frame::XFrame> const&, rtl::OUString const&, int, LoadEnvFeatures) () from /usr/lib64/libreoffice/program/libfwklo.so
+#9  0x00007f4d96a9a86c in framework::LoadDispatcher::impl_dispatch(com::sun::star::util::URL const&, com::sun::star::uno::Sequence<com::sun::star::beans::PropertyValue> const&, com::sun::star::uno::Reference<com::sun::star::frame::XDispatchResultListener> const&) () from /usr/lib64/libreoffice/program/libfwklo.so
+#10 0x00007f4d96a9afe2 in non-virtual thunk to framework::LoadDispatcher::dispatchWithReturnValue(com::sun::star::util::URL const&, com::sun::star::uno::Sequence<com::sun::star::beans::PropertyValue> const&) () from /usr/lib64/libreoffice/program/libfwklo.so
+#11 0x00007f4d97522501 in comphelper::SynchronousDispatch::dispatch(com::sun::star::uno::Reference<com::sun::star::uno::XInterface> const&, rtl::OUString const&, rtl::OUString const&, com::sun::star::uno::Sequence<com::sun::star::beans::PropertyValue> const&) () from /usr/lib64/libreoffice/program/libcomphelper.so
+#12 0x00007f4d97d333f7 in desktop::DispatchWatcher::executeDispatchRequests(std::vector<desktop::DispatchWatcher::DispatchRequest, std::allocator<desktop::DispatchWatcher::DispatchRequest> > const&, bool, desktop::DispatchRequestFlags*) () from /usr/lib64/libreoffice/program/libsofficeapp.so
+#13 0x00007f4d97d36760 in desktop::RequestHandler::ExecuteCmdLineRequests(desktop::ProcessDocumentsRequest&, bool) () from /usr/lib64/libreoffice/program/libsofficeapp.so
+#14 0x00007f4d97d2383d in desktop::Desktop::OpenClients() () from /usr/lib64/libreoffice/program/libsofficeapp.so
+#15 0x00007f4d97d24e24 in desktop::Desktop::LinkStubOpenClients_Impl(void*, void*) () from /usr/lib64/libreoffice/program/libsofficeapp.so
+#16 0x00007f4d94047cc1 in ImplWindowFrameProc(vcl::Window*, SalEvent, void const*) () from /usr/lib64/libreoffice/program/libvcllo.so
+#17 0x00007f4d94291509 in SalUserEventList::DispatchUserEvents(bool) () from /usr/lib64/libreoffice/program/libvcllo.so
+#18 0x00007f4d8026e0bf in call_userEventFn () from /usr/lib64/libreoffice/program/libvclplug_gtk3lo.so
+#19 0x00007f4d90669524 in g_idle_dispatch () from /lib64/libglib-2.0.so.0
+#20 0x00007f4d90667f24 in g_main_context_dispatch_unlocked.lto_priv () from /lib64/libglib-2.0.so.0
+#21 0x00007f4d9066c038 in g_main_context_iterate_unlocked.isra () from /lib64/libglib-2.0.so.0
+#22 0x00007f4d9066c1e3 in g_main_context_iteration () from /lib64/libglib-2.0.so.0
+#23 0x00007f4d8027624e in GtkInstance::DoYield(bool, bool) () from /usr/lib64/libreoffice/program/libvclplug_gtk3lo.so
+#24 0x00007f4d942ec1e6 in Application::Yield() () from /usr/lib64/libreoffice/program/libvcllo.so
+#25 0x00007f4d942ec448 in Application::Execute() () from /usr/lib64/libreoffice/program/libvcllo.so
+#26 0x00007f4d97d1ba3d in desktop::Desktop::Main() () from /usr/lib64/libreoffice/program/libsofficeapp.so
+#27 0x00007f4d942fe122 in ImplSVMain() () from /usr/lib64/libreoffice/program/libvcllo.so
+#28 0x00007f4d97d4229c in soffice_main () from /usr/lib64/libreoffice/program/libsofficeapp.so
+#29 0x0000557bd914b406 in main ()
+[Inferior 1 (process 3418244) detached]

@@ -1,7 +1,8 @@
 # Deadlock on cold start with a document (GitHub #35 / #37, tdf#173208)
 
-**Status:** open, not reproduced locally. One strong lead in Nelson's own code,
-recorded here because nobody has posted it on either issue yet.
+**Status:** reproduced on demand and root-caused (2026-09-16, `make
+coldstart-wbox`: 3 hangs in 17 cold starts with a document on the command
+line). See "Root cause" below; fix in #2625.
 
 ## The two issues are one bug
 
@@ -212,3 +213,46 @@ is exactly the #35/#37 window. **Lead for #2625: `/health` must not touch UNO
 off the main thread** — answer from cached state, or marshal the document part
 to the main thread with a short timeout and report `document: unknown` when it
 cannot get it.
+
+
+## Root cause, 2026-09-16 21:40 — reproduced by `make coldstart-wbox`
+
+`scripts/coldstart_test.py` starts LibreOffice in wbox (gtk3, offscreen) with
+a Writer document on the command line, polls `/health`, and captures gdb
+when Nelson does not answer in 90 s. On the code of `5aadb97`: runs 11, 15
+and 17 of 17 hung. Backtrace of run 11:
+`deadlock-2026-09-16-coldstart-menu-icons.bt.txt`.
+
+A lock-order inversion between the main thread and a Nelson thread:
+
+```
+main thread          holds SolarMutex (SynchronousDispatch loading the
+                     command-line document), then
+                     LayoutManager::implts_reset
+                     ModuleUIConfigurationManagerSupplier::getUIConfigurationManager
+                     -> waits on the supplier's mutex
+
+Nelson thread        threading.Thread(target=_update_menu_icons), started at
+"Thread-1 (_update_  the end of bootstrap: ImageManager lookup ->
+menu_icons)"         ModuleUIConfigurationManagerSupplier::getUIConfigurationManager
+                     holds the supplier's mutex, constructs a
+                     ModuleUIConfigurationManager ->
+                     -> waits on SolarMutex
+```
+
+Everyone else then queues on SolarMutex: `nelson-prebuild`
+(`getCurrentComponent`, as in the #37 capture) and one HTTP thread per
+`/health` poll (`getCurrentComponent` again) — which is why the server
+socket accepts connections but never answers.
+
+It needs a document on the command line (or Recovery) because only then is
+the main thread creating a frame's layout — and taking the UI configuration
+manager — during the few seconds Nelson bootstraps. That is why #37 first
+looked tied to `RecoveryInfo/Crashed=true`, and why #35 (a mail attachment)
+has the same shape.
+
+Fix (#2625): no UNO from Nelson's own threads at startup — menu icons and
+status events posted to the main thread, `nelson-prebuild` removed, the
+doc-type poller replaced by document events, `/health` answered without
+UNO, bootstrap no longer waiting for the main thread while holding a lock
+UNO callbacks take.
