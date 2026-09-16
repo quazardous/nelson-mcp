@@ -130,7 +130,13 @@ class WriteCellRange(ToolBase):
     description = (
         "Writes formulas or values to a cell range(s) efficiently. "
         "Use a single value to fill the entire range, or an array of "
-        "values for each cell. Supports lists for non-contiguous areas."
+        "values for each cell. Supports lists for non-contiguous areas. "
+        "A formula that returns an array (FILTER, SORT, UNIQUE, SEQUENCE, "
+        "TRANSPOSE…) written to one cell is entered as an array formula "
+        "over exactly the cells its result needs, which must be empty; the "
+        "answer gives the range and the first rows. Set array=true for "
+        "other array formulas (LET, XLOOKUP returning ranges, range "
+        "arithmetic), array=false to force a single cell."
     )
     parameters = {
         "type": "object",
@@ -150,6 +156,12 @@ class WriteCellRange(ToolBase):
                     "formulas/values for each cell. Formulas start with '='."
                 ),
             },
+            "array": {
+                "type": "boolean",
+                "description": (
+                    "Enter the formula as an array formula (default: "
+                    "detected from the functions it returns)."),
+            },
         },
         "required": ["range_name", "formula_or_values"],
     }
@@ -162,15 +174,26 @@ class WriteCellRange(ToolBase):
         manipulator = CellManipulator(bridge)
         rn = kwargs["range_name"]
         fov = kwargs["formula_or_values"]
+        array = kwargs.get("array")
 
+        from plugin.modules.calc.manipulator import ArrayFormulaError
         try:
             if isinstance(rn, list):
-                for r in rn:
-                    manipulator.write_formula_range(r, fov)
-                return {"status": "ok", "message": f"Wrote to {len(rn)} ranges"}
+                results = [manipulator.write_formula_range(r, fov, array)
+                           for r in rn]
+                arrays = [r for r in results if isinstance(r, dict)]
+                out = {"status": "ok", "message": f"Wrote to {len(rn)} ranges"}
+                if arrays:
+                    out["arrays"] = arrays
+                return out
             else:
-                result = manipulator.write_formula_range(rn, fov)
+                result = manipulator.write_formula_range(rn, fov, array)
+                if isinstance(result, dict):
+                    return {"status": "ok", **result}
                 return {"status": "ok", "message": result}
+        except ArrayFormulaError as e:
+            return {"status": "error", "code": e.code, "message": str(e),
+                    "retryable": False, **e.details}
         except Exception as e:
             logger.exception("calc_write_formula failed")
             return {"status": "error", "error": str(e)}
@@ -554,6 +577,24 @@ class WriteCellRangeFromLists(ToolBase):
                 return {"status": "error", "message": str(e)}
 
             (start_col, start_row), _ = parse_range_string(start_cell)
+
+            # A lone array formula needs its result range, not one cell (#2631).
+            if (len(values) == 1 and isinstance(values[0], (list, tuple))
+                    and len(values[0]) == 1 and isinstance(values[0][0], str)):
+                from plugin.modules.calc.array_formula import returns_array
+                if returns_array(values[0][0]):
+                    from plugin.modules.calc.bridge import CalcBridge as _B
+                    from plugin.modules.calc.manipulator import (
+                        ArrayFormulaError, CellManipulator)
+                    try:
+                        result = CellManipulator(_B(doc)).write_array_formula(
+                            "'%s'.%s" % (sheet.getName(), start_cell),
+                            values[0][0])
+                    except ArrayFormulaError as e:
+                        return {"status": "error", "code": e.code,
+                                "message": str(e), "retryable": False,
+                                **e.details}
+                    return {"status": "ok", **result}
 
             rows_written = 0
             cols_written = 0

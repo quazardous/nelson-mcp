@@ -86,6 +86,11 @@ class CalcBridge:
         sheet = self.get_sheet(name) if name else self.get_active_sheet()
         return sheet, address
 
+    @staticmethod
+    def split_prefix(ref: str):
+        """(sheet name or None, address) of *ref*."""
+        return split_sheet_prefix(ref)
+
     def get_cell(self, sheet, col: int, row: int):
         """Return the cell object at *col*, *row* on *sheet*."""
         return sheet.getCellByPosition(col, row)

@@ -30,6 +30,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **FILTER, SORT, UNIQUE and other array formulas returned one value with
+  `status: ok`** (#2631). LibreOffice does not spill array results: written
+  into a single cell, `=SORT(FILTER(...))` showed its first value and the
+  rest of the table silently disappeared. `calc_write_formula` (and a lone
+  formula in `calc_write_range`) now recognises a formula whose outermost
+  function returns an array, measures its result, and enters it as an array
+  formula over exactly those cells — refusing, without writing anything, if
+  any of them is occupied. An error result (a FILTER that matches nothing) is
+  reported as an error, a result over 100 000 cells is refused, and the
+  answer gives the range, its size and the first rows. `=SUM(FILTER(...))`
+  stays an ordinary formula; `array` forces either way. On an explicit range
+  the formula fills that range and warns when the result does not fit.
+  `calc_read_range` reports `array_range` for cells of an array formula
 - **Closing a document could crash LibreOffice** (#2651). Nelson wraps every
   change in an undo context, so one Ctrl+Z undoes a whole agent action — and
   `doc_close` counted as a change: the document was destroyed while its undo

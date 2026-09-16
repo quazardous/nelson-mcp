@@ -92,6 +92,19 @@ def _parse_formula_or_values_string(s: str):
     return None
 
 
+class ArrayFormulaError(ValueError):
+    """An array formula that cannot be written as asked (#2631)."""
+
+    def __init__(self, code, message, **details):
+        super().__init__(message)
+        self.code = code
+        self.details = details
+
+
+# XSheetOperation.clearContents flags: VALUE | DATETIME | STRING | FORMULA
+_CLEAR_CONTENT = 1 | 2 | 4 | 16
+
+
 # ── Manipulator ────────────────────────────────────────────────────────
 
 
@@ -397,7 +410,8 @@ class CellManipulator:
             logger.error("Sort error (%s): %s", range_str, str(e))
             raise
 
-    def write_formula_range(self, range_str: str, formula_or_values):
+    def write_formula_range(self, range_str: str, formula_or_values,
+                            array=None):
         """Write formula(s) or value(s) to a cell range.
 
         Args:
@@ -421,6 +435,14 @@ class CellManipulator:
                 parsed = _parse_formula_or_values_string(formula_or_values)
                 if parsed is not None:
                     formula_or_values = parsed
+
+            if isinstance(formula_or_values, str):
+                from plugin.modules.calc.array_formula import returns_array
+                if returns_array(formula_or_values, array):
+                    return self.write_array_formula(
+                        range_str if self.bridge.split_prefix(range_str)[0]
+                        else "'%s'.%s" % (sheet.getName(), range_str),
+                        formula_or_values)
 
             if isinstance(formula_or_values, (list, tuple)):
                 if len(formula_or_values) != total_cells:
@@ -458,9 +480,148 @@ class CellManipulator:
                 "Range %s filled with %d values.", range_str.upper(), len(values),
             )
             return f"Range {range_str} filled with {len(values)} values."
+        except ArrayFormulaError as e:
+            # The caller's formula or target, not a fault: keep the log clean.
+            logger.debug("Array formula refused (%s): %s", range_str, e)
+            raise
         except Exception as e:
             logger.error("Range formula write error (%s): %s", range_str, str(e))
             raise
+
+    # ── Array formulas (#2631) ─────────────────────────────────────────
+
+    def _measure_array(self, sheet, formula):
+        """(rows, columns) of *formula*'s result, measured by LibreOffice.
+
+        =ROWS(expr) and =COLUMNS(expr) are entered as array formulas in two
+        scratch cells to the right of the sheet's used area, read, then
+        cleared. Raises ArrayFormulaError when the formula itself fails.
+        """
+        cursor = sheet.createCursor()
+        cursor.gotoEndOfUsedArea(False)
+        used = cursor.getRangeAddress()
+        col = min(used.EndColumn + 2, 16383)
+        expr = formula[1:] if formula.startswith("=") else formula
+        sizes = []
+        try:
+            for row, fn in ((0, "ROWS"), (1, "COLUMNS")):
+                probe = sheet.getCellRangeByPosition(col, row, col, row)
+                probe.setArrayFormula("=%s(%s)" % (fn, expr))
+                cell = sheet.getCellByPosition(col, row)
+                if cell.getError():
+                    shown = cell.getString()
+                    raise ArrayFormulaError(
+                        "formula_error",
+                        "The formula returns an error (%s, code %d) — e.g. "
+                        "FILTER with no matching row gives #CALC!."
+                        % (shown or "error", cell.getError()),
+                        error=shown or None, error_code=cell.getError())
+                sizes.append(int(round(cell.getValue())))
+        finally:
+            for row in (0, 1):
+                try:
+                    probe = sheet.getCellRangeByPosition(col, row, col, row)
+                    probe.setArrayFormula("")
+                    probe.clearContents(_CLEAR_CONTENT)
+                except Exception:
+                    pass
+        return sizes[0], sizes[1]
+
+    @staticmethod
+    def _array_block(sheet, col, row):
+        """Range address of the array formula covering (col, row), or None."""
+        try:
+            cursor = sheet.createCursorByRange(
+                sheet.getCellRangeByPosition(col, row, col, row))
+            cursor.collapseToCurrentArray()
+            a = cursor.getRangeAddress()
+            if not sheet.getCellRangeByPosition(
+                    a.StartColumn, a.StartRow, a.EndColumn,
+                    a.EndRow).getArrayFormula():
+                return None
+            return a
+        except Exception:
+            return None
+
+    def write_array_formula(self, range_str: str, formula: str):
+        """Enter *formula* as an array formula so its whole result shows.
+
+        From a single cell, the result range is sized from the result and
+        must be empty (an array formula already anchored there is replaced).
+        On an explicit range, that range is used as given, and the answer
+        says if the result is larger (rows cut) or smaller (#N/A padding).
+        """
+        from plugin.modules.calc.array_formula import MAX_CELLS, result_range
+        from plugin.modules.calc.address_utils import index_to_column
+
+        sheet, address = self.bridge.resolve(range_str)
+        (c1, r1), (c2, r2) = self.bridge.parse_range_string(address)
+        explicit = (c1, r1) != (c2, r2)
+        rows, cols = self._measure_array(sheet, formula)
+
+        def name(a, b, c, d):
+            return "%s%d:%s%d" % (index_to_column(a), b + 1,
+                                  index_to_column(c), d + 1)
+
+        notes = []
+        if explicit:
+            target = (c1, r1, c2, r2)
+            height, width = r2 - r1 + 1, c2 - c1 + 1
+            if rows > height or cols > width:
+                notes.append("The result is %d x %d but the range is %d x %d: "
+                             "the rest is cut." % (rows, cols, height, width))
+            elif rows < height or cols < width:
+                notes.append("The result is %d x %d, smaller than the range: "
+                             "the extra cells show #N/A." % (rows, cols))
+        else:
+            if rows * cols > MAX_CELLS:
+                raise ArrayFormulaError(
+                    "result_too_large",
+                    "The result is %d x %d cells, over the %d-cell limit."
+                    % (rows, cols, MAX_CELLS), rows=rows, columns=cols)
+            target = result_range(c1, r1, rows, cols)
+            # Rewriting the same array formula in place is an update.
+            block = self._array_block(sheet, c1, r1)
+            if block is not None and (block.StartColumn, block.StartRow) \
+                    == (c1, r1):
+                sheet.getCellRangeByPosition(
+                    block.StartColumn, block.StartRow,
+                    block.EndColumn, block.EndRow).setArrayFormula("")
+            formulas = sheet.getCellRangeByPosition(*target).getFormulaArray()
+            occupied = [
+                (i, j) for i, row in enumerate(formulas)
+                for j, value in enumerate(row) if value not in ("", None)]
+            if occupied:
+                i, j = occupied[0]
+                raise ArrayFormulaError(
+                    "target_not_empty",
+                    "The result needs %s, but %d cell(s) there are not empty "
+                    "(first: %s%d). Nothing was written; clear them or start "
+                    "elsewhere." % (name(*target), len(occupied),
+                                    index_to_column(target[0] + j),
+                                    target[1] + i + 1),
+                    needed_range=name(*target), rows=rows, columns=cols)
+
+        rng = sheet.getCellRangeByPosition(*target)
+        rng.setArrayFormula(formula)
+        anchor = sheet.getCellByPosition(target[0], target[1])
+        if anchor.getError():
+            raise ArrayFormulaError(
+                "formula_error",
+                "The formula returns an error (%s, code %d)."
+                % (anchor.getString(), anchor.getError()),
+                error=anchor.getString(), error_code=anchor.getError())
+        preview = [list(r) for r in rng.getDataArray()[:5]]
+        return {
+            "message": "Array formula entered on %s (%d x %d)."
+                       % (name(*target), rows, cols),
+            "array": True,
+            "range": "%s.%s" % (sheet.getName(), name(*target)),
+            "rows": rows,
+            "columns": cols,
+            "preview": preview,
+            **({"warning": " ".join(notes)} if notes else {}),
+        }
 
     def import_csv_from_string(self, csv_data: str, target_cell: str = "A1"):
         """Import CSV data into the sheet starting at *target_cell*.

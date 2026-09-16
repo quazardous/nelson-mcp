@@ -89,13 +89,20 @@ class CellInspector:
 
             formula = cell.getFormula() if cell_type == FORMULA else None
 
-            return {
+            result = {
                 # The resolved address: no sheet prefix, like read_range (#33).
                 "address": split_sheet_prefix(address)[1].upper(),
                 "value": value,
                 "formula": formula,
                 "type": self._cell_type_name(cell_type),
             }
+            if cell_type == FORMULA:
+                sheet, bare = self.bridge.resolve(address)
+                col, row = parse_address(bare)
+                block = _array_block(sheet, col, row)
+                if block:
+                    result["array_range"] = block
+            return result
         except Exception as e:
             # A bad address or sheet name is the caller's mistake, not a
             # fault: log it quietly so real errors stay visible (#30).
@@ -193,12 +200,17 @@ class CellInspector:
                     cell_address = f"{col_letter}{row + 1}"
                     formula = cell.getFormula() if cell_type == FORMULA else None
 
-                    row_data.append({
+                    entry = {
                         "address": cell_address,
                         "value": value,
                         "formula": formula,
                         "type": self._cell_type_name(cell_type),
-                    })
+                    }
+                    if cell_type == FORMULA:
+                        block = _array_block(sheet, col, row)
+                        if block:
+                            entry["array_range"] = block
+                    row_data.append(entry)
                 result.append(row_data)
 
             return result
@@ -254,3 +266,23 @@ class CellInspector:
         except Exception as e:
             logger.error("Formula listing error: %s", str(e))
             raise
+
+
+def _array_block(sheet, col, row):
+    """'A1:C5' when (col, row) is part of an array formula, else None."""
+    try:
+        cursor = sheet.createCursorByRange(
+            sheet.getCellRangeByPosition(col, row, col, row))
+        cursor.collapseToCurrentArray()
+        a = cursor.getRangeAddress()
+        # A plain formula cell collapses to itself without failing: only an
+        # actual array formula has one to report.
+        if not sheet.getCellRangeByPosition(
+                a.StartColumn, a.StartRow, a.EndColumn,
+                a.EndRow).getArrayFormula():
+            return None
+    except Exception:
+        return None
+    from plugin.modules.calc.address_utils import index_to_column
+    return "%s%d:%s%d" % (index_to_column(a.StartColumn), a.StartRow + 1,
+                          index_to_column(a.EndColumn), a.EndRow + 1)

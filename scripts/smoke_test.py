@@ -1453,6 +1453,66 @@ def check_close_after_rewrite(h):
     return "3 rewrite-and-close rounds, LibreOffice still answering"
 
 
+def check_array_formulas(h):
+    """FILTER/SORT results come back whole, or not at all (#2631).
+
+    LibreOffice does not spill: written to one cell, =SORT(FILTER(...))
+    showed one value and dropped the rest, with status ok.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="calc")
+    rows = [["country", "year", "co2"]]
+    data = [["A", 2021, 5], ["B", 2022, 30], ["C", 2022, 10], ["D", 2020, 7],
+            ["E", 2022, 20], ["F", 2021, 1], ["G", 2022, 40]]
+    rows += data
+    h.call("calc_write_range", start_cell="A1", values=rows)
+    expected = sorted([r for r in data if r[1] == 2022], key=lambda r: -r[2])
+
+    res = h.call("calc_write_formula", range_name="E1",
+                 formula_or_values="=SORT(FILTER(A2:C8;B2:B8=2022);3;-1)")
+    if res.get("status") != "ok" or res.get("rows") != len(expected) \
+            or res.get("columns") != 3:
+        raise Fail("array formula not entered over its result: %s" % res)
+    got = h.call("calc_read_range", range_name="E1:G%d" % len(expected))
+    values = [[c["value"] for c in row] for row in got["result"]]
+    want = [[r[0], float(r[1]), float(r[2])] for r in expected]
+    if values != want:
+        raise Fail("array result %s, expected %s" % (values, want))
+    last = got["result"][-1][-1]
+    if last.get("array_range") != "E1:G%d" % len(expected):
+        raise Fail("calc_read_range does not report the array range: %s"
+                   % last)
+
+    none = h.call("calc_write_formula", range_name="J1",
+                  formula_or_values="=FILTER(A2:C8;B2:B8=1999)")
+    if none.get("code") != "formula_error":
+        raise Fail("a FILTER with no match was not reported: %s" % none)
+
+    h.call("calc_write_range", start_cell="M2", values=[["keep me"]])
+    blocked = h.call("calc_write_formula", range_name="L1",
+                     formula_or_values="=SORT(FILTER(A2:C8;B2:B8=2022);3;-1)")
+    kept = h.call("calc_read_range", range_name="L1")["result"][0][0]
+    if blocked.get("code") != "target_not_empty" or kept.get("value"):
+        raise Fail("an occupied target was overwritten or not refused: %s"
+                   % blocked)
+
+    scalar = h.call("calc_write_formula", range_name="I1",
+                    formula_or_values="=SUM(FILTER(C2:C8;B2:B8=2022))")
+    total = h.call("calc_read_range", range_name="I1")["result"][0][0]
+    if scalar.get("array") or total.get("value") != 100.0 \
+            or total.get("array_range"):
+        raise Fail("=SUM(FILTER()) should stay a single cell worth 100: %s %s"
+                   % (scalar, total))
+
+    small = h.call("calc_write_formula", range_name="E20:G21",
+                   formula_or_values="=SORT(FILTER(A2:C8;B2:B8=2022);3;-1)")
+    if "cut" not in (small.get("warning") or ""):
+        raise Fail("a too-small explicit range gave no warning: %s" % small)
+    return ("SORT(FILTER) over E1:G%d with the right values; no-match error, "
+            "occupied target refused, SUM(FILTER) scalar, cut range warned"
+            % len(expected))
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -1476,6 +1536,7 @@ CHECKS = [
     ("search backends agree", check_search_backends_agree),
     ("sheet-qualified refs", check_sheet_qualified_refs),
     ("calc sheet targets (#31-33)", check_calc_sheet_targets),
+    ("array formulas (#2631)", check_array_formulas),
     ("doc_close truthful (#36)", check_close_reports_truth),
     ("browser origin refused", check_origin_rejected),
     ("session semantics (#38)", check_session_semantics),
