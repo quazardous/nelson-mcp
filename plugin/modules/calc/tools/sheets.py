@@ -248,7 +248,8 @@ class CreateChart(ToolBase):
             "chart_type": {
                 "type": "string",
                 "enum": ["bar", "line", "pie", "scatter", "column"],
-                "description": "Chart type",
+                "description": ("Chart type. As in Excel: 'column' draws "
+                                "vertical bars, 'bar' horizontal ones."),
             },
             "title": {
                 "type": "string",
