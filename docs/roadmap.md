@@ -2,13 +2,23 @@
 
 ## Where we are
 
-Nelson MCP v0.7 exposes 148 tools via MCP to cloud AI agents (Claude, ChatGPT, Gemini). It works well with large models that can handle many tools, but smaller local models (7B–14B) get confused by the tool count and protocol complexity. Custom endpoints help (static filtered subsets), but don't solve the underlying problem: small models need guidance, not just fewer options.
+Nelson MCP v0.12.1 exposes 140 tools over MCP. A client never sees all of
+them: the list follows the active document — 94 with a Writer document, 48
+with Calc — and a custom endpoint cuts it to whatever you choose, down to 8
+on the `minimal` preset.
+
+That works well with large models. Smaller local models (7B–14B) still
+struggle, and 0.12.0 sharpened *why*: it is not the count on its own, it is
+picking the right tool and chaining multi-step work. So the approach is
+guidance rather than gating — the `initialize` instructions spend their
+budget on decisions, and tools on a decision boundary say what the
+alternative is for. Progressive disclosure was measured and refused.
 
 ## Where we're going
 
 **The mission: make small local models (7B–14B) as productive as GPT-4 or Claude on document tasks.**
 
-A 70B cloud model can browse 148 tools and figure out the right sequence. A 7B local model can't — it needs to be guided step by step, with fewer choices at each point and clear suggestions for what to do next. Nelson should bridge that gap: not by dumbing down the tools, but by being smarter about how it presents them.
+A 70B cloud model can browse 140 tools and figure out the right sequence. A 7B local model can't — it needs to be guided step by step, with fewer choices at each point and clear suggestions for what to do next. Nelson should bridge that gap: not by dumbing down the tools, but by being smarter about how it presents them.
 
 ---
 
@@ -32,21 +42,28 @@ POST /api/do
 
 Nelson resolves "Introduction" internally (heading lookup → bookmark → paragraph index → `text_insert`). The model never sees paragraph indices, bookmarks, or locators. ~15 structured actions instead of 148 low-level tools.
 
-### Tool broker (progressive disclosure)
+### Tool broker (progressive disclosure) — refused
 
-Bring back the two-tier tool delivery, adapted for MCP:
+Measured and decided against (#27). A `tier = "core"` opening set would take
+about 13,500 tokens off a Writer session — but a custom endpoint already
+yields a smaller set than the broker's core tier, with no new machinery and
+no extra round trip. And hiding most tools behind a request step
+reintroduces #24 by design: a model that does not realise it should ask
+concludes the capability is missing.
 
-- **Core tools** always visible: `doc_list_open`, `doc_info`, `nav_outline`, `do`, `request_tools`
-- **Extended tools** unlocked on demand by intent: `request_tools(intent="edit")` adds editing tools to the session
-- Intent groups: `navigate`, `edit`, `search`, `tables`, `images`, `styles`, `review`, `calc`, `draw`
-- `tools/list` reflects the current session — starts small, grows as the agent asks
-- Compatible with MCP `listChanged` notification
+`docs/analysis/tool-broker-decision.md` records the measurements and, more
+importantly, what would reopen the question: a measurement, not an
+argument.
 
 ### Context-aware tool filtering
 
-`tools/list` adapts to what's happening:
-- No document open → only lifecycle tools (open, create, list recent)
-- Writer document → Writer tools only (no Calc/Draw noise)
+Partly shipped. Per-document-type filtering is in (`tools_for_doc_type`),
+and clients are told when it changes via the `listChanged` notification
+(#24). What remains:
+
+- No document open → only lifecycle tools (open, create, list recent).
+  Today this yields every doc-type-agnostic tool, which is 26, not just the
+  lifecycle ones
 - First edit done → surface `doc_undo`, `doc_save`
 
 ### Pre-trained baseline rules
@@ -70,7 +87,7 @@ Each endpoint gets its own rule partition. The "writer-edit" endpoint learns Wri
 
 ```
 rules.json:
-  _default:       generic patterns (148 tools, broad)
+  _default:       generic patterns (140 tools, broad)
   writer-edit:    Writer editing patterns (25 tools, focused)
   calc:           spreadsheet patterns (13 tools, focused)
   my-custom:      user's custom endpoint (10 tools, very precise)
@@ -199,7 +216,7 @@ Both MCP and `/api/do` return `_next` after every action, powered by the learned
 }
 ```
 
-Large cloud models can ignore `_next`. Small local models follow it like breadcrumbs — at each step, Nelson tells them exactly what makes sense next. A 7B model doesn't need to understand 148 tools if Nelson says "you just read a heading, here are the 3 things you can do now."
+Large cloud models can ignore `_next`. Small local models follow it like breadcrumbs — at each step, Nelson tells them exactly what makes sense next. A 7B model doesn't need to understand 140 tools if Nelson says "you just read a heading, here are the 3 things you can do now."
 
 The effect: a small model guided by `_next` behaves like a much larger model that figured out the workflow on its own.
 
@@ -213,14 +230,14 @@ Nelson injects the most reliable workflow patterns into the MCP `instructions` f
 
 ### Stability & trust
 
-- **CI/CD pipeline** — automated build + test on push, release artifacts
-- **Integration tests** — tool execution against a real LibreOffice instance (headless)
-- **Range coordinate fix** — resolve the known Writer coordinate mismatch
-- **Session authentication** — API keys for exposed endpoints
+- **CI/CD pipeline** — automated build + test on push, release artifacts. Not started: there is no `.github/` yet, and `make test` runs in 0.2 s
+- **Integration tests** — **shipped** as `make smoke` (#26): installs the built `.oxt`, runs LibreOffice headless, and asserts against the bytes on disk and the live document through the UNO socket rather than the tool's own answer
+- **Range coordinate fix** — resolve the known Writer coordinate mismatch (see `docs/known-issues.md`)
+- **Session authentication** — a shared secret for exposed endpoints. The MCP transport spec asks for it; `Origin` validation landed first, authentication has not
 
 ### Packaging & distribution
 
-- **LibreOffice Extensions site** — publish on the official marketplace
+- **LibreOffice Extensions site** — listed, but the published `.oxt` lags behind the releases; the site has no automated update path
 - **Linux packages** — .deb/.rpm for distro repos
 - **One-click installer** — bundled LibreOffice + Nelson for non-technical users
 

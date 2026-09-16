@@ -99,8 +99,12 @@ class ToolBase(ABC):
         parameters:  JSON Schema dict (MCP ``inputSchema`` format).
         doc_types:   List of supported doc types (["writer"], ["calc"],
                      ["draw"], or None for all types).
-        tier:        "core" = always sent to the LLM, "extended" = on demand
-                     via the tool broker.  Default "extended".
+        tier:        Unvalidated metadata from an abandoned design. Nothing
+                     reads it at runtime: the tool broker it was meant to
+                     drive was measured and refused (see
+                     ``docs/analysis/tool-broker-decision.md``). Kept as the
+                     input to ``scripts/bench_broker.py``, which is what
+                     would measure the question if it is reopened.
         group:       Derived from the name prefix (see ``_GROUP_BY_PREFIX``)
                      — "document", "text", "navigate", "review", "media",
                      "calc", "draw" or "system". Set ``group`` explicitly

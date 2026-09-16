@@ -18,7 +18,7 @@ Nelson MCP runs an HTTP server inside LibreOffice and speaks the [Model Context 
 
 ## Features
 
-- **160+ document tools** — read content, edit text, manage styles, insert images, handle tables, charts, conditional formatting, hyperlinks, track changes, page headers/footers, navigate headings, search, and more. The list is filtered by the active document type, so a client sees only what applies (about 100 with a Writer document, 65 with Calc)
+- **140 document tools** — read content, edit text, manage styles, insert images, handle tables, charts, conditional formatting, hyperlinks, track changes, page headers/footers, navigate headings, search, and more. The list is filtered by the active document type, so a client sees only what applies (94 with a Writer document, 48 with Calc)
 - **Custom MCP endpoints** — expose only the tools your agent needs. Built-in presets (minimal, writer-edit, writer-read, calc, gallery) or create your own filtered endpoints
 - **Writer, Calc, Draw, Impress** — tools adapt to the active document type
 - **Calc `=PROMPT()`** — call an LLM directly from a spreadsheet cell

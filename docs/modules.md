@@ -71,7 +71,14 @@ svc = services.my_service            # Attribute access
 
 ## Tools
 
-Auto-discovered from `tools/` — any `ToolBase` subclass is registered. Key attributes: `name`, `description`, `parameters` (JSON Schema), `doc_types`, `tier` ("core"/"extended"), `intent`.
+Auto-discovered from `tools/` — any `ToolBase` subclass is registered. Key
+attributes: `name`, `aliases`, `description`, `parameters` (JSON Schema),
+`doc_types`, `is_mutation` (always set it explicitly), `requires_doc` and
+`requires_service`. The group a tool belongs to is derived from its
+`domain_verb` name; set `group` only when the prefix would mislead.
+
+`tier` and `intent` are leftovers of the refused tool broker and are read by
+nothing at runtime — see `docs/analysis/tool-broker-decision.md`.
 
 ## Config access
 
