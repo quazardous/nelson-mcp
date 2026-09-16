@@ -30,6 +30,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Reading a Writer document's structure changed the document, and could
+  save it behind the user's back** — `nav_tree`, `nav_heading_children`,
+  `nav_heading` and `nav_surroundings` give every heading a hidden
+  `_mcp_<hex>` bookmark so agents can address it by a stable name. Adding
+  them marked the document modified, left undo steps, and — when the
+  document had a file — called `store()` right away, so a pure read saved
+  whatever the user had typed, and the bookmarks ended up in `.odt`/`.docx`
+  files shared with others. `bookmark_cleanup` saved silently too. Neither
+  saves any more, and creating the bookmarks no longer touches the modified
+  flag or the undo stack. A new option decides what happens to them,
+  `writer.nav.heading_bookmarks` (Options > Nelson MCP > Writer navigation):
+  **`strip_on_save`** (default) keeps them while the document is open and
+  leaves them out of every save — removed just before the file is written and
+  put back under the same names right after, so agents' names stay valid;
+  **`keep`** saves them with the document, as before; **`off`** never creates
+  them, and headings are addressed by paragraph index. `make smoke` saves a
+  document under each value and counts the bookmarks in `content.xml`
+
 - **The call right after `doc_open` or `doc_create` could miss the new
   document** (#34) — both returned as soon as LibreOffice had loaded it, but
   its window only became the active one a few tens of milliseconds later. The

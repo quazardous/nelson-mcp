@@ -757,6 +757,72 @@ def check_auth_token(h):
     return "401 without it, 200 with header or ?token=, applied live"
 
 
+def check_heading_bookmarks(h):
+    """#2644: navigation's _mcp_ bookmarks obey writer.nav.heading_bookmarks.
+
+    For each value, navigate a saved document, then save it again and look
+    inside the file. Navigation must never mark the document modified, and
+    only `keep` may leave _mcp_ bookmarks in content.xml.
+    """
+    base = "http://localhost:%d" % h.port
+    html = "<h1>One</h1><p>a</p><h2>Two</h2><p>b</p><h1>Three</h1><p>c</p>"
+
+    def set_mode(value):
+        req = urllib.request.Request(
+            base + "/api/config", method="POST",
+            data=json.dumps({"writer.nav.heading_bookmarks": value}).encode())
+        req.add_header("Content-Type", "application/json")
+        with urllib.request.urlopen(req, timeout=30) as r:
+            if r.status != 200:
+                raise Fail("setting heading_bookmarks returned %s" % r.status)
+
+    def bookmarks(tree):
+        return [c.get("bookmark") for c in tree.get("children", [])]
+
+    seen = {}
+    try:
+        for mode in ("strip_on_save", "keep", "off"):
+            set_mode(mode)
+            path = h.doc("bookmarks_%s.odt" % mode)
+            h.reset()
+            h.call("doc_create", doc_type="writer", path=path)
+            h.call("text_apply_range", target="full", content=html)
+            h.call("doc_save")
+            if h.call("doc_info").get("is_modified"):
+                raise Fail("%s: document still modified right after saving"
+                           % mode)
+            first = bookmarks(h.call("nav_tree"))
+            if h.call("doc_info").get("is_modified"):
+                raise Fail("%s: navigating marked the document modified"
+                           % mode)
+            if mode == "off":
+                if any(first):
+                    raise Fail("off: nav_tree created bookmarks %s" % first)
+            elif not all(first):
+                raise Fail("%s: headings got no bookmark: %s" % (mode, first))
+            h.call("text_insert", paragraph_index=1, text="edit")
+            h.call("doc_save")
+            with zipfile.ZipFile(path) as z:
+                in_file = z.read("content.xml").decode("utf-8", "replace") \
+                    .count('text:name="_mcp_')
+            after = bookmarks(h.call("nav_tree"))
+            if h.call("doc_info").get("is_modified"):
+                raise Fail("%s: document modified after save + navigation"
+                           % mode)
+            if mode != "off" and after != first:
+                raise Fail("%s: bookmark names changed across a save: %s -> %s"
+                           % (mode, first, after))
+            h.call("doc_close", save=False)
+            want_in_file = 3 if mode == "keep" else 0
+            if in_file != want_in_file:
+                raise Fail("%s: %d _mcp_ bookmark(s) in the saved file, "
+                           "expected %d" % (mode, in_file, want_in_file))
+            seen[mode] = in_file
+    finally:
+        set_mode("strip_on_save")
+    return "in file: %s; never modified, names stable across saves" % seen
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -781,6 +847,7 @@ CHECKS = [
     ("browser origin refused", check_origin_rejected),
     ("session semantics (#38)", check_session_semantics),
     ("access token", check_auth_token),
+    ("heading bookmarks (#2644)", check_heading_bookmarks),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

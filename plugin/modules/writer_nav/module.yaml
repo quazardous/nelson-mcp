@@ -2,3 +2,19 @@ name: writer.nav
 title: Writer navigation (bookmarks, headings, proximity)
 requires: [document, config, events]
 provides_services: [writer_bookmarks, writer_tree, writer_proximity]
+
+config:
+  heading_bookmarks:
+    type: string
+    default: strip_on_save
+    widget: select
+    label: Heading bookmarks
+    public: true
+    helper: "Navigation marks each heading with a hidden _mcp_ bookmark so agents can address it by a stable name. Choose whether those bookmarks end up in your saved files."
+    options:
+      - value: strip_on_save
+        label: "Use while open, leave out of saved files"
+      - value: keep
+        label: "Save them with the document"
+      - value: "off"
+        label: "Don't create them (address headings by paragraph index)"
