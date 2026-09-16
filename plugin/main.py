@@ -332,6 +332,14 @@ def bootstrap(ctx=None):
             if events_svc:
                 config_svc.set_events(events_svc)
 
+        # And into the document service: without it document changes never
+        # reached the tree, proximity, bookmark and search-index caches, which
+        # then served stale results after every edit (#2642).
+        document_svc = _services.get("document")
+        events_svc = _services.get("events")
+        if document_svc and events_svc:
+            document_svc.set_events(events_svc)
+
         # Initialize services that need a UNO context
         log.info("Initializing services with UNO context...")
         if ctx:

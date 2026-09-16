@@ -30,6 +30,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **A read could return another document's paragraphs, and edits made in
+  the GUI were invisible to navigation and search** — two faults in the
+  document caches. The paragraph cache was keyed by the `id()` of a pyuno
+  proxy, but every lookup of a document returns a new proxy: the cache
+  almost never hit, never emptied (holding on to closed documents'
+  paragraphs), and when Python reused an id a call read a different or
+  closed document — a search after `doc_open` counting 0, or
+  "SwXParagraph: disposed or invalid" in the middle of an edit. And the
+  document service was never connected to the event bus, so the
+  heading-tree, bookmark, proximity and full-text-index caches, which are
+  keyed by URL and do persist, were never told of any change: after an edit
+  `nav_tree` and `text_search_fulltext` kept answering about the old text.
+  Caches are now matched by UNO identity, each document has a modify
+  listener, so an edit from any source — a tool or the user — invalidates
+  them, and a closed document's entry is dropped. A tool still sees stable
+  paragraph numbering while it runs (a batch across all its steps) and
+  invalidates once when it returns; Nelson's hidden heading bookmarks and
+  saves invalidate nothing. `make smoke` churns 30 documents, then edits a
+  document over UNO from outside Nelson and checks `nav_tree` and the index
+  see it
+
 - **`nav_heading_content` could return the wrong section** — it walked the
   outline to the heading, then looked the heading up again by its title, so
   with two headings of the same title and level (a "Notes" section in every

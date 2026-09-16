@@ -288,7 +288,8 @@ class ToolRegistry:
                 undo_mgr = None
 
         try:
-            result = tool.execute(ctx, **kwargs)
+            with _deferred_invalidation():
+                result = tool.execute(ctx, **kwargs)
         except Exception as exc:
             if undo_mgr:
                 try:
@@ -364,3 +365,13 @@ class ToolRegistry:
 
     def __len__(self):
         return len(self._tools)
+
+
+def _deferred_invalidation():
+    """DocumentCache.deferring(), or a no-op where the core module is absent."""
+    try:
+        from plugin.modules.core.services.document import DocumentCache
+        return DocumentCache.deferring()
+    except Exception:
+        import contextlib
+        return contextlib.nullcontext()

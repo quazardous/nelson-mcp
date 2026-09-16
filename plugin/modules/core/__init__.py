@@ -95,13 +95,10 @@ class Module(ModuleBase):
         if doc is None:
             return
 
-        # Skip if already built (a tool call may have triggered it)
-        cache = DocumentCache.get(doc)
-        if cache.para_ranges is not None:
-            return
-
         def _build():
-            # Re-check inside main thread (may have been built meanwhile)
+            # The cache registry compares UNO objects and registers a
+            # listener on first use: main thread only.
+            cache = DocumentCache.get(doc)
             if cache.para_ranges is not None:
                 return
             try:

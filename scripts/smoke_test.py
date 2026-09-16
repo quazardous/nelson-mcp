@@ -297,6 +297,37 @@ class Harness:
         except Exception:
             return None
 
+    def uno_append_heading(self, url_suffix, text):
+        """Append a Heading 1 to an open document, from outside Nelson.
+
+        Stands in for the user typing in the GUI: Nelson's caches must see
+        a change no tool made. Returns False when uno is unavailable.
+        """
+        script = (
+            "import uno, sys\n"
+            "l=uno.getComponentContext()\n"
+            "c=l.ServiceManager.createInstanceWithContext("
+            "'com.sun.star.bridge.UnoUrlResolver',l).resolve("
+            "'uno:socket,host=localhost,port=%d;urp;StarOffice.ComponentContext')\n"
+            "d=c.ServiceManager.createInstanceWithContext("
+            "'com.sun.star.frame.Desktop',c)\n"
+            "e=d.getComponents().createEnumeration()\n"
+            "while e.hasMoreElements():\n"
+            "    doc=e.nextElement()\n"
+            "    if doc.getURL().endswith(%r):\n"
+            "        t=doc.getText(); cur=t.createTextCursor(); cur.gotoEnd(False)\n"
+            "        t.insertControlCharacter(cur, 0, False)\n"
+            "        cur.setPropertyValue('ParaStyleName', 'Heading 1')\n"
+            "        t.insertString(cur, %r, False)\n"
+            "        print('ok'); sys.exit(0)\n"
+            "print('missing'); sys.exit(2)\n" % (self.uno_port, url_suffix, text))
+        try:
+            r = subprocess.run([sys.executable, "-c", script],
+                               capture_output=True, text=True, timeout=60)
+        except Exception:
+            return False
+        return r.returncode == 0
+
     def log_errors(self):
         if not os.path.exists(self.log_path):
             return ["no log written at %s" % self.log_path]
@@ -965,6 +996,50 @@ def check_heading_content_duplicates(h):
     return "path 2.1 reads the second 'Notes'; ambiguous title lists paths"
 
 
+def check_caches_follow_the_document(h):
+    """Caches serve the right document and see edits made outside Nelson.
+
+    The paragraph cache was keyed by the id() of pyuno proxies, which
+    Python reuses, and no change ever reached the heading-tree and
+    search-index caches (#2642). Churn through documents, then check a
+    fresh one is read correctly, and that an edit made over UNO — as the
+    user would in the GUI — shows up in nav_tree and the full-text index.
+    """
+    h.reset()
+    for i in range(30):
+        h.call("doc_create", doc_type="writer")
+        h.call("text_insert", paragraph_index=0, text="churn %d decoy" % i)
+        h.call("text_search", pattern="decoy")
+        h.call("doc_close")
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full",
+           content="<p>needle one</p><p>hay</p><p>needle two</p>")
+    found = h.call("text_search", pattern="needle").get("count")
+    if found != 2:
+        raise Fail("after 30 open/close cycles, text_search counts %r "
+                   "'needle', expected 2" % found)
+    if h.call("text_search", pattern="decoy").get("count"):
+        raise Fail("text_search found a closed document's text")
+
+    path = h.doc("outside_edit.odt")
+    h.call("doc_create", doc_type="writer", path=path)
+    h.call("text_apply_range", target="full",
+           content="<h1>Inside</h1><p>written by a tool</p>")
+    h.call("doc_save")
+    before = [c.get("text") for c in h.call("nav_tree").get("children", [])]
+    h.call("text_search_fulltext", query="written")         # build the index
+    if not h.uno_append_heading("outside_edit.odt", "Outsider Zebra"):
+        return "SKIPPED — uno module unavailable for the out-of-band edit"
+    after = [c.get("text") for c in h.call("nav_tree").get("children", [])]
+    if "Outsider Zebra" not in [(t or "").strip() for t in after]:
+        raise Fail("nav_tree still serves the tree from before an outside "
+                   "edit: before %s, after %s" % (before, after))
+    hits = h.call("text_search_fulltext", query="zebra").get("total_found")
+    if not hits:
+        raise Fail("the full-text index missed an edit made outside Nelson")
+    return "30 doc churn: counts right; outside edit seen by nav_tree and index"
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -993,6 +1068,7 @@ CHECKS = [
     ("access token", check_auth_token),
     ("heading bookmarks (#2644)", check_heading_bookmarks),
     ("heading content by path", check_heading_content_duplicates),
+    ("caches follow the document", check_caches_follow_the_document),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

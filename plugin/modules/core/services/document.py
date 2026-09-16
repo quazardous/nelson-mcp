@@ -97,9 +97,29 @@ class PageMap:
 
 
 class DocumentCache:
-    """Cache for expensive UNO calls, tied to a document model."""
+    """Cache for expensive UNO calls, tied to a document model.
 
-    _instances = {}  # {id(model): cache}
+    Keyed by UNO identity. Every lookup of a document through UNO returns a
+    new Python proxy, so ``id(model)`` differs from one call to the next:
+    keyed that way the cache almost never hit, never emptied, and served a
+    closed document's paragraphs whenever Python reused an id (#2642). Two
+    proxies of the same document always compare ``==``, so entries are
+    matched that way, with a short list of recently seen proxies in front to
+    keep repeated lookups within one call cheap.
+
+    Each document gets a modify listener: any change — a tool's or the
+    user's in the GUI — invalidates its cache, and disposing the document
+    drops its entry.
+    """
+
+    _entries = []          # [_Entry]
+    _recent = []           # [(proxy, _Entry)], most recent last
+    _RECENT_MAX = 8
+    _counter = 0
+    on_changed = None      # callable(model): set by DocumentService
+    _ignoring = 0          # >0: changes are Nelson's invisible bookkeeping
+    _deferring = 0         # >0: a tool is running; invalidate when it ends
+    _pending = []          # [_Entry] changed while deferring
 
     def __init__(self):
         self.length = None
@@ -110,33 +130,204 @@ class DocumentCache:
         self.current_page = None
         self.last_invalidated = time.time()
 
+    # ── Identity registry ──────────────────────────────────────────
+
+    @classmethod
+    def _find(cls, model):
+        for proxy, entry in reversed(cls._recent):
+            if proxy is model:
+                return entry
+        for entry in cls._entries:
+            try:
+                if entry.model == model:
+                    cls._remember(model, entry)
+                    return entry
+            except Exception:
+                continue
+        return None
+
+    @classmethod
+    def _remember(cls, model, entry):
+        cls._recent.append((model, entry))
+        if len(cls._recent) > cls._RECENT_MAX:
+            del cls._recent[0]
+
+    @classmethod
+    def _entry(cls, model):
+        entry = cls._find(model)
+        if entry is None:
+            cls._counter += 1
+            entry = _Entry(model, DocumentCache(), "doc:%d" % cls._counter)
+            cls._entries.append(entry)
+            cls._remember(model, entry)
+            entry.listen()
+        return entry
+
     @classmethod
     def get(cls, model):
-        mid = id(model)
-        if mid not in cls._instances:
-            cls._instances[mid] = DocumentCache()
-        return cls._instances[mid]
+        return cls._entry(model).cache
+
+    @classmethod
+    def key(cls, model):
+        """A key for *model* that is stable for as long as it is open."""
+        return cls._entry(model).key
 
     @classmethod
     def invalidate(cls, model):
         """Clear mutable caches. PageMap is kept (idxV2: self-correcting)."""
-        mid = id(model)
-        cache = cls._instances.get(mid)
-        if cache is None:
-            return
+        entry = cls._find(model)
+        if entry is not None:
+            entry.cache._clear()
+
+    def _clear(self):
         # --- idxV2: keep PageMap for future use ---
-        saved_page_map = cache.page_map
-        cache.length = None
-        cache.para_ranges = None
-        cache.page_cache = {}
-        cache.dirty = True
-        cache.last_invalidated = time.time()
-        cache.page_map = saved_page_map
+        saved_page_map = self.page_map
+        self.length = None
+        self.para_ranges = None
+        self.page_cache = {}
+        self.dirty = True
+        self.last_invalidated = time.time()
+        self.page_map = saved_page_map
 
     @classmethod
     def remove(cls, model):
         """Remove cache entirely (document closed)."""
-        cls._instances.pop(id(model), None)
+        entry = cls._find(model)
+        if entry is not None:
+            cls._drop(entry)
+
+    @classmethod
+    def _drop(cls, entry):
+        entry.unlisten()
+        cls._entries = [e for e in cls._entries if e is not entry]
+        cls._recent = [(p, e) for p, e in cls._recent if e is not entry]
+        cls._pending = [e for e in cls._pending if e is not entry]
+
+    @classmethod
+    def ignoring(cls):
+        """Context manager: changes made inside do not invalidate anything.
+
+        For bookkeeping that leaves the text alone, such as Nelson's hidden
+        heading bookmarks — otherwise every save, which strips and restores
+        them, would throw away the search index.
+        """
+        return _Counter(cls, "_ignoring")
+
+    @classmethod
+    def deferring(cls):
+        """Context manager: invalidate once, when the outermost one exits.
+
+        Wraps tool execution. A tool keeps a stable paragraph numbering
+        while it edits — and a batch across all its steps — as it always
+        has; whatever it changed is invalidated when it returns, even if
+        the tool did not declare itself a mutation.
+        """
+        return _Counter(cls, "_deferring", on_exit=cls._flush)
+
+    @classmethod
+    def _flush(cls):
+        pending, cls._pending = cls._pending, []
+        for entry in pending:
+            cls._invalidate_entry(entry)
+
+    # ── Listener callbacks ─────────────────────────────────────────
+
+    @classmethod
+    def _modified(cls, entry):
+        if cls._ignoring:
+            return
+        if cls._deferring:
+            if entry not in cls._pending:
+                cls._pending.append(entry)
+            return
+        cls._invalidate_entry(entry)
+
+    @classmethod
+    def _invalidate_entry(cls, entry):
+        entry.cache._clear()
+        if cls.on_changed is not None:
+            try:
+                cls.on_changed(entry.model)
+            except Exception:
+                log.debug("cache change callback failed", exc_info=True)
+
+    @classmethod
+    def _disposed(cls, entry):
+        if cls.on_changed is not None:
+            try:
+                cls.on_changed(entry.model)
+            except Exception:
+                log.debug("cache dispose callback failed", exc_info=True)
+        cls._drop(entry)
+
+
+class _Counter:
+    def __init__(self, owner, attr, on_exit=None):
+        self._owner = owner
+        self._attr = attr
+        self._on_exit = on_exit
+
+    def __enter__(self):
+        setattr(self._owner, self._attr, getattr(self._owner, self._attr) + 1)
+        return self
+
+    def __exit__(self, *exc):
+        left = getattr(self._owner, self._attr) - 1
+        setattr(self._owner, self._attr, left)
+        if left == 0 and self._on_exit is not None:
+            self._on_exit()
+        return False
+
+
+class _Entry:
+    """One open document: its model, cache, stable key and listener."""
+
+    def __init__(self, model, cache, key):
+        self.model = model
+        self.cache = cache
+        self.key = key
+        self._listener = None
+
+    def listen(self):
+        if not hasattr(self.model, "addModifyListener"):
+            return
+        try:
+            import unohelper
+            from com.sun.star.util import XModifyListener
+        except ImportError:
+            return                                  # no UNO (unit tests)
+        entry = self
+
+        class _Listener(unohelper.Base, XModifyListener):
+            def modified(self, event):
+                # Writer also notifies when the flag is *reset* (a save,
+                # setModified(False)): nothing in the text changed then.
+                # Real edits, undo included, notify with the flag set.
+                try:
+                    if not entry.model.isModified():
+                        return
+                except Exception:
+                    pass
+                DocumentCache._modified(entry)
+
+            def disposing(self, event):
+                DocumentCache._disposed(entry)
+
+        try:
+            self._listener = _Listener()
+            self.model.addModifyListener(self._listener)
+        except Exception:
+            self._listener = None
+            log.debug("could not listen to document changes", exc_info=True)
+
+    def unlisten(self):
+        if self._listener is None:
+            return
+        try:
+            self.model.removeModifyListener(self._listener)
+        except Exception:
+            pass
+        self._listener = None
 
 
 class DocumentService(ServiceBase):
@@ -152,6 +343,10 @@ class DocumentService(ServiceBase):
 
     def set_events(self, events):
         self._events = events
+
+        def changed(model):
+            events.emit("document:cache_invalidated", doc=model)
+        DocumentCache.on_changed = changed
 
     # ── Desktop / active document ─────────────────────────────────────
 
@@ -630,9 +825,9 @@ class DocumentService(ServiceBase):
     def doc_key(self, model):
         """Stable key for a document (URL or id)."""
         try:
-            return model.getURL() or str(id(model))
+            return model.getURL() or DocumentCache.key(model)
         except Exception:
-            return str(id(model))
+            return DocumentCache.key(model)
 
     # ── Document ID (persistent) ──────────────────────────────────
 

@@ -249,7 +249,8 @@ class BookmarkService:
         except Exception as e:
             log.error("Failed to restore heading bookmarks: %s", e)
         finally:
-            _set_modified(doc, target)
+            with _ignoring():
+                _set_modified(doc, target)
         self._bookmark_cache[self._doc_svc.doc_key(doc)] = restored_map
         return restored
 
@@ -289,6 +290,10 @@ class _untracked:
         self._was_modified = False
 
     def __enter__(self):
+        # Bookmarks leave the text and its numbering alone: no cache (and no
+        # search index) needs to be thrown away for them.
+        self._ignore = _ignoring()
+        self._ignore.__enter__()
         self._was_modified = _is_modified(self._doc)
         try:
             self._undo = self._doc.getUndoManager()
@@ -305,4 +310,14 @@ class _untracked:
                 pass
         if self._keep:
             _set_modified(self._doc, self._was_modified)
+        self._ignore.__exit__(*exc)
         return False
+
+
+def _ignoring():
+    try:
+        from plugin.modules.core.services.document import DocumentCache
+        return DocumentCache.ignoring()
+    except Exception:
+        import contextlib
+        return contextlib.nullcontext()
