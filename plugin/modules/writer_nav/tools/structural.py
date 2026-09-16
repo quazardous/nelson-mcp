@@ -228,6 +228,112 @@ class RefreshIndexes(ToolBase):
             return {"status": "error", "error": str(e)}
 
 
+class InsertTableOfContents(ToolBase):
+    """Insert a table of contents built from the document's headings."""
+
+    name = "doc_insert_toc"
+    intent = "edit"
+    description = (
+        "Insert a table of contents built from the headings, and fill it. "
+        "position: 'beginning' (default), 'after_heading' (after the "
+        "document's first heading, typically its title) or "
+        "'paragraph_index' (before that paragraph). Refused if the "
+        "document already has one: use doc_refresh_indexes to update it."
+    )
+    parameters = {
+        "type": "object",
+        "properties": {
+            "position": {
+                "type": "string",
+                "enum": ["beginning", "after_heading", "paragraph_index"],
+                "description": "Where to insert it (default: beginning).",
+            },
+            "paragraph_index": {
+                "type": "integer",
+                "description": "For position='paragraph_index'.",
+            },
+            "title": {
+                "type": "string",
+                "description": "Heading of the table (default: 'Table of "
+                               "Contents').",
+            },
+            "levels": {
+                "type": "integer",
+                "description": "Heading levels to list, 1-10 (default 3).",
+            },
+        },
+        "required": [],
+    }
+    doc_types = ["writer"]
+    is_mutation = True
+
+    def execute(self, ctx, **kwargs):
+        doc = ctx.doc
+        position = kwargs.get("position") or "beginning"
+        levels = kwargs.get("levels", 3)
+        title = kwargs.get("title") or "Table of Contents"
+        if not isinstance(levels, int) or not 1 <= levels <= 10:
+            return {"status": "error", "error": "levels must be 1 to 10."}
+
+        indexes = doc.getDocumentIndexes()
+        for i in range(indexes.getCount()):
+            if indexes.getByIndex(i).supportsService(
+                    "com.sun.star.text.ContentIndex"):
+                return {"status": "error", "code": "toc_exists",
+                        "error": "The document already has a table of "
+                                 "contents.",
+                        "hint": "Use doc_refresh_indexes to update it.",
+                        "retryable": False}
+
+        doc_svc = ctx.services.document
+        para_ranges = doc_svc.get_paragraph_ranges(doc)
+        text = doc.getText()
+        if position == "beginning":
+            target = 0
+        elif position == "after_heading":
+            target = None
+            for i, para in enumerate(para_ranges):
+                try:
+                    if para.getPropertyValue("OutlineLevel") > 0:
+                        target = i + 1
+                        break
+                except Exception:
+                    continue
+            if target is None:
+                return {"status": "error",
+                        "error": "The document has no heading to insert "
+                                 "the table after."}
+        elif position == "paragraph_index":
+            target = kwargs.get("paragraph_index")
+            if not isinstance(target, int) or not \
+                    0 <= target <= len(para_ranges):
+                return {"status": "error",
+                        "error": "paragraph_index must be 0 to %d."
+                                 % len(para_ranges)}
+        else:
+            return {"status": "error",
+                    "error": "Unknown position: %s" % position}
+
+        if target < len(para_ranges):
+            cursor = text.createTextCursorByRange(
+                para_ranges[target].getStart())
+        else:
+            cursor = text.createTextCursorByRange(text.getEnd())
+
+        toc = doc.createInstance("com.sun.star.text.ContentIndex")
+        toc.setPropertyValue("Title", title)
+        toc.setPropertyValue("CreateFromOutline", True)
+        toc.setPropertyValue("Level", levels)
+        text.insertTextContent(cursor, toc, False)
+        toc.update()
+        entries = [line for line in
+                   toc.getAnchor().getString().split("\n")[1:]
+                   if line.strip()]
+        return {"status": "ok", "position": position,
+                "before_paragraph": target, "title": title,
+                "levels": levels, "entries": len(entries)}
+
+
 class ReadSection(ToolBase):
     """Read the content of a named text section."""
 

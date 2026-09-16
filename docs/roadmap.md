@@ -2,8 +2,8 @@
 
 ## Where we are
 
-Nelson MCP v0.12.1 exposes 141 tools over MCP. A client never sees all of
-them: the list follows the active document — 95 with a Writer document, 48
+Nelson MCP v0.12.1 exposes 143 tools over MCP. A client never sees all of
+them: the list follows the active document — 97 with a Writer document, 48
 with Calc — and a custom endpoint cuts it to whatever you choose, down to 8
 on the `minimal` preset.
 

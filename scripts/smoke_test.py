@@ -1366,6 +1366,93 @@ def _flatten_outline(nodes):
         yield from _flatten_outline(n.get("children", []))
 
 
+def check_report_building_blocks(h):
+    """Page numbers, a table of contents and a page break (#2634).
+
+    "Page <page>" in a footer used to stay literal text, and nothing could
+    insert a table of contents or a page break. Saved as .docx and read in
+    the XML, so the fields are real ones Word understands.
+    """
+    path = h.doc("report.docx")
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full", content=(
+        "<h1>Quarterly Report</h1><p>Intro.</p>"
+        "<h2>Sales</h2><p>Up.</p><h2>Costs</h2><p>Down.</p>"))
+    foot = h.call("header_footer_set", region="footer",
+                  text="Page {page} of {pages}")
+    if foot.get("status") != "ok" or foot.get("fields") != ["page", "pages"]:
+        raise Fail("footer fields not inserted: %s" % foot)
+    bad = h.call("header_footer_set", region="header", text="{chapter}")
+    if bad.get("status") == "ok" or "{page}" not in json.dumps(bad):
+        raise Fail("an unknown field was not refused with the known ones")
+
+    toc = h.call("doc_insert_toc", position="after_heading")
+    if toc.get("status") != "ok" or toc.get("entries", 0) < 3:
+        raise Fail("table of contents not inserted or empty: %s" % toc)
+    again = h.call("doc_insert_toc")
+    if again.get("code") != "toc_exists":
+        raise Fail("a second table of contents was not refused: %s" % again)
+
+    paras = h.call("text_read", count=40).get("paragraphs", [])
+    costs = next((p["index"] for p in paras if p.get("text") == "Costs"), None)
+    if costs is None:
+        raise Fail("cannot find the Costs heading: %s" % paras)
+    brk = h.call("text_insert_break", paragraph_index=costs, type="page")
+    if brk.get("status") != "ok":
+        raise Fail("text_insert_break failed: %s" % brk)
+
+    saved = h.call("doc_save_as", target_path=path)
+    if saved.get("status") != "ok":
+        raise Fail("saving as .docx failed: %s" % saved)
+    with zipfile.ZipFile(path) as z:
+        names = z.namelist()
+        footers = "".join(z.read(n).decode("utf-8", "replace")
+                          for n in names if n.startswith("word/footer"))
+        body = z.read("word/document.xml").decode("utf-8", "replace")
+    missing = [w for w, where in (("PAGE", footers), ("NUMPAGES", footers))
+               if w not in where]
+    # Word stores a table of contents as a TOC field built from outline
+    # levels ("TOC \\o", possibly with other switches between).
+    if not re.search(r"TOC\s[^<]*\\o", body):
+        missing.append("TOC field")
+    if "Page {page}" in footers or "<page>" in footers:
+        missing.append("literal token left in the footer")
+    if 'w:type="page"' not in body and "w:pageBreakBefore" not in body:
+        missing.append("page break")
+    if missing:
+        at = body.find("TOC")
+        raise Fail("the saved .docx lacks: %s (TOC context: %r)"
+                   % (", ".join(missing), body[max(0, at - 80):at + 120]))
+    return ("footer PAGE/NUMPAGES fields, TOC with %d entries, page break — "
+            "all in the .docx" % toc["entries"])
+
+
+def check_close_after_rewrite(h):
+    """Closing a rewritten document does not abort LibreOffice (#2651).
+
+    doc_close ran inside the undo context Nelson opens around every
+    mutation, so the document was destroyed with a list action still open;
+    after full rewrites involving a table, ~SfxUndoArray aborted the whole
+    office. Three rewrite-and-close rounds, then LibreOffice must answer.
+    """
+    md = ("# Report\n\nSome **bold** text.\n\n"
+          "| Region | Sales |\n|---|---|\n| North | 3 |\n| South | 1 |\n")
+    for round_ in range(3):
+        h.reset()
+        h.call("doc_create", doc_type="writer")
+        h.call("text_apply_range", target="full", content=md)
+        h.call("text_apply_range", target="full", content=md + "\nMore.\n")
+        closed = h.call("doc_close")
+        if closed.get("status") != "ok":
+            raise Fail("round %d: doc_close failed: %s" % (round_ + 1, closed))
+        listed = h.call("doc_list_open")
+        if listed.get("status") != "ok":
+            raise Fail("round %d: LibreOffice stopped answering after "
+                       "doc_close: %s" % (round_ + 1, listed))
+    return "3 rewrite-and-close rounds, LibreOffice still answering"
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -1401,6 +1488,7 @@ CHECKS = [
     ("reads are capped (#39)", check_reads_are_capped),
     ("markdown exchange (#2635)", check_markdown_exchange),
     ("close after rewrite (#2651)", check_close_after_rewrite),
+    ("report building blocks (#2634)", check_report_building_blocks),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

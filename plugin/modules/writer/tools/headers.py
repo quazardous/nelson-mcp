@@ -26,6 +26,80 @@ _REGION_PROPS = {
 # com.sun.star.text.ControlCharacter.PARAGRAPH_BREAK
 PARAGRAPH_BREAK = 0
 
+# {token} -> text field service. "Page {page} of {pages}" was written as
+# literal text before (#2634); these become fields Word reads as PAGE /
+# NUMPAGES.
+FIELD_TOKENS = {
+    "page": "com.sun.star.text.textfield.PageNumber",
+    "pages": "com.sun.star.text.textfield.PageCount",
+    "date": "com.sun.star.text.textfield.DateTime",
+    "title": "com.sun.star.text.textfield.docinfo.Title",
+}
+
+
+def parse_field_tokens(text):
+    """Split *text* into [("text", str) | ("field", name)].
+
+    ``{{`` and ``}}`` are literal braces. An unknown ``{name}`` raises
+    ValueError listing the known ones, rather than being written as text.
+    """
+    parts, buf, i = [], [], 0
+    while i < len(text):
+        two = text[i:i + 2]
+        if two in ("{{", "}}"):
+            buf.append(two[0])
+            i += 2
+            continue
+        if text[i] == "{":
+            end = text.find("}", i + 1)
+            if end == -1:
+                buf.append(text[i])
+                i += 1
+                continue
+            name = text[i + 1:end].strip().lower()
+            if name not in FIELD_TOKENS:
+                raise ValueError(
+                    "Unknown field {%s}. Known: %s (write {{ for a literal "
+                    "brace)." % (text[i + 1:end],
+                                 ", ".join("{%s}" % k for k in FIELD_TOKENS)))
+            if buf:
+                parts.append(("text", "".join(buf)))
+                buf = []
+            parts.append(("field", name))
+            i = end + 1
+            continue
+        buf.append(text[i])
+        i += 1
+    if buf:
+        parts.append(("text", "".join(buf)))
+    return parts
+
+
+def _make_field(doc, name):
+    field = doc.createInstance(FIELD_TOKENS[name])
+    if name in ("page", "pages"):
+        field.setPropertyValue("NumberingType", 4)      # ARABIC
+    if name == "page":
+        import uno
+        field.setPropertyValue(
+            "SubType", uno.Enum("com.sun.star.text.PageNumberType", "CURRENT"))
+    if name == "date":
+        field.setPropertyValue("IsDate", True)
+        field.setPropertyValue("IsFixed", True)
+    return field
+
+
+def _write_parts(doc, xtext, cursor, parts):
+    """Insert text and fields at *cursor*; return the field names used."""
+    used = []
+    for kind, value in parts:
+        if kind == "text":
+            xtext.insertString(cursor, value, False)
+        else:
+            xtext.insertTextContent(cursor, _make_field(doc, value), False)
+            used.append(value)
+    return used
+
 
 def _height_props(region):
     """Return the (dynamic-height, dynamic-spacing, height) property names."""
@@ -132,6 +206,12 @@ class GetHeaderFooter(ToolBase):
         doc = ctx.doc
         region = kwargs.get("region", "both")
         try:
+            parts = parse_field_tokens(text or "")
+        except ValueError as e:
+            return {"status": "error", "code": "invalid_field",
+                    "error": str(e), "retryable": False}
+
+        try:
             style, resolved = _resolve_page_style(doc, kwargs.get("page_style"))
             regions = ["header", "footer"] if region == "both" else [region]
             result = {r: _read_region(style, r) for r in regions}
@@ -155,8 +235,10 @@ class SetHeaderFooter(ToolBase):
         "Set (or append to) the page header or footer text of a Writer "
         "page style. Writing turns the region on automatically. Use "
         "left/center/right tab-separated text to align across the page "
-        "(e.g. 'Left\\tCentre\\tRight'). Pass enabled=false to turn the "
-        "region off."
+        "(e.g. 'Left\\tCentre\\tRight'). Fields: {page}, {pages}, {date} "
+        "(today, fixed), {title} become live fields, e.g. "
+        "'Page {page} of {pages}'; write {{ for a literal brace. Pass "
+        "enabled=false to turn the region off."
     )
     parameters = {
         "type": "object",
@@ -221,6 +303,12 @@ class SetHeaderFooter(ToolBase):
         text = kwargs.get("text", "")
 
         try:
+            parts = parse_field_tokens(text or "")
+        except ValueError as e:
+            return {"status": "error", "code": "invalid_field",
+                    "error": str(e), "retryable": False}
+
+        try:
             style, resolved = _resolve_page_style(doc, kwargs.get("page_style"))
 
             if not enabled:
@@ -247,9 +335,10 @@ class SetHeaderFooter(ToolBase):
                 cursor = xtext.createTextCursorByRange(xtext.getEnd())
                 if xtext.getString():
                     xtext.insertControlCharacter(cursor, PARAGRAPH_BREAK, False)
-                xtext.insertString(cursor, text, False)
             else:
-                xtext.setString(text)
+                xtext.setString("")
+                cursor = xtext.createTextCursorByRange(xtext.getEnd())
+            fields = _write_parts(doc, xtext, cursor, parts)
 
             result = {
                 "status": "ok",
@@ -257,6 +346,7 @@ class SetHeaderFooter(ToolBase):
                 "region": region,
                 "enabled": True,
                 "text": xtext.getString(),
+                "fields": fields,
             }
             if auto_height is not None:
                 result["auto_height"] = bool(auto_height)

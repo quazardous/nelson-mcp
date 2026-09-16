@@ -205,6 +205,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **Page numbers, tables of contents and page breaks for reports** (#2634).
+  `header_footer_set` turns `{page}`, `{pages}`, `{date}` and `{title}` into
+  real fields, so `Page {page} of {pages}` numbers pages instead of printing
+  the braces (`{{` for a literal brace); `doc_insert_toc` inserts a table of
+  contents built from the headings, at the start, after the first heading or
+  before a paragraph; `text_insert_break` starts a paragraph on a new page or
+  column. `make smoke` saves such a report as .docx and finds the PAGE and
+  NUMPAGES fields, the TOC field and the page break in the XML
 - **Choose Markdown or HTML for reading Writer content** (#2650). The format
   setting existed in the code but was never declared, so reads were always
   HTML. It is now *Document format for agents* in Options (HTML by default
