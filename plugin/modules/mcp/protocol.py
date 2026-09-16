@@ -186,8 +186,17 @@ class MCPProtocolHandler:
             _sse_unregister(q)
 
     def handle_mcp_delete(self, handler):
-        """DELETE /mcp — session termination."""
-        handler.send_response(200)
+        """DELETE /mcp — refused: sessions cannot be terminated by a client.
+
+        Nelson has a single session id for the whole process, shared by every
+        client and every endpoint. Ending it on one client's DELETE would cut
+        all the others off, so the Streamable HTTP spec's own answer for a
+        server that does not let clients terminate sessions applies: 405.
+        Answering 200 while terminating nothing told the client a lie.
+        """
+        handler.send_response(405)
+        handler.send_header("Allow", "GET, POST, OPTIONS")
+        handler.send_header("Content-Length", "0")
         self._send_cors_headers(handler)
         handler.end_headers()
 
@@ -255,14 +264,17 @@ class MCPProtocolHandler:
         is_initialize = (isinstance(msg, dict)
                          and msg.get("method") == "initialize")
 
-        # Validate incoming session ID (MCP spec: reject stale sessions)
+        # Validate incoming session ID. A session from before a restart gets
+        # 404, not 409: the Streamable HTTP spec (Session Management, 3-4)
+        # makes 404 the signal a client MUST answer by re-initializing. With
+        # 409 no client recovered by itself after LibreOffice restarted.
         client_session = handler.headers.get("Mcp-Session-Id")
         if (client_session
                 and client_session != _mcp_session_id
                 and not is_initialize):
             log.warning("[MCP] Stale session ID: client=%s server=%s",
                         client_session, _mcp_session_id)
-            self._send_json(handler, 409, {
+            self._send_json(handler, 404, {
                 "jsonrpc": "2.0",
                 "id": req_id,
                 "error": {

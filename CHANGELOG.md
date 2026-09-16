@@ -6,6 +6,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **A LibreOffice restart left every MCP client silently dead** (#38) — a
+  session id from before the restart was answered with `409`, which no client
+  acts on, so the client kept listing the server as connected and failed on
+  every call until someone reconnected it by hand. It is now `404`, the signal
+  the Streamable HTTP spec requires a client to answer with a fresh
+  `initialize` on the same URL — which Nelson already accepted. Conformant
+  clients now recover by themselves. It restores the connection, not the work:
+  documents that were open when LibreOffice went down are still gone
+- **`DELETE /mcp` claimed to end a session it did not end** (#38) — it answered
+  `200` and terminated nothing. Nelson has one session id for the whole process,
+  shared by every client, so ending it on one client's request would cut all
+  the others off. It now answers `405`, the spec's answer for a server that
+  does not let clients terminate sessions
+
 ### Added
 
 - **`make smoke-wbox` and the `wbox-*` targets** — run LibreOffice's real GUI

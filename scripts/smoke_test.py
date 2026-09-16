@@ -20,6 +20,7 @@ and was caught by hand:
     #22  an MCP edit switched change recording on for the whole document
     #11  50 read-only tools were silently reclassified as mutations
     CORS any web page could drive LibreOffice through the MCP endpoint
+    #38  a stale session got 409, so no client ever re-initialized by itself
 
 Where it can, it checks something other than the tool's own answer — the
 bytes on disk, or the live document through the UNO socket. A tool
@@ -613,6 +614,51 @@ def check_origin_rejected(h):
     return "browser origin refused (403), MCP client unaffected"
 
 
+def check_session_semantics(h):
+    """#38: a restarted server must tell clients to re-initialize.
+
+    A session id from before a LibreOffice restart used to get 409, which no
+    client acts on — so every client stayed silently dead. The Streamable HTTP
+    spec makes 404 the signal a client MUST answer with a fresh initialize.
+    """
+    url = "http://localhost:%d/mcp" % h.port
+    stale = "00000000-dead-beef-0000-000000000000"
+
+    def send(method, session, rpc_method=None):
+        req = urllib.request.Request(url, method=method)
+        if rpc_method:
+            req.data = json.dumps({"jsonrpc": "2.0", "id": 9002,
+                                   "method": rpc_method,
+                                   "params": {}}).encode("utf-8")
+            req.add_header("Content-Type", "application/json")
+            req.add_header("Accept", "application/json, text/event-stream")
+        if session:
+            req.add_header("Mcp-Session-Id", session)
+        try:
+            with urllib.request.urlopen(req, timeout=30) as r:
+                return r.status
+        except urllib.error.HTTPError as e:
+            return e.code
+
+    status = send("POST", stale, "tools/list")
+    if status != 404:
+        raise Fail("stale session on tools/list returned %s, expected 404 "
+                   "(clients only re-initialize on 404)" % status)
+
+    # The recovery the 404 asks for has to actually work on the same URL.
+    status = send("POST", stale, "initialize")
+    if status != 200:
+        raise Fail("initialize carrying a stale session returned %s, "
+                   "expected 200" % status)
+
+    # One session id serves every client: DELETE must not pretend to end it.
+    status = send("DELETE", stale)
+    if status != 405:
+        raise Fail("DELETE /mcp returned %s, expected 405" % status)
+
+    return "stale session 404, re-initialize 200, DELETE 405"
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -634,6 +680,7 @@ CHECKS = [
     ("search backends agree", check_search_backends_agree),
     ("sheet-qualified refs", check_sheet_qualified_refs),
     ("browser origin refused", check_origin_rejected),
+    ("session semantics (#38)", check_session_semantics),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 
