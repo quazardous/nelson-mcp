@@ -150,6 +150,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added
 
+- **`style_set` — change a style** (#2647). "Change the font of the body
+  text" had no answer: `style_list` and `style_info` only read. `style_set`
+  changes a paragraph, character or page style through readable properties —
+  `font_name`, `font_size` (pt), `bold`, `italic`, `color`, `parent_style`;
+  `space_before`, `space_after` (mm), `line_spacing` (%), `align` for
+  paragraphs; margins (mm) and `orientation` for pages — rather than raw UNO
+  names and units. It answers with each property's value before and after,
+  refuses an unknown property or a bad value with what is allowed, suggests
+  close names for a misspelt style, and warns when a font is not installed
+  (LibreOffice accepts any name and shows a substitute). One undo step.
+  `make smoke` restyles the body text and checks `styles.xml` after saving
 - **`text_search` and `text_read` report each paragraph's style, and
   `text_search` filters on it** (`style`, `exclude_style`). A table of
   contents repeats every chapter title in body text; without the style an

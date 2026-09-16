@@ -1075,6 +1075,56 @@ def check_search_reports_styles(h):
     return "styles %s told apart; style and exclude_style filter" % styles
 
 
+def check_style_set(h):
+    """style_set changes a style, reports before/after, and it is saved (#2647).
+
+    "Change the font of the body text" had no tool at all: styles were
+    read-only.
+    """
+    path = h.doc("styled.odt")
+    h.reset()
+    h.call("doc_create", doc_type="writer", path=path)
+    h.call("text_apply_range", target="full",
+           content="<h1>Title</h1><p>Body text to restyle.</p>")
+    body = h.call("text_read", start_index=1, count=1)["paragraphs"][0]
+    style = body.get("style")
+    changed = h.call("style_set", style_name=style, properties={
+        "font_name": "Liberation Serif", "font_size": 13, "bold": True,
+        "align": "justify", "space_after": 3})
+    if changed.get("status") != "ok":
+        raise Fail("style_set on %r failed: %s" % (style, changed))
+    after = changed.get("after", {})
+    want = {"font_name": "Liberation Serif", "font_size": 13.0, "bold": True,
+            "align": "justify", "space_after": 3.0}
+    if after != want:
+        raise Fail("style_set after=%s, expected %s" % (after, want))
+    info = h.call("style_info", style_name=style, family="ParagraphStyles")
+    if info.get("CharFontName") != "Liberation Serif":
+        raise Fail("style_info does not see the new font: %s" % info)
+    h.call("doc_save")
+    with zipfile.ZipFile(path) as z:
+        styles_xml = z.read("styles.xml").decode("utf-8", "replace")
+    if 'style:font-name="Liberation Serif"' not in styles_xml:
+        raise Fail("the saved styles.xml does not carry the new font")
+
+    bad = h.call("style_set", style_name=style, properties={"align": "middle"})
+    if bad.get("status") == "ok" or "left" not in json.dumps(bad):
+        raise Fail("an invalid value was not refused with the choices: %s"
+                   % bad)
+    missing = h.call("style_set", style_name="Text bodyy",
+                     properties={"bold": True})
+    if missing.get("code") != "style_not_found" or not missing.get("similar"):
+        raise Fail("a misspelt style gave no suggestion: %s" % missing)
+    odd = h.call("style_set", style_name=style,
+                 properties={"font_name": "No Such Font Nelson"})
+    if odd.get("status") != "ok":
+        raise Fail("an unknown font was refused instead of warned: %s" % odd)
+    warned = "warning" in odd
+    return "%r restyled and saved; bad value and misspelt name refused; " \
+           "unknown font %s" % (style, "warned" if warned
+                                else "not warned (font list unavailable)")
+
+
 def check_log_clean(h):
     errors = h.log_errors()
     if errors:
@@ -1105,6 +1155,7 @@ CHECKS = [
     ("heading content by path", check_heading_content_duplicates),
     ("caches follow the document", check_caches_follow_the_document),
     ("search reports styles", check_search_reports_styles),
+    ("style_set (#2647)", check_style_set),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 
