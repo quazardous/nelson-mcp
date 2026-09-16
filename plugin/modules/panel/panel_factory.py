@@ -22,6 +22,13 @@ if _parent not in sys.path:
 log = logging.getLogger("nelson.panel.factory")
 
 
+def _show_starting(root):
+    try:
+        root.getControl("label").getModel().Label = "Nelson is starting…"
+    except Exception:
+        pass
+
+
 def _get_arg(args, name):
     """Extract PropertyValue from UNO args by Name."""
     for pv in args:
@@ -142,7 +149,14 @@ try:
             from plugin.main import bootstrap, get_services
             from plugin.framework.main_thread import post_to_main_thread
 
-            bootstrap(self.ctx)
+            if not bootstrap(self.ctx, wait=False):
+                # Created while Nelson starts, possibly with the SolarMutex
+                # held: show that, and wire the panel once ready (#2625).
+                _show_starting(root)
+                from plugin.main import when_ready
+                when_ready(lambda: post_to_main_thread(
+                    lambda: self._wire(root)))
+                return
             services = get_services()
 
             self._action_log = services.get("action_log")
@@ -388,7 +402,14 @@ try:
             from plugin.main import bootstrap, get_services
             from plugin.framework.main_thread import post_to_main_thread
 
-            bootstrap(self.ctx)
+            if not bootstrap(self.ctx, wait=False):
+                # Created while Nelson starts, possibly with the SolarMutex
+                # held: show that, and wire the panel once ready (#2625).
+                _show_starting(root)
+                from plugin.main import when_ready
+                when_ready(lambda: post_to_main_thread(
+                    lambda: self._wire(root)))
+                return
             services = get_services()
 
             self._job_mgr = services.get("jobs")

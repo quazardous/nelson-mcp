@@ -68,6 +68,9 @@ _tools = None
 _modules = []
 _init_lock = threading.Lock()
 _initialized = False
+# Phase 2 (module start) is claimed once, and runs outside _init_lock (#2625).
+_phase2_claimed = False
+_ready = threading.Event()
 
 
 def _setup_bundled_sqlite3(base_path):
@@ -237,20 +240,14 @@ def get_tools():
     return _tools
 
 
-def bootstrap(ctx=None):
-    """Initialize the entire framework.
+def _phase1(ctx):
+    """Load, sort and initialize modules; register services and tools.
 
-    Idempotent — safe to call multiple times.
+    Pure Python work (plus configuration reads). Called with _init_lock held.
     """
-    global _services, _tools, _modules, _initialized
+    global _services, _tools, _modules
 
-    if _initialized:
-        return
-
-    with _init_lock:
-        if _initialized:
-            return
-
+    if True:
         if ctx:
             _ensure_extension_on_path(ctx)
             # Store fallback ctx for environments where uno module
@@ -355,69 +352,149 @@ def bootstrap(ctx=None):
             events_svc.emit("modules:initialized",
                             modules=[m.name for m in _modules])
 
-        # ── Phase 2a: start modules on VCL main thread ────────────────
-        log.info("── Phase 2a: start (main thread) ────────────────────")
 
-        from plugin.framework.main_thread import execute_on_main_thread
+def _phase2a_start_all():
+    """Run every module's start() in dependency order. Main thread."""
+    started = 0
+    for mod in _modules:
+        try:
+            mod.start(_services)
+            started += 1
+            log.info("Module started: %s", mod.name)
+        except Exception:
+            log.exception("Failed to start module: %s", mod.name)
+    return started
 
-        started_count = 0
-        for mod in _modules:
+
+def _phase2():
+    """Start modules (main thread), then background work, then mark ready.
+
+    Never runs while _init_lock is held, and never from a thread that may
+    hold LibreOffice's SolarMutex: either inline on the main thread, or on
+    the dedicated nelson-start thread, which holds nothing while it waits
+    for the main thread (#2625).
+    """
+    global _initialized
+    from plugin.framework.main_thread import post_to_main_thread
+
+    log.info("── Phase 2a: start (main thread) ────────────────────")
+    if threading.current_thread() is threading.main_thread():
+        started = _phase2a_start_all()
+    else:
+        # One batch, in order: modules start as soon as the main thread is
+        # free, and nothing is abandoned half-way on a timeout.
+        done = threading.Event()
+        result = [0]
+
+        def batch():
             try:
-                execute_on_main_thread(mod.start, _services, timeout=5.0)
-                started_count += 1
-                log.info("Module started: %s", mod.name)
-            except TimeoutError:
-                log.warning("Module start timed out (VCL not ready?): %s",
-                            mod.name)
-            except Exception:
-                log.exception("Failed to start module: %s", mod.name)
+                result[0] = _phase2a_start_all()
+            finally:
+                done.set()
 
-        log.info("── Phase 2a complete: %d/%d modules started ──────────",
-                 started_count, len(_modules))
+        post_to_main_thread(batch)
+        waited = 0
+        while not done.wait(10.0):
+            waited += 10
+            log.info("Waiting for the main thread to start modules (%ds)",
+                     waited)
+        started = result[0]
+    log.info("── Phase 2a complete: %d/%d modules started ──────────",
+             started, len(_modules))
 
-        # ── Phase 2b: start_background on Job thread ─────────────────
-        log.info("── Phase 2b: start_background (job thread) ──────────")
+    log.info("── Phase 2b: start_background (job thread) ──────────")
+    for mod in _modules:
+        try:
+            mod.start_background(_services)
+            log.info("Module background started: %s", mod.name)
+        except Exception:
+            log.exception("Failed to background-start module: %s", mod.name)
+    log.info("── Phase 2b complete: %d modules background started ─",
+             len(_modules))
 
-        for mod in _modules:
-            try:
-                mod.start_background(_services)
-                log.info("Module background started: %s", mod.name)
-            except Exception:
-                log.exception("Failed to background-start module: %s",
-                              mod.name)
+    events_svc = _services.get("events") if _services else None
+    config_svc = _services.get("config") if _services else None
+    if events_svc:
+        events_svc.emit("modules:started",
+                        modules=[m.name for m in _modules])
+        events_svc.subscribe("menu:update",
+                             lambda **kw: notify_menu_update())
 
-        log.info("── Phase 2b complete: %d modules background started ─",
-                 len(_modules))
+    # Pre-load icons into ImageManager so first menu display has them —
+    # UNO work, so on the main thread.
+    from plugin.framework.main_thread import post_to_main_thread
+    post_to_main_thread(_update_menu_icons)
 
-        # Emit modules:started event
-        if events_svc:
-            events_svc.emit("modules:started",
-                            modules=[m.name for m in _modules])
+    _initialized = True
+    _ready.set()
+    log.info("Framework bootstrap complete: %d modules, %d tools",
+             len(_modules), len(_tools))
 
-        # Subscribe to menu:update for dynamic menu text + icons
-        if events_svc:
-            events_svc.subscribe("menu:update",
-                                 lambda **kw: notify_menu_update())
+    from plugin.framework.logging import set_log_level
+    env_level = os.environ.get("NELSON_LOG_LEVEL")
+    if env_level:
+        set_log_level(env_level)
+        log.info("Log level set to %s (from env)", env_level)
+    elif config_svc:
+        level = config_svc.proxy_for("core").get("log_level", "DEBUG")
+        set_log_level(level)
+        log.info("Log level set to %s", level)
 
-        # Pre-load icons into ImageManager so first menu display has them
-        threading.Thread(target=_update_menu_icons, daemon=True).start()
+
+def bootstrap(ctx=None, wait=True):
+    """Initialize the framework. Returns True once Nelson is ready.
+
+    Idempotent. Phase 1 (initialize) runs under _init_lock; phase 2 (start)
+    runs outside it — inline on the main thread, otherwise on a dedicated
+    thread — so a UNO callback that LibreOffice runs while holding the
+    SolarMutex can never wait on a lock held by a thread that is itself
+    waiting for the main thread (#2625, GitHub #35/#37).
+
+    wait=False is for UNO callbacks (menus, dispatch, panels, the formula
+    function): it never blocks. If another thread is initializing, or the
+    start is not finished, it returns False and the caller degrades.
+    """
+    global _phase2_claimed
+
+    if _initialized:
+        return True
+
+    if wait:
+        _init_lock.acquire()
+    elif not _init_lock.acquire(blocking=False):
+        return False
+    try:
+        if _services is None:
+            _phase1(ctx)
+        claim = not _phase2_claimed
+        _phase2_claimed = True
+    finally:
+        _init_lock.release()
+
+    if claim:
+        if threading.current_thread() is threading.main_thread():
+            _phase2()
+        else:
+            threading.Thread(target=_phase2, daemon=True,
+                             name="nelson-start").start()
+    return _initialized
 
 
-        _initialized = True
-        log.info("Framework bootstrap complete: %d modules, %d tools",
-                 len(_modules), len(_tools))
+def when_ready(fn):
+    """Call fn() on a background thread once Nelson is ready."""
+    if _initialized:
+        fn()
+        return
 
-        # Apply configured log level now that bootstrap is done.
-        # NELSON_LOG_LEVEL env var overrides the config value.
-        from plugin.framework.logging import set_log_level
-        env_level = os.environ.get("NELSON_LOG_LEVEL")
-        if env_level:
-            set_log_level(env_level)
-            log.info("Log level set to %s (from env)", env_level)
-        elif config_svc:
-            level = config_svc.proxy_for("core").get("log_level", "DEBUG")
-            set_log_level(level)
-            log.info("Log level set to %s", level)
+    def _wait():
+        _ready.wait()
+        try:
+            fn()
+        except Exception:
+            log.exception("Deferred call after startup failed")
+
+    threading.Thread(target=_wait, daemon=True,
+                     name="nelson-when-ready").start()
 
 
 def shutdown():
@@ -508,24 +585,54 @@ def get_menu_text(command):
     return None
 
 
+def _dispatch_when_ready(ctx, command):
+    """Run a menu command now if Nelson is ready, else as soon as it is.
+
+    A dispatch arrives on the main thread with the SolarMutex held: it must
+    not wait for the bootstrap (#2625).
+    """
+    from plugin.framework.main_thread import post_to_main_thread
+
+    def run():
+        _dispatch_command(command)
+        notify_menu_update()
+
+    if bootstrap(ctx, wait=False):
+        run()
+    else:
+        log.info("Nelson is starting; %s will run once it is ready", command)
+        when_ready(lambda: post_to_main_thread(run))
+
+
 def notify_menu_update():
     """Push current menu text and icons to all registered status listeners.
 
-    Called by modules when state changes (e.g. server start/stop).
+    Called by modules when state changes (e.g. server start/stop). The
+    listener list is copied under _status_lock and the UNO events are sent
+    on the main thread, outside the lock: addStatusListener takes that lock
+    while LibreOffice holds the SolarMutex (#2625).
     """
+    from plugin.framework.main_thread import post_to_main_thread
+
     with _status_lock:
-        alive = []
-        for listener, url in _status_listeners:
-            command = url.Path
-            text = get_menu_text(command)
+        listeners = list(_status_listeners)
+
+    def fire():
+        dead = []
+        for listener, url in listeners:
             try:
-                _fire_status_event(listener, url, text)
-                alive.append((listener, url))
+                _fire_status_event(listener, url, get_menu_text(url.Path))
             except Exception:
-                log.debug("Dropping dead status listener for %s", command)
-        _status_listeners[:] = alive
-    # Update icons in a background thread (avoids blocking UI)
-    threading.Thread(target=_update_menu_icons, daemon=True).start()
+                log.debug("Dropping dead status listener for %s", url.Path)
+                dead.append(listener)
+        if dead:
+            with _status_lock:
+                _status_listeners[:] = [(l, u) for l, u in _status_listeners
+                                        if l not in dead]
+
+    post_to_main_thread(fire)
+    # Icons live in the ImageManager: UNO, so on the main thread too.
+    post_to_main_thread(_update_menu_icons)
 
 
 def _fire_status_event(listener, url, text):
@@ -700,7 +807,9 @@ try:
             """Called by the Jobs framework on OnStartApp."""
             log.info("MainJob.execute (OnStartApp) called")
             try:
-                bootstrap(self.ctx)
+                # Runs on the main thread: never wait on another thread's
+                # bootstrap from here (#2625).
+                bootstrap(self.ctx, wait=False)
             except Exception:
                 log.exception("MainJob.execute bootstrap FAILED")
             return ()
@@ -711,9 +820,8 @@ try:
             """Fallback dispatch for service: protocol URLs."""
             log.info("MainJob.trigger called with: %r", args)
             try:
-                bootstrap(self.ctx)
                 command = args if isinstance(args, str) else ""
-                _dispatch_command(command)
+                _dispatch_when_ready(self.ctx, command)
             except Exception:
                 log.exception("MainJob.trigger FAILED")
 
@@ -764,11 +872,7 @@ try:
             command = url.Path
             log.info("DispatchHandler.dispatch: %s", command)
             try:
-                bootstrap(self.ctx)
-                _dispatch_command(command)
-                # After action, push updated menu text
-                threading.Thread(target=notify_menu_update,
-                                 daemon=True).start()
+                _dispatch_when_ready(self.ctx, command)
             except Exception:
                 log.exception("DispatchHandler.dispatch FAILED")
 

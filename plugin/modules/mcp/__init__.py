@@ -12,14 +12,10 @@ Supports custom filtered endpoints for smaller LLMs.
 
 import json
 import logging
-import threading
 
 from plugin.framework.module_base import ModuleBase
 
 log = logging.getLogger("nelson.mcp")
-
-# Sentinel for "baseline not yet established" in the doc-type poller.
-_UNKNOWN = object()
 
 # Tool presets — pre-filled tool lists for common use cases
 PRESETS = {
@@ -109,11 +105,16 @@ class MCPModule(ModuleBase):
     """Exposes tools via MCP JSON-RPC routes on the shared HTTP server."""
 
     def initialize(self, services):
+        from plugin.modules.mcp.active_doc import ActiveDocumentWatcher
+
         self._services = services
         self._protocol = None
         self._routes_registered = False
-        self._poll_thread = None
-        self._poll_stop = None
+        # Replaces the 2-second poller: kept up to date by document events
+        # on the main thread, read by /health without UNO (#2625, #24).
+        self._active_doc = ActiveDocumentWatcher(
+            services.document, on_type_change=self._on_doc_type_change)
+        services.register_instance("active_document", self._active_doc)
 
         if services.config.proxy_for(self.name).get("enabled"):
             self._register_routes(services)
@@ -162,9 +163,6 @@ class MCPModule(ModuleBase):
         # Register custom filtered endpoints
         self._register_custom_endpoints(services)
 
-        # Watch for active-document-type changes → notify SSE clients so they
-        # refetch tools/list (the tool set is filtered by doc type). #24
-        self._start_doc_type_poller(services)
 
     def _register_custom_endpoints(self, services):
         """Register custom filtered MCP endpoints from config."""
@@ -210,52 +208,26 @@ class MCPModule(ModuleBase):
             log.info("Custom MCP endpoint: %s (%s, %d tools)",
                      path, name, len(tool_filter))
 
-    def _start_doc_type_poller(self, services):
-        """Poll the active document type and broadcast list_changed on change.
+    def start(self, services):
+        """Main thread: listen to document events for the active document."""
+        from plugin.framework.uno_context import get_ctx
+        try:
+            self._active_doc.register(get_ctx())
+        except Exception:
+            log.exception("Active document watcher not registered")
 
-        Only polls while at least one SSE client is connected; re-baselines
-        when clients reconnect so a reconnect never spuriously notifies. #24
-        """
+    def _on_doc_type_change(self, doc_type):
+        """The active document type changed: SSE clients refetch tools/list,
+        since the tool set is filtered by document type (#24)."""
         from plugin.modules.mcp.protocol import (
             broadcast_notification, _sse_has_clients)
-
-        self._poll_stop = threading.Event()
-        stop = self._poll_stop
-
-        def _poll():
-            doc_svc = services.document
-            last = _UNKNOWN
-            while not stop.wait(2.0):
-                if not _sse_has_clients():
-                    last = _UNKNOWN  # re-baseline on next connect
-                    continue
-                try:
-                    doc = doc_svc.get_active_document()
-                    dt = doc_svc.detect_doc_type(doc) if doc else None
-                except Exception:
-                    continue
-                if last is _UNKNOWN:
-                    last = dt  # establish baseline, no notification
-                    continue
-                if dt != last:
-                    last = dt
-                    n = broadcast_notification(
-                        "notifications/tools/list_changed")
-                    log.info("Active doc type → %s; notified %d MCP "
-                             "client(s)", dt, n)
-
-        self._poll_thread = threading.Thread(
-            target=_poll, name="mcp-doctype-poll", daemon=True)
-        self._poll_thread.start()
-
-    def _stop_doc_type_poller(self):
-        if self._poll_stop is not None:
-            self._poll_stop.set()
-        self._poll_thread = None
-        self._poll_stop = None
+        if not _sse_has_clients():
+            return
+        n = broadcast_notification("notifications/tools/list_changed")
+        log.info("Active doc type -> %s; notified %d MCP client(s)",
+                 doc_type, n)
 
     def _unregister_routes(self, services):
-        self._stop_doc_type_poller()
         routes = services.http_routes
         for method, path in [
             ("POST", "/mcp"), ("GET", "/mcp"), ("DELETE", "/mcp"),
@@ -273,6 +245,7 @@ class MCPModule(ModuleBase):
         log.info("MCP routes unregistered")
 
     def shutdown(self):
+        self._active_doc.unregister()
         if self._routes_registered:
             try:
                 self._unregister_routes(self._services)

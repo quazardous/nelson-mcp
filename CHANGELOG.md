@@ -30,6 +30,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **LibreOffice sometimes never came up when started with a document**
+  (GitHub #35, #37; #2625). Two threads waited on each other: the main
+  thread, opening the document, held LibreOffice's global lock and waited for
+  the menu configuration, which a Nelson background thread held while it
+  waited for the global lock to set menu icons. Reproduced on 5 of 20 cold
+  starts with `/health` polled during launch. Nelson now does all its UNO
+  work at startup on the main thread (menu icons, module start, cache
+  prebuild removed), the sidebar panel and menu commands wait for startup
+  instead of forcing it, and `/health` and `tools/list` answer from a
+  document-event watcher instead of querying LibreOffice from the HTTP
+  thread. 50 cold starts out of 50 came up. `make coldstart-wbox` repeats
+  the scenario and saves a gdb backtrace of any hang; `make smoke` fails
+  when UNO is used off the main thread
 - **`calc_read_range` read cell by cell** (#2630) — four UNO calls per cell,
   5.4 s on the main thread for A1:CA2000. It now reads a range in two calls
   (`getDataArray`, `getFormulaArray`), with the same output. `format="rows"`

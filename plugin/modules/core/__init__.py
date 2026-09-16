@@ -66,64 +66,10 @@ class Module(ModuleBase):
             log.debug("Auto-deps check failed", exc_info=True)
 
         self._attach_page_logger()
-        # Pre-build paragraph cache in background after doc is loaded
-        import threading
-        threading.Thread(
-            target=self._prebuild_cache,
-            daemon=True, name="nelson-prebuild").start()
-
-    def _prebuild_cache(self):
-        """Wait for a document to load, then build para_ranges cache.
-
-        Skips if the cache was already built by a tool call.
-        """
-        import time
-        from plugin.framework.main_thread import post_to_main_thread
-        from plugin.modules.core.services.document import DocumentCache
-
-        # Wait for a document to be available (max 30s)
-        doc = None
-        for _ in range(15):
-            time.sleep(2)
-            try:
-                doc = self._doc_svc.get_active_document()
-                if doc and hasattr(doc, "getText"):
-                    break
-                doc = None
-            except Exception:
-                pass
-        if doc is None:
-            return
-
-        def _build():
-            # The cache registry compares UNO objects and registers a
-            # listener on first use: main thread only.
-            cache = DocumentCache.get(doc)
-            if cache.para_ranges is not None:
-                return
-            try:
-                sb = None
-                try:
-                    frame = doc.getCurrentController().getFrame()
-                    sb = frame.createStatusIndicator()
-                    sb.start("Nelson: indexing document...", 0)
-                except Exception:
-                    pass
-
-                self._doc_svc.get_paragraph_ranges(doc)
-
-                n = len(cache.para_ranges) if cache.para_ranges else 0
-                if sb:
-                    sb.setText("Nelson: %d paragraphs ready" % n)
-                    sb.setValue(100)
-                    import threading
-                    threading.Timer(
-                        3.0, lambda: post_to_main_thread(sb.end)
-                    ).start()
-            except Exception:
-                log.debug("prebuild cache failed", exc_info=True)
-
-        post_to_main_thread(_build)
+        # No cache pre-build: it polled getCurrentComponent() from a
+        # background thread during startup, the Nelson side of the GitHub
+        # #35/#37 deadlock. The first tool call builds the cache, and
+        # DocumentCache keeps it across calls (#2625, #2642).
 
     def _on_tool_completed(self, name=None, caller=None, result=None,
                            is_mutation=False, doc=None, **_kw):

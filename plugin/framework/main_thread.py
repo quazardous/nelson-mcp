@@ -163,3 +163,26 @@ def post_to_main_thread(fn):
     item = _WorkItem(fn, (), {})
     _work_queue.put(item)
     _poke_vcl()
+
+
+_off_main_reported = set()
+
+
+def warn_if_off_main_thread(what):
+    """Log a warning, once per call site, when UNO is used off the main thread.
+
+    Touching UNO from Nelson's own threads during startup is how Nelson took
+    part in the GitHub #35/#37 deadlock (#2625). `make smoke` fails on this
+    warning. Returns True when called off the main thread.
+    """
+    if threading.current_thread() is threading.main_thread():
+        return False
+    import traceback
+    frames = traceback.extract_stack(limit=6)[:-2]
+    site = tuple((f.filename, f.lineno) for f in frames)
+    if site not in _off_main_reported:
+        _off_main_reported.add(site)
+        log.warning("UNO off the main thread: %s from thread %r\n%s", what,
+                    threading.current_thread().name,
+                    "".join(traceback.format_list(frames)))
+    return True

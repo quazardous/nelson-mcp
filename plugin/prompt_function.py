@@ -41,7 +41,8 @@ try:
                 return self._provider
             try:
                 from plugin.main import bootstrap, get_services
-                bootstrap(self.ctx)
+                if not bootstrap(self.ctx, wait=False):
+                    return None     # still starting: try again next call
                 services = get_services()
                 self._provider = services.ai.get_provider("text")
             except Exception:

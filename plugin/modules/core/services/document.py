@@ -375,6 +375,8 @@ class DocumentService(ServiceBase):
 
     def get_active_document(self):
         """Return the active UNO document model, or None."""
+        from plugin.framework.main_thread import warn_if_off_main_thread
+        warn_if_off_main_thread("get_active_document")
         desktop = self._get_desktop()
         if desktop is None:
             log.warning("get_active_document: desktop is None")
@@ -748,10 +750,23 @@ class DocumentService(ServiceBase):
             return 1
 
     def get_page_count(self, model):
-        """Return page count of a Writer document."""
+        """Return page count of a Writer document.
+
+        Tries, in order, sources that do not move anything: the model's
+        PageCount property, then the document statistics. A 0 from either
+        means "not known yet" (no layout), not an empty document — it used
+        to be returned as is (#2636). Last resort: the view cursor.
+        """
         try:
-            # Use document property — no cursor movement needed
-            return model.getPropertyValue("PageCount") or 0
+            count = model.getPropertyValue("PageCount")
+            if count:
+                return count
+        except Exception:
+            pass
+        try:
+            for stat in model.getDocumentProperties().DocumentStatistics:
+                if stat.Name == "PageCount" and stat.Value:
+                    return stat.Value
         except Exception:
             pass
         # Fallback: use view cursor with save/restore

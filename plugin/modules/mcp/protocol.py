@@ -744,36 +744,28 @@ class MCPProtocolHandler:
     # ── Health endpoint ────────────────────────────────────────────────
 
     def handle_health(self, handler):
-        """GET /health — readiness probe."""
-        doc_svc = self.services.document
-        doc = None
-        doc_type = None
-        try:
-            doc = doc_svc.get_active_document()
-            if doc:
-                doc_type = doc_svc.detect_doc_type(doc)
-        except Exception:
-            pass
+        """GET /health — readiness probe.
 
-        save_dir = None
-        try:
-            save_dir = doc_svc.get_default_save_dir().replace("\\", "/")
-        except Exception:
-            pass
-
-        tool_count = len(self.tool_registry)
+        Answers from the active-document snapshot the main thread keeps: no
+        UNO call on the HTTP thread, which during startup is the Nelson side
+        of the GitHub #35/#37 deadlock (#2625).
+        """
+        watcher = self.services.get("active_document")
+        state = watcher.snapshot() if watcher is not None else {}
         data = {
             "status": "ok",
             "version": self.version,
             "session_id": _mcp_session_id,
-            "tools": tool_count,
+            "tools": len(self.tool_registry),
             "document": {
-                "available": doc is not None,
-                "doc_type": doc_type,
-                "doc_id": doc_svc.get_doc_id(doc) if doc else None,
+                "available": state.get("available"),
+                "doc_type": state.get("doc_type"),
+                "doc_id": state.get("doc_id"),
             },
-            "default_save_dir": save_dir,
+            "default_save_dir": state.get("default_save_dir"),
         }
+        if not state.get("known"):
+            data["document"]["pending"] = True
         self._send_json(handler, 200, data)
 
     def handle_tool_reference(self, handler):
@@ -849,14 +841,19 @@ class MCPProtocolHandler:
     # ── Helpers ───────────────────────────────────────────────────────
 
     def _detect_active_doc_type(self):
+        # Runs on the HTTP thread, where UNO must not be touched (#2625): the
+        # document-event watcher re-reads the active document on the main
+        # thread — events can lag behind a doc_create that just returned —
+        # and its last state answers if the main thread is busy.
+        watcher = self.services.get("active_document")
+        if watcher is None:
+            return None
         try:
-            doc_svc = self.services.document
-            doc = doc_svc.get_active_document()
-            if doc:
-                return doc_svc.detect_doc_type(doc)
+            execute_on_main_thread(watcher.refresh, timeout=5.0)
         except Exception:
-            pass
-        return None
+            log.debug("active document refresh for tools/list failed",
+                      exc_info=True)
+        return watcher.snapshot().get("doc_type")
 
     def _read_body(self, handler):
         from plugin.framework.http_server import read_json_body

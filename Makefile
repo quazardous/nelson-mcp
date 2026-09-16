@@ -83,7 +83,7 @@ OXT_NAME = $(EXTENSION_NAME)-$(EXTENSION_VERSION)$(BUILD_TAG)
 
 # ── Phony targets ────────────────────────────────────────────────────────────
 
-.PHONY: help build rebuild repack repack-deploy xcu clean dev-up dev-down smoke \
+.PHONY: coldstart-wbox help build rebuild repack repack-deploy xcu clean dev-up dev-down smoke \
         smoke-wbox wbox-up wbox-down wbox-deploy wbox-shot wbox-click wbox-key wbox-log \
         install install-force uninstall cache \
         dev-deploy dev-deploy-remove \
@@ -450,6 +450,13 @@ WBOX_CTL    = $(WBOX_PYTHON) $(SCRIPTS)/wbox_ctl.py
 
 smoke-wbox: build
 	WBOX_PYTHON="$(WBOX_PYTHON)" python3 $(SCRIPTS)/smoke_test.py --wbox
+
+# Cold starts with a document on the command line (GitHub #35/#37): runs the
+# dev instance, so deploy the code under test first (make wbox-deploy).
+# RUNS=20 make coldstart-wbox ; a hang saves a gdb backtrace per thread.
+RUNS ?= 10
+coldstart-wbox:
+	WBOX_PYTHON="$(WBOX_PYTHON)" python3 $(SCRIPTS)/coldstart_test.py $(RUNS)
 
 # The dev instance is the one the lo-wbox MCP tools drive (same config, same
 # instance name), so both can be mixed: start it here, screenshot it there.
