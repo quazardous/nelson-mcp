@@ -855,7 +855,10 @@ class DocumentService(ServiceBase):
         try:
             return model.getURL() or DocumentCache.key(model)
         except Exception:
-            return DocumentCache.key(model)
+            # Disposed (just closed): answer from the entry it had, and
+            # never register a new one for a dead document.
+            entry = DocumentCache._find(model)
+            return entry.key if entry is not None else None
 
     # ── Document ID ───────────────────────────────────────────────
 

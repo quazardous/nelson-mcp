@@ -144,3 +144,21 @@ def test_get_doc_id_does_not_touch_the_document():
     svc = DocumentService()
     model = Untouchable()
     assert svc.get_doc_id(model) == svc.get_doc_id(model)
+
+
+class Closed(Proxy):
+    """A proxy whose document was closed: every call is DisposedException."""
+
+    def getURL(self):
+        raise RuntimeError("DisposedException")
+
+
+def test_doc_key_of_a_closed_document_registers_nothing():
+    from plugin.modules.core.services.document import DocumentService
+    svc = DocumentService.__new__(DocumentService)
+    doc = Model()
+    known = DocumentCache.key(Proxy(doc))
+    count = len(DocumentCache._entries)
+    assert svc.doc_key(Closed(doc)) == known
+    assert svc.doc_key(Closed(Model())) is None
+    assert len(DocumentCache._entries) == count

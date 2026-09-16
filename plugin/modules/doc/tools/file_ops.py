@@ -656,13 +656,8 @@ def _release_undo(model):
     except Exception:
         return
     try:
-        guard = 0
-        while undo.isInContext() and guard < 100:
-            undo.leaveUndoContext()
-            guard += 1
-    except Exception:
-        log.debug("doc_close: could not leave undo context", exc_info=True)
-    try:
+        # reset() leaves every open Undo context, clears both stacks and
+        # removes any lock (XUndoManager.idl).
         undo.reset()
     except Exception:
         log.debug("doc_close: could not reset undo stack", exc_info=True)
