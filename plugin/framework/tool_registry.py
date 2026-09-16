@@ -280,12 +280,13 @@ class ToolRegistry:
         undo_mgr = None
         if mutates and ctx.doc is not None:
             action_id = uuid.uuid4().hex[:8]
-            try:
-                undo_mgr = ctx.doc.getUndoManager()
-                undo_mgr.enterUndoContext(
-                    "Nelson: %s [%s]" % (tool_name, action_id))
-            except Exception:
-                undo_mgr = None
+            if tool.opens_undo_context:
+                try:
+                    undo_mgr = ctx.doc.getUndoManager()
+                    undo_mgr.enterUndoContext(
+                        "Nelson: %s [%s]" % (tool_name, action_id))
+                except Exception:
+                    undo_mgr = None
 
         try:
             with _deferred_invalidation():

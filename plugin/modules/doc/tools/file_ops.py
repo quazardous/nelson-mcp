@@ -541,6 +541,8 @@ class CloseDocument(ToolBase):
     }
     doc_types = None
     is_mutation = True
+    # Closing destroys the document: never inside an undo context (#2651).
+    opens_undo_context = False
 
     def execute(self, ctx, **kwargs):
         desktop = _get_desktop()
@@ -598,6 +600,7 @@ class CloseDocument(ToolBase):
             log.info("Could not enumerate frames for next-doc activation", exc_info=True)
 
         closed = _describe_document(closing_doc)
+        _release_undo(closing_doc)
 
         # Close the document
         try:
@@ -638,6 +641,31 @@ class CloseDocument(ToolBase):
             log.info("doc_close: no next frame found")
 
         return result
+
+
+def _release_undo(model):
+    """Leave any open undo context and empty the undo stack before closing.
+
+    LibreOffice aborts in ~SfxUndoArray when a document is destroyed while
+    its undo manager still has a list action open, and the nested undo
+    arrays of a large rewrite (tables, notes, comments) are what it trips
+    on (#2651). The stack is destroyed a moment later anyway.
+    """
+    try:
+        undo = model.getUndoManager()
+    except Exception:
+        return
+    try:
+        guard = 0
+        while undo.isInContext() and guard < 100:
+            undo.leaveUndoContext()
+            guard += 1
+    except Exception:
+        log.debug("doc_close: could not leave undo context", exc_info=True)
+    try:
+        undo.reset()
+    except Exception:
+        log.debug("doc_close: could not reset undo stack", exc_info=True)
 
 
 def _describe_document(model):

@@ -285,3 +285,51 @@ class TestPerCallMutationDetection:
 
         # is_mutation unset -> inferred from the name prefix
         assert Unflagged().detects_mutation() is False
+
+
+class _Undo:
+    def __init__(self, log):
+        self.log = log
+
+    def enterUndoContext(self, title):
+        self.log.append("enter")
+
+    def leaveUndoContext(self):
+        self.log.append("leave")
+
+
+class _UndoDoc:
+    def __init__(self):
+        self.log = []
+
+    def getUndoManager(self):
+        return _Undo(self.log)
+
+
+class _Writes(ToolBase):
+    name = "fake_write"
+    parameters = {"type": "object", "properties": {}}
+    is_mutation = True
+
+    def execute(self, ctx, **kwargs):
+        ctx.doc.log.append("execute")
+        return {"status": "ok"}
+
+
+class _Closes(_Writes):
+    name = "fake_close"
+    opens_undo_context = False
+
+
+@pytest.mark.parametrize("tool, expected", [
+    (_Writes, ["enter", "execute", "leave"]),
+    (_Closes, ["execute"]),          # #2651: never destroy inside a context
+])
+def test_undo_context_only_for_tools_that_want_one(tool, expected):
+    reg = ToolRegistry(ServiceRegistry())
+    reg.register(tool())
+    doc = _UndoDoc()
+    ctx = ToolContext(doc=doc, ctx=None, doc_type=None,
+                      services=ServiceRegistry(), caller="test")
+    assert reg.execute(tool.name, ctx)["status"] == "ok"
+    assert doc.log == expected

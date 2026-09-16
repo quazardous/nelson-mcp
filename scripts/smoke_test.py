@@ -40,6 +40,7 @@ Exit code 0 = every check passed.
 
 import argparse
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -1399,6 +1400,7 @@ CHECKS = [
     ("style_set (#2647)", check_style_set),
     ("reads are capped (#39)", check_reads_are_capped),
     ("markdown exchange (#2635)", check_markdown_exchange),
+    ("close after rewrite (#2651)", check_close_after_rewrite),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

@@ -117,6 +117,11 @@ class ToolBase(ABC):
                      ``detects_mutation`` instead, so reads inside a
                      merged tool are not treated as writes.
         long_running: Hint that the tool may take a while (e.g. image gen).
+        opens_undo_context: Whether the registry wraps a mutating call in
+                     an undo context (one Ctrl+Z undoes the whole call).
+                     Must be False for a tool that closes, disposes or
+                     reloads its document: destroying a document inside
+                     an open undo context aborts LibreOffice (#2651).
         requires_doc: Whether the tool needs an open document.  Set to
                      False for tools like doc_create, doc_open
                      that should work without any document open.
@@ -137,6 +142,7 @@ class ToolBase(ABC):
     intent: Optional[str] = None
     is_mutation: Optional[bool] = None
     long_running: bool = False
+    opens_undo_context: bool = True
     requires_doc: bool = True
     requires_service: Optional[str] = None
 

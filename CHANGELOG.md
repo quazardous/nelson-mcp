@@ -30,6 +30,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **Closing a document could crash LibreOffice** (#2651). Nelson wraps every
+  change in an undo context, so one Ctrl+Z undoes a whole agent action — and
+  `doc_close` counted as a change: the document was destroyed while its undo
+  manager still had that context open. After a rewrite involving tables,
+  notes or comments, LibreOffice aborted, taking every open document with
+  it. It was in every version since 0.7.1. `doc_close` now runs outside any
+  undo context and leaves and clears the undo stack before closing; a tool
+  declares `opens_undo_context = False` when it destroys its document.
+  `make smoke` rewrites a document with a table twice and closes it, three
+  times over — which crashed LibreOffice before the fix
 - **Markdown given to `text_apply_range` landed as literal `#` and `**`**
   (#2635). The tool says it takes Markdown or HTML, but the import filter came
   from a global format setting, HTML in practice, so a Markdown report went
