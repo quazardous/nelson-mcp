@@ -35,7 +35,8 @@ TEMP_DIR = tempfile.gettempdir()
 def _get_format(config_svc=None):
     """Return the configured export format (``'markdown'`` or ``'html'``).
 
-    ``core.document_format`` in Options; ``'html'`` when unset or unknown.
+    ``core.document_format`` in Options; ``'markdown'`` when unset or
+    unknown (#2650).
     """
     if config_svc is not None:
         try:
@@ -44,7 +45,7 @@ def _get_format(config_svc=None):
                 return fmt
         except Exception:
             pass
-    return "html"
+    return "markdown"
 
 
 def resolve_export_format(config_svc=None, requested=None):

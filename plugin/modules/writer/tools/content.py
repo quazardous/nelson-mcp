@@ -26,6 +26,9 @@ class GetDocumentContent(ToolBase):
         "Get document (or selection/range) content. "
         "Result includes document_length. "
         "scope: full, selection, or range (requires start, end). "
+        "Content is Markdown by default (the Document format setting), or "
+        "HTML with format='html'; the result says which. HTML is about a "
+        "third larger, so a long document may not fit a single read. "
         "Content is capped (max_chars, default from Options, at most "
         "500000); a capped result says truncated: true. For a long document "
         "read by section instead: nav_outline, then nav_heading_content."
@@ -53,8 +56,9 @@ class GetDocumentContent(ToolBase):
                 "enum": ["markdown", "html"],
                 "description": (
                     "Format of the returned content (default: the Document "
-                    "format setting). Markdown is lighter; HTML keeps more "
-                    "formatting."),
+                    "format setting, markdown unless changed). Markdown is "
+                    "lighter; HTML keeps colours, underline, footnotes and "
+                    "merged cells."),
             },
             "start": {
                 "type": "integer",
@@ -135,7 +139,12 @@ class ApplyDocumentContent(ToolBase):
         "Insert or replace content. Preferred for partial edits: "
         "target='search' with search= and content=. "
         "For whole doc: target='full'. "
-        "Use target='range' with start/end."
+        "Use target='range' with start/end. "
+        "Rewriting from Markdown loses what Markdown cannot carry: text "
+        "colours, underline, footnotes and merged table cells. On a "
+        "formatted document, read and write with format='html', or rewrite "
+        "only the range that changes. Comments are lost by a rewrite in "
+        "either format."
     )
     parameters = {
         "type": "object",

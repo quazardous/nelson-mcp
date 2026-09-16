@@ -54,5 +54,6 @@ class Config:
 def test_export_format_prefers_the_call_then_the_setting():
     assert fs.resolve_export_format(Config("markdown")) == "markdown"
     assert fs.resolve_export_format(Config("markdown"), "html") == "html"
-    assert fs.resolve_export_format(Config("bogus")) == "html"
-    assert fs.resolve_export_format(None) == "html"
+    assert fs.resolve_export_format(Config("html")) == "html"
+    assert fs.resolve_export_format(Config("bogus")) == "markdown"
+    assert fs.resolve_export_format(None) == "markdown"

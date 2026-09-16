@@ -28,6 +28,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   applied without a restart, and the server reopened to local clients once it
   is cleared
 
+### Changed
+
+- **Writer content is exchanged as Markdown by default** (#2650).
+  `text_get_range` returned HTML unless told otherwise. Measured on the bench
+  documents, Markdown is about a third smaller: the RGPD `.docx` reads in one
+  call as Markdown (362 000 characters), while its HTML (626 000) exceeds the
+  500 000-character read limit, so rewriting it from HTML lost 40% of the
+  text. Rewriting from Markdown loses what Markdown cannot carry (text
+  colours, underline, footnotes, merged cells); `text_apply_range` now says
+  so and recommends `format: "html"` or a targeted rewrite for formatted
+  documents. HTML stays available per call and through Options > Nelson >
+  Document format; a setting already saved as HTML is kept
+
 ### Fixed
 
 - **Comments added by an agent showed "(no date)"** — `comment_add`, the

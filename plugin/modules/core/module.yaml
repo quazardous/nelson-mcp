@@ -7,19 +7,21 @@ config_inline: main
 config:
   document_format:
     type: string
-    default: html
+    default: markdown
     widget: select
     label: Document format for agents
     public: true
     description: >
       The format text_get_range returns Writer content in when a call does not
-      choose. Markdown is lighter for an AI agent to read; HTML keeps more of
-      the formatting. Content an agent writes is recognised either way.
+      choose. Markdown is about a third lighter and fits long documents under
+      the read limit, but rewriting a document from it loses text colours,
+      underline, footnotes and merged cells; HTML keeps those. Content an
+      agent writes is recognised either way.
     options:
-      - value: html
-        label: HTML
       - value: markdown
         label: Markdown
+      - value: html
+        label: HTML
   log_level:
     type: string
     default: WARN

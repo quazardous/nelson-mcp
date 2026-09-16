@@ -1337,14 +1337,18 @@ def check_markdown_exchange(h):
             "content", "").lower():
         raise Fail("format=html did not return HTML")
 
-    h.set_config("core.document_format", "markdown")
+    default = h.call("text_get_range", scope="full")
+    if default.get("format") != "markdown":
+        raise Fail("the default format is not Markdown (#2650): %s"
+                   % default.get("format"))
+    h.set_config("core.document_format", "html")
     try:
-        default = h.call("text_get_range", scope="full")
-        if default.get("format") != "markdown":
+        setting = h.call("text_get_range", scope="full")
+        if setting.get("format") != "html":
             raise Fail("the Document format setting did not change the "
-                       "default: %s" % default.get("format"))
+                       "default: %s" % setting.get("format"))
     finally:
-        h.set_config("core.document_format", "html")
+        h.set_config("core.document_format", "markdown")
 
     # Round trip: read as Markdown, write it back, same structure.
     h.call("text_apply_range", target="full", content=as_md["content"],
@@ -1356,8 +1360,9 @@ def check_markdown_exchange(h):
         raise Fail("Markdown round trip changed the structure: headings "
                    "%s -> %s, tables %d -> %d"
                    % (outline, again, len(tables), len(tables_again)))
-    return ("Markdown imported as headings%s%s; formats and setting "
-            "apply; round trip keeps %d headings, %d table(s)"
+    return ("Markdown imported as headings%s%s; Markdown by default, html "
+            "per call and by setting; round trip keeps %d headings, "
+            "%d table(s)"
             % ("" if bold is None else ", bold",
                ", table" if tables else " (no table: filter)",
                len(again), len(tables_again)))
