@@ -326,6 +326,45 @@ def _get_desktop():
     return smgr.createInstanceWithContext("com.sun.star.frame.Desktop", ctx)
 
 
+def _make_active(desktop, model):
+    """Make *model* the desktop's current component before returning (#34).
+
+    loadComponentFromURL returns as soon as the document is loaded, but its
+    frame only becomes the active one once the window system gets round to
+    it. Until then getCurrentComponent() still answers the previous
+    component — the Start Center when this is the first document — so the
+    next tool call, which resolves the active document, fails with
+    no_document, or silently targets the document that was active before.
+
+    Activating the frame is synchronous and needs no event loop, which
+    matters: tools run on the main thread, so waiting or sleeping here would
+    block the very loop that performs the activation. It is also what the
+    `_document` path already does, which is why that path never raced.
+
+    Returns True when the model is the current component afterwards.
+    """
+    try:
+        frame = model.getCurrentController().getFrame()
+        frame.activate()
+    except Exception:
+        log.debug("Could not activate the new document's frame", exc_info=True)
+    try:
+        current = desktop.getCurrentComponent()
+    except Exception:
+        return False
+    if current is None:
+        return False
+    if current == model:
+        return True
+    # pyuno proxies of the same object do not always compare equal; fall
+    # back on the URL, which a freshly loaded file always has.
+    try:
+        url = model.getURL()
+        return bool(url) and current.getURL() == url
+    except Exception:
+        return False
+
+
 class CreateDocument(ToolBase):
     """Create a new empty document in LibreOffice."""
 
@@ -395,6 +434,8 @@ class CreateDocument(ToolBase):
             log.exception("CreateDocument failed: %s", exc)
             return {"status": "error", "error": str(exc)}
 
+        active = _make_active(desktop, new_doc)
+
         # Optionally set initial content for writer documents.
         if content and doc_type == "writer":
             try:
@@ -413,6 +454,10 @@ class CreateDocument(ToolBase):
         result = {"status": "ok", "doc_type": doc_type}
         if doc_id:
             result["doc_id"] = doc_id
+        if not active:
+            result["warning"] = (
+                "The new document is not the active one yet. Pass "
+                "_document='id:%s' to address it explicitly." % doc_id)
 
         # Optionally save immediately
         if path:
@@ -466,6 +511,8 @@ class OpenDocument(ToolBase):
             log.exception("OpenDocument failed: %s", exc)
             return {"status": "error", "error": str(exc)}
 
+        active = _make_active(desktop, new_doc)
+
         # Return stable doc_id
         doc_id = None
         try:
@@ -477,6 +524,10 @@ class OpenDocument(ToolBase):
         result = {"status": "ok", "file_url": url}
         if doc_id:
             result["doc_id"] = doc_id
+        if not active:
+            result["warning"] = (
+                "The document is open but not the active one yet. Pass "
+                "_document='id:%s' to address it explicitly." % doc_id)
         return result
 
 

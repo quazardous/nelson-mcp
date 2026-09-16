@@ -58,6 +58,28 @@ _EXECUTION_TIMEOUT = -32001
 _mcp_session_id = str(uuid.uuid4())
 
 
+def _count_open_documents(doc_svc):
+    """Count open office documents without touching them.
+
+    Deliberately does not go through get_doc_id(), which writes a property
+    into each document and marks it modified (#2627).
+    """
+    try:
+        desktop = doc_svc._get_desktop()
+        components = desktop.getComponents().createEnumeration()
+    except Exception:
+        return 0
+    count = 0
+    while components.hasMoreElements():
+        try:
+            comp = components.nextElement()
+            if comp.supportsService("com.sun.star.document.OfficeDocument"):
+                count += 1
+        except Exception:
+            continue
+    return count
+
+
 def _tool_error(code, message, hint=None, retryable=False):
     """Build a structured tool error response."""
     err = {
@@ -539,6 +561,20 @@ class MCPProtocolHandler:
         # as requiring a document).
         tool = registry.get(tool_name)
         if doc is None and (tool is None or tool.requires_doc):
+            open_docs = _count_open_documents(doc_svc)
+            if open_docs:
+                # Documents exist but none is active: typically the moment
+                # right after one was opened, while the window system has
+                # not made it current yet (#34). Waiting fixes it, and naming
+                # the document fixes it for good.
+                return _tool_error(
+                    "no_active_document",
+                    "%d document(s) open, but none is active right now."
+                    % open_docs,
+                    hint=("Retry, or pass _document (see doc_list_open) to "
+                          "address a document explicitly."),
+                    retryable=True,
+                )
             return _tool_error(
                 "no_document",
                 "No document open in LibreOffice.",

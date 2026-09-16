@@ -21,6 +21,7 @@ and was caught by hand:
     #11  50 read-only tools were silently reclassified as mutations
     CORS any web page could drive LibreOffice through the MCP endpoint
     #38  a stale session got 409, so no client ever re-initialized by itself
+    #34  the call right after doc_open targeted no document, or the previous one
 
 Where it can, it checks something other than the tool's own answer — the
 bytes on disk, or the live document through the UNO socket. A tool
@@ -433,6 +434,33 @@ def check_round_trip(h):
     return "content.xml and reopen both carry the text"
 
 
+def check_open_is_active(h):
+    """#34: the document doc_open returns is the one the next call targets.
+
+    Opened as the first document, so the Start Center is the current
+    component when doc_open starts — the case that raced. The very next call
+    names no document, exactly as braklo's failing sequence did.
+    """
+    path = h.doc("open_active.odt")
+    h.reset()
+    h.call("doc_create", doc_type="writer", path=path)
+    h.reset()
+    opened = h.call("doc_open", file_path=path)
+    if opened.get("status") != "ok":
+        raise Fail("doc_open failed: %s" % opened)
+    info = h.call("doc_info")
+    if info.get("status") != "ok":
+        raise Fail("call right after doc_open failed: %s" % info)
+    want = opened.get("file_url")
+    if info.get("file_url") != want:
+        raise Fail("call right after doc_open targeted %r, not the document "
+                   "just opened (%r)" % (info.get("file_url"), want))
+    if "warning" in opened:
+        raise Fail("doc_open says the document is not active: %s"
+                   % opened["warning"])
+    return "first opened document is the active one on the next call"
+
+
 def check_save_as_keeps_original(h):
     """save_document_as must not write through to the source file (#19)."""
     a, b = h.doc("original.odt"), h.doc("saved_as.odt")
@@ -744,6 +772,7 @@ CHECKS = [
     ("deprecated aliases", check_alias_still_resolves),
     ("mutation classification", check_mutation_classification),
     ("document round-trip", check_round_trip),
+    ("open is active (#34)", check_open_is_active),
     ("save-as keeps original", check_save_as_keeps_original),
     ("doc_id uniqueness", check_doc_ids_distinct),
     ("recording not forced", check_recording_not_forced),

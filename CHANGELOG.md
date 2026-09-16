@@ -30,6 +30,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Fixed
 
+- **The call right after `doc_open` or `doc_create` could miss the new
+  document** (#34) — both returned as soon as LibreOffice had loaded it, but
+  its window only became the active one a few tens of milliseconds later. The
+  next call, which resolves the active document, then failed with
+  `no_document` (`retryable: false`), or silently worked on whatever document
+  was active before. It only happened with the real GUI and when the Start
+  Center was the current component, which is why headless tests never saw it.
+  Both tools now activate the new document's frame before returning — the
+  synchronous step the `_document` path always took, and the reason naming the
+  document explicitly never raced — and say so in a `warning` if it still is
+  not active. When documents are open but none is active, the error is now
+  `no_active_document`, retryable, with a hint to pass `_document`.
+  `make smoke-wbox` reproduced the race on every run before the fix and passes
+  after it; `make smoke` gains a check that the first opened document is the
+  one the next call targets
 - **A LibreOffice restart left every MCP client silently dead** (#38) — a
   session id from before the restart was answered with `409`, which no client
   acts on, so the client kept listing the server as connected and failed on
