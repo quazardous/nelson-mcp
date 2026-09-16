@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **`make smoke-wbox` and the `wbox-*` targets** — run LibreOffice's real GUI
+  inside a nested wbox compositor from make, offscreen by default and visible
+  with `WBOX_VISIBLE=1`. Headless LibreOffice has no event loop and no Start
+  Center, which hides a class of bugs; the smoke suite run this way already
+  reproduces the document-activation race of #34 on every run
+
 ## [0.13.0] — 2026-09-16
 
 A browser origin that is not explicitly allowed can no longer reach the

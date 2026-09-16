@@ -84,6 +84,7 @@ OXT_NAME = $(EXTENSION_NAME)-$(EXTENSION_VERSION)$(BUILD_TAG)
 # ── Phony targets ────────────────────────────────────────────────────────────
 
 .PHONY: help build rebuild repack repack-deploy xcu clean dev-up dev-down smoke \
+        smoke-wbox wbox-up wbox-down wbox-deploy wbox-shot wbox-log \
         install install-force uninstall cache \
         dev-deploy dev-deploy-remove \
         lo-start lo-start-full lo-kill lo-restart \
@@ -107,6 +108,14 @@ help:
 	@echo "Checks:"
 	@echo "  make test                   Unit tests (fast, never starts LibreOffice)"
 	@echo "  make smoke                  Live check: headless LO + real MCP calls"
+	@echo "  make smoke-wbox             Same checks, LO's real GUI in a wbox compositor"
+	@echo ""
+	@echo "wbox (LibreOffice GUI in a nested compositor, offscreen by default):"
+	@echo "  make wbox-deploy            Stop, build + install into the dev profile, start"
+	@echo "  make wbox-up / wbox-down    Start / stop the dev instance (port 8767)"
+	@echo "  make wbox-shot              Screenshot into dev/lo-wbox/screenshots/"
+	@echo "  make wbox-log               Last lines of the live Nelson log"
+	@echo "  WBOX_VISIBLE=1 make ...     Show the window instead of rendering offscreen"
 	@echo ""
 	@echo "Release:"
 	@echo "  make release                Tag + build + publish GitHub release (gated)"
@@ -423,6 +432,41 @@ test:
 # UNO behaviour — which is where the bugs that reached releases all were.
 smoke: build
 	python3 $(SCRIPTS)/smoke_test.py
+
+# ── wbox ─────────────────────────────────────────────────────────────────────
+# LibreOffice with its real GUI inside a nested wbox compositor, driven from
+# make instead of through the lo-wbox MCP tools. `soffice --headless` never
+# starts the VCL event loop, so it cannot see what depends on it (the cold-start
+# deadlock of #35/#37, the first-document race of #34); this can.
+#
+# Offscreen by default. WBOX_VISIBLE=1 gives a window, for when the assertion
+# is something you have to look at. wbox lives in its own venv, on a different
+# Python than the system one pyuno needs, hence WBOX_PYTHON.
+WBOX_PYTHON ?= $(shell head -1 "$$(command -v wbox-mcp 2>/dev/null)" 2>/dev/null | sed -n 's/^\#!//p')
+WBOX_CONFIG := dev/lo-wbox/config.yaml
+WBOX_CTL    = $(WBOX_PYTHON) $(SCRIPTS)/wbox_ctl.py
+
+smoke-wbox: build
+	WBOX_PYTHON="$(WBOX_PYTHON)" python3 $(SCRIPTS)/smoke_test.py --wbox
+
+# The dev instance is the one the lo-wbox MCP tools drive (same config, same
+# instance name), so both can be mixed: start it here, screenshot it there.
+wbox-up:
+	$(WBOX_CTL) up $(WBOX_CONFIG)
+
+wbox-down:
+	$(WBOX_CTL) down $(WBOX_CONFIG)
+
+# Never install while soffice runs — see AGENTS.md on unopkg keeping the old code.
+wbox-deploy: wbox-down
+	bash dev/lo-wbox/scripts/deploy.sh
+	$(MAKE) wbox-up
+
+wbox-shot:
+	$(WBOX_CTL) shot $(WBOX_CONFIG)
+
+wbox-log:
+	@tail -n 50 dev/lo-wbox/log/nelson.log
 
 # ── POC extension ───────────────────────────────────────────────────────────
 

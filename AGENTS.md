@@ -48,8 +48,24 @@ never deploy while soffice is running:
 mcp__lo-wbox__kill  →  mcp__lo-wbox__deploy  →  mcp__lo-wbox__launch
 ```
 
-wbox can run headless, which is what an automated check should use; a visible
-session is for when the assertion is something you have to *look* at.
+The same loop is available from make, without MCP — offscreen by default,
+`WBOX_VISIBLE=1` to get a window:
+
+```bash
+make wbox-deploy     # stop, build + install into /tmp/lo_dev_profile, start
+make wbox-up         # start the dev instance (Nelson on port 8767)
+make wbox-down       # stop it
+make wbox-shot       # screenshot into dev/lo-wbox/screenshots/
+make wbox-log        # tail the live Nelson log
+```
+
+It is the same instance the MCP tools drive (same config, same instance name),
+so the two can be mixed. `scripts/wbox_ctl.py` does the work and runs under
+wbox's own venv interpreter (`WBOX_PYTHON`, resolved from `wbox-mcp`), since
+wbox and pyuno need different Pythons.
+
+Headless is what an automated check should use; a visible session is for when
+the assertion is something you have to *look* at.
 
 > **`unopkg add -f` does not reliably replace the installed code.** It can
 > report success while LibreOffice keeps running the previous version, which
@@ -171,9 +187,19 @@ LibreOffice has run it. `make test` covers pure-Python framework logic only —
 run it (it must stay green), but it proves nothing about UNO behaviour.
 
 ```bash
-make test     # fast, pure Python, never starts LibreOffice
-make smoke    # installs the built .oxt, runs LO headless, drives it over MCP
+make test        # fast, pure Python, never starts LibreOffice
+make smoke       # installs the built .oxt, runs LO headless, drives it over MCP
+make smoke-wbox  # the same checks against LO's real GUI in a wbox compositor
 ```
+
+`soffice --headless` never starts the VCL event loop and has no Start Center,
+so it cannot see anything that depends on either. `make smoke-wbox` runs the
+same checks with the real GUI, offscreen. It is **not** a release gate — it
+needs wbox installed — but it is the one to use for anything touching startup,
+document activation or the main thread. It already shows a bug headless hides:
+a tool called right after `doc_create` can still see the Start Center as the
+current component (#34's family), so `doc-type filtering` and `deprecated
+aliases` fail there and pass headless.
 
 `make smoke` is the one that can catch a real regression: it asserts the bugs
 that actually shipped (#11 mutation classification and aliases, #19 save-as,

@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
 """Seed LibreOffice profile with default registry settings (suppress first-run wizard, etc.)."""
 
+import os
 import re
+import sys
 from pathlib import Path
 
-PROFILE_DIR = Path("/tmp/lo_dev_profile")
+# The profile to seed: first argument, else LO_PROFILE_DIR, else the dev
+# profile. The smoke test passes its throwaway profile explicitly.
+PROFILE_DIR = Path(sys.argv[1] if len(sys.argv) > 1
+                   else os.environ.get("LO_PROFILE_DIR", "/tmp/lo_dev_profile"))
 
 # Settings to pre-seed
 ITEMS = [

@@ -25,7 +25,13 @@ Where it can, it checks something other than the tool's own answer — the
 bytes on disk, or the live document through the UNO socket. A tool
 reporting on itself cannot catch a bug in how it reports.
 
-    python3 scripts/smoke_test.py [--keep] [--port N] [--verbose]
+    python3 scripts/smoke_test.py [--keep] [--port N] [--verbose] [--wbox]
+
+`--wbox` runs LibreOffice with its real GUI inside a nested wbox compositor
+instead of `soffice --headless`. Headless mode never starts the VCL event loop,
+so it cannot see what depends on it — the cold-start dispatch behind #35/#37,
+the first-document race of #34. The compositor is offscreen by default; set
+WBOX_VISIBLE=1 to watch it.
 
 Exit code 0 = every check passed.
 """
@@ -46,6 +52,21 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_PORT = 8769
 UNO_PORT = 2003
 BOOT_TIMEOUT = 90
+WBOX_INSTANCE = "nelson-smoke"
+
+
+def _wbox_python():
+    """The interpreter wbox is installed under — it is not the system one."""
+    explicit = os.environ.get("WBOX_PYTHON")
+    if explicit:
+        return explicit
+    launcher = shutil.which("wbox-mcp")
+    if launcher:
+        with open(launcher, encoding="utf-8", errors="replace") as f:
+            first = f.readline().strip()
+        if first.startswith("#!"):
+            return first[2:].split()[0]
+    raise RuntimeError("wbox not found: install wbox-mcp or set WBOX_PYTHON")
 
 
 # ── plumbing ─────────────────────────────────────────────────────────────
@@ -55,11 +76,13 @@ class Fail(Exception):
 
 
 class Harness:
-    def __init__(self, port, uno_port, verbose=False, keep=False):
+    def __init__(self, port, uno_port, verbose=False, keep=False, wbox=False):
         self.port = port
         self.uno_port = uno_port
         self.verbose = verbose
         self.keep = keep
+        self.wbox = wbox
+        self.wbox_config = None
         self.profile = tempfile.mkdtemp(prefix="nelson-smoke-")
         self.workdir = tempfile.mkdtemp(prefix="nelson-smoke-docs-")
         self.log_path = os.path.join(self.profile, "nelson.log")
@@ -87,6 +110,13 @@ class Harness:
             if not any(n.startswith("plugin/lib/pysqlite3/") for n in z.namelist()):
                 raise Fail("%s has no bundled pysqlite3 — it would fail on "
                            "Windows (run scripts/fetch_sqlite3.py)" % oxt)
+        if self.wbox:
+            # A GUI LibreOffice on a fresh profile opens the first-run wizard
+            # and blocks. Seed before unopkg touches the profile, while the
+            # registry file does not exist yet and nothing can be lost.
+            self._run([sys.executable,
+                       os.path.join(ROOT, "dev", "lo-wbox", "scripts",
+                                    "seed_registry.py"), self.profile])
         unopkg = self._find("unopkg")
         self._run([unopkg, "add", "-f", oxt,
                    "-env:UserInstallation=file://%s" % self.profile])
@@ -98,13 +128,49 @@ class Harness:
         env["NELSON_SET_CONFIG"] = (
             "core.log_level=DEBUG,http.port=%d" % self.port)
         cmd = [
-            soffice, "--headless", "--nologo", "--norestore", "--nolockcheck",
+            soffice, "--nologo", "--norestore", "--nolockcheck",
             "-env:UserInstallation=file://%s" % self.profile,
             "--accept=socket,host=localhost,port=%d;urp;" % self.uno_port,
         ]
-        self.proc = subprocess.Popen(
-            cmd, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        if self.wbox:
+            self._wbox_up(cmd, env)
+        else:
+            cmd.insert(1, "--headless")
+            self.proc = subprocess.Popen(
+                cmd, env=env, stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL)
         self._wait_healthy()
+
+    def _wbox(self, action):
+        ctl = os.path.join(ROOT, "scripts", "wbox_ctl.py")
+        r = subprocess.run([_wbox_python(), ctl, action, self.wbox_config],
+                           capture_output=True, text=True, timeout=120)
+        if self.verbose or r.returncode != 0:
+            print("    wbox %s: %s%s" % (action, r.stdout.strip(),
+                                       r.stderr.strip()))
+        return r
+
+    def _wbox_up(self, cmd, env):
+        # JSON is valid YAML, and it sidesteps quoting the ';' and ':' in the
+        # soffice arguments. Only the variables Nelson reads are passed: wbox
+        # builds the rest of the environment for the nested session itself.
+        config = {
+            "name": WBOX_INSTANCE,
+            "compositor": "labwc",
+            "screen": "1280x800",
+            "input_backend": "hybrid",
+            "app": {
+                "command": cmd,
+                "env": {k: env[k] for k in
+                        ("NELSON_LOG_PATH", "NELSON_SET_CONFIG")},
+            },
+        }
+        self.wbox_config = os.path.join(self.profile, "wbox.yaml")
+        with open(self.wbox_config, "w", encoding="utf-8") as f:
+            json.dump(config, f, indent=2)
+        self._wbox("down")               # a previous run may have crashed
+        if self._wbox("up").returncode != 0:
+            raise Fail("wbox could not start the compositor")
 
     def _wait_healthy(self):
         deadline = time.time() + BOOT_TIMEOUT
@@ -121,6 +187,8 @@ class Harness:
                    % (self.port, BOOT_TIMEOUT, last))
 
     def stop(self):
+        if self.wbox and self.wbox_config:
+            self._wbox("down")
         if self.proc and self.proc.poll() is None:
             self.proc.terminate()
             try:
@@ -594,16 +662,25 @@ def main():
     ap.add_argument("--keep", action="store_true",
                     help="keep the profile and documents for inspection")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--wbox", action="store_true",
+                    help="run LibreOffice's GUI in a wbox compositor "
+                         "(offscreen unless WBOX_VISIBLE=1)")
     args = ap.parse_args()
 
-    h = Harness(args.port, args.uno_port, args.verbose, args.keep)
+    h = Harness(args.port, args.uno_port, args.verbose, args.keep, args.wbox)
     print("Nelson smoke test — profile %s" % h.profile)
 
     failures = []
     try:
         print("  installing extension ...", flush=True)
         h.install()
-        print("  starting LibreOffice headless ...", flush=True)
+        if h.wbox:
+            visible = os.environ.get("WBOX_VISIBLE", "").lower() in (
+                "1", "true", "yes", "on")
+            print("  starting LibreOffice in wbox (%s) ..."
+                  % ("visible" if visible else "offscreen"), flush=True)
+        else:
+            print("  starting LibreOffice headless ...", flush=True)
         h.launch()
         print("  server up on port %d\n" % h.port, flush=True)
 
