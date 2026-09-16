@@ -18,7 +18,11 @@ Nelson MCP runs an HTTP server inside LibreOffice and speaks the [Model Context 
 
 ## What it looks like
 
-An agent wrote this report through Nelson: the content as Markdown, heading colours with `style_set`, a shaded table, a `Page {page} of {pages}` footer, and a comment on the hiring line. The **Nelson MCP** sidebar logs every call. Select a call to see its caller, status, duration and parameters.
+An agent writes a quarterly report into an empty Writer document, one tool call at a time:
+
+![An agent builds a Q3 report in LibreOffice Writer through Nelson: text, heading colours, table shading, footer, and a comment, with each call listed in the Nelson MCP sidebar](docs/img/demo-report.gif)
+
+The finished report: the content as Markdown, heading colours with `style_set`, a shaded table, a `Page {page} of {pages}` footer, and a comment on the hiring line. The **Nelson MCP** sidebar logs every call. Select a call to see its caller, status, duration and parameters.
 
 ![A Writer report built by an agent, with the Nelson MCP sidebar listing each tool call](docs/img/panel-mcp-actions.png)
 
