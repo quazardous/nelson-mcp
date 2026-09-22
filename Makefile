@@ -84,7 +84,7 @@ OXT_NAME = $(EXTENSION_NAME)-$(EXTENSION_VERSION)$(BUILD_TAG)
 # ── Phony targets ────────────────────────────────────────────────────────────
 
 .PHONY: coldstart-wbox help build rebuild repack repack-deploy xcu clean dev-up dev-down smoke \
-        smoke-wbox wbox-up wbox-down wbox-deploy wbox-shot wbox-click wbox-key wbox-log \
+        smoke-wbox smoke-wbox-kde wbox-up wbox-down wbox-deploy wbox-shot wbox-click wbox-key wbox-log \
         install install-force uninstall cache \
         dev-deploy dev-deploy-remove \
         lo-start lo-start-full lo-kill lo-restart \
@@ -109,6 +109,7 @@ help:
 	@echo "  make test                   Unit tests (fast, never starts LibreOffice)"
 	@echo "  make smoke                  Live check: headless LO + real MCP calls"
 	@echo "  make smoke-wbox             Same checks, LO's real GUI in a wbox compositor"
+	@echo "  make smoke-wbox-kde         Same, with the KDE interface (VCL=kf6)"
 	@echo ""
 	@echo "wbox (LibreOffice GUI in a nested compositor, offscreen by default):"
 	@echo "  make wbox-deploy            Stop, build + install into the dev profile, start"
@@ -452,8 +453,16 @@ WBOX_PYTHON ?= $(shell head -1 "$$(command -v wbox-mcp 2>/dev/null)" 2>/dev/null
 WBOX_CONFIG := dev/lo-wbox/config.yaml
 WBOX_CTL    = $(WBOX_PYTHON) $(SCRIPTS)/wbox_ctl.py
 
+# VCL=kf6 (or qt6) runs the GUI smoke with LibreOffice's KDE/Qt interface
+# instead of GTK3; smoke-wbox-kde is the shorthand. GitHub #41 only showed
+# there, so a change to document activation deserves both runs.
+VCL ?= gtk3
+
 smoke-wbox: build
-	SOFFICE="$(SOFFICE)" WBOX_PYTHON="$(WBOX_PYTHON)" python3 $(SCRIPTS)/smoke_test.py --wbox
+	SOFFICE="$(SOFFICE)" VCL="$(VCL)" WBOX_PYTHON="$(WBOX_PYTHON)" python3 $(SCRIPTS)/smoke_test.py --wbox
+
+smoke-wbox-kde:
+	$(MAKE) smoke-wbox VCL=kf6
 
 # Cold starts with a document on the command line (GitHub #35/#37): runs the
 # dev instance, so deploy the code under test first (make wbox-deploy).

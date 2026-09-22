@@ -85,6 +85,7 @@ class Harness:
         self.verbose = verbose
         self.keep = keep
         self.wbox = wbox
+        self.vcl = os.environ.get("VCL") or "gtk3"
         self.wbox_config = None
         self.profile = tempfile.mkdtemp(prefix="nelson-smoke-")
         self.workdir = tempfile.mkdtemp(prefix="nelson-smoke-docs-")
@@ -126,6 +127,15 @@ class Harness:
 
     def launch(self):
         soffice = self._find("soffice")
+        if self.wbox:
+            # VCL=kf6 runs LibreOffice's KDE interface instead of GTK3: window
+            # activation completes later there, which is the only setup where
+            # /health went stale after doc_open (GitHub #41).
+            plugin = os.path.join(os.path.dirname(os.path.realpath(soffice)),
+                                  "libvclplug_%slo.so" % self.vcl)
+            if not os.path.exists(plugin):
+                raise Fail("VCL=%s: %s is not installed" % (self.vcl, plugin))
+            print("  interface: %s" % self.vcl)
         try:
             version = subprocess.run([soffice, "--version"], capture_output=True,
                                      text=True, timeout=60).stdout.strip()
@@ -174,8 +184,9 @@ class Harness:
             "input_backend": "hybrid",
             "app": {
                 "command": cmd,
-                "env": {k: env[k] for k in
-                        ("NELSON_LOG_PATH", "NELSON_SET_CONFIG")},
+                "env": dict({k: env[k] for k in
+                             ("NELSON_LOG_PATH", "NELSON_SET_CONFIG")},
+                            SAL_USE_VCLPLUGIN=self.vcl),
             },
         }
         self.wbox_config = os.path.join(self.profile, "wbox.yaml")
