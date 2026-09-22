@@ -256,3 +256,31 @@ status events posted to the main thread, `nelson-prebuild` removed, the
 doc-type poller replaced by document events, `/health` answered without
 UNO, bootstrap no longer waiting for the main thread while holding a lock
 UNO callbacks take.
+
+## Verification by the reporter, 0.14.0, 2026-09-19 (GitHub #35)
+
+On the machine where both hangs happened, now on LibreOffice 26.8.0.3:
+
+- 20 replicated Thunderbird-attachment cold starts (read-only file in the
+  mail client's private temp dir, handed over as a `file://` URL, with the
+  mail client's environment including its `LD_LIBRARY_PATH`), plus one real
+  double click: all came up with the document window, `/health` at ~0.55 s.
+- 50 earlier cold starts (ordinary, recovery pending, `Crashed=true` forced)
+  all came up, but by the reporter's own correction their oracle stopped at
+  the lock file or the recovery dialog, so only the attachment runs cover a
+  completed start.
+
+Two corrections to the record above:
+
+- **The NSS lead is closed.** The hung process had the mail client's
+  `cert9.db` / `key4.db` open because LibreOffice inherits the mail client's
+  environment; healthy starts from the attachment path open them too. It was
+  a property of the launch path, not of the hang.
+- **`kill -9` does not set `RecoveryInfo/Crashed=true`.** After `SIGKILL`
+  the flag stays `false` and only a `RecoveryList` entry appears; the flag is
+  written on shutdown. The `Crashed=true` precondition in #37's title has to
+  be set by hand to be reproduced.
+
+The A/B the reporter could not do is on our side: `make coldstart-wbox`
+hung 5 of 20 before 78421fc, 0 of 50 after. Issues #35/#37 stay open until
+2026-09-30 in case the hang comes back in normal use.
