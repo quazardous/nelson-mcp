@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.14.2] — 2026-09-22
+
+`doc_open` no longer hangs when LibreOffice has a question about the file
+(a lock, a password, damage): it says what the problem is at once.
 
 ### Fixed
 
