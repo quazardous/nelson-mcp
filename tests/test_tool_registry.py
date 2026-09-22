@@ -355,3 +355,18 @@ class RuntimeException(Exception):
 def test_only_transient_failures_are_retryable(exc, retryable):
     from plugin.framework.tool_registry import _is_retryable
     assert _is_retryable(exc) is retryable
+
+
+class _SaysError(ToolBase):
+    name = "says_error"
+    parameters = {"type": "object", "properties": {}}
+
+    def execute(self, ctx, **kwargs):
+        return {"status": "error", "error": "No sheet named 'Nope'."}
+
+
+def test_error_results_carry_message_and_keep_error():
+    reg = _make_registry(_SaysError())
+    result = reg.execute("says_error", _make_ctx(doc_type=None))
+    assert result["message"] == "No sheet named 'Nope'."
+    assert result["error"] == "No sheet named 'Nope'."

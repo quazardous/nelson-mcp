@@ -315,6 +315,8 @@ class ToolRegistry:
             except Exception:
                 pass
 
+        _with_message(result)
+
         # Add action_id to result for traceability
         if action_id and isinstance(result, dict):
             result["_action_id"] = action_id
@@ -368,6 +370,18 @@ class ToolRegistry:
 
     def __len__(self):
         return len(self._tools)
+
+
+def _with_message(result):
+    """Give an error result a ``message``, the key the rest of Nelson uses.
+
+    Several Calc tools put the reason in ``error`` (GitHub #33, follow-up).
+    ``error`` stays, for clients that already read it.
+    """
+    if (isinstance(result, dict) and result.get("status") == "error"
+            and "message" not in result and "error" in result):
+        result["message"] = str(result["error"])
+    return result
 
 
 def _signing(signer, doc):
