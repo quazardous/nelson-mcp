@@ -939,15 +939,13 @@ class DocumentService(ServiceBase):
 
                     doc_id = self.get_doc_id(model)
 
+                    # UNO identity: two documents loaded from the same file
+                    # share a URL and a title, and both read as active when
+                    # compared by those (GitHub #40).
                     is_active = False
                     if active_model is not None:
                         try:
-                            is_active = (
-                                model.getURL() == active_model.getURL()
-                                and frame.getTitle()
-                                == active_model.getCurrentController()
-                                    .getFrame().getTitle()
-                            )
+                            is_active = (model == active_model)
                         except Exception:
                             is_active = (model is active_model)
 

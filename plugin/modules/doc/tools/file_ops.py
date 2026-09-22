@@ -471,10 +471,10 @@ class OpenDocument(ToolBase):
     aliases = ["open_document"]
     intent = "media"
     description = (
-        "Open an existing document file in LibreOffice, by path. "
-        "Check doc_list_open first: if the document is already open, it "
-        "does not need opening again. Use doc_recent when the user names a "
-        "document but not its path."
+        "Open an existing document file in LibreOffice, by path. A document "
+        "that is already open is not loaded again: it is made active and "
+        "its doc_id returned, with already_open: true. Use doc_recent when "
+        "the user names a document but not its path."
     )
     parameters = {
         "type": "object",
@@ -500,6 +500,9 @@ class OpenDocument(ToolBase):
 
         try:
             desktop = _get_desktop()
+            existing = _find_open(desktop, url)
+            if existing is not None:
+                return _switch_to(ctx, desktop, existing)
             new_doc = desktop.loadComponentFromURL(url, "_blank", 0, ())
         except Exception as exc:
             log.exception("OpenDocument failed: %s", exc)
@@ -675,6 +678,61 @@ def _describe_document(model):
     except Exception:
         pass
     return info
+
+
+def _same_file(url_a, url_b):
+    """True if two file URLs name the same file (encoding, symlinks)."""
+    if url_a == url_b:
+        return True
+    try:
+        a = os.path.realpath(uno.fileUrlToSystemPath(url_a))
+        b = os.path.realpath(uno.fileUrlToSystemPath(url_b))
+    except Exception:
+        return False
+    return a == b
+
+
+def _find_open(desktop, url):
+    """The open document loaded from *url*, or None.
+
+    Loading an open file again with "_blank" gave a second, independent
+    document over the same file: two doc_ids, and closing either one
+    removed the lock file while the other stayed open (GitHub #40).
+    """
+    try:
+        components = desktop.getComponents().createEnumeration()
+    except Exception:
+        return None
+    while components.hasMoreElements():
+        try:
+            model = components.nextElement()
+            doc_url = model.getURL()
+        except Exception:
+            continue
+        if doc_url and _same_file(doc_url, url):
+            return model
+    return None
+
+
+def _switch_to(ctx, desktop, model):
+    """doc_open's answer for a document that is already open."""
+    active = _make_active(desktop, model)
+    doc_id = None
+    try:
+        doc_id = ctx.services.document.get_doc_id(model)
+    except Exception:
+        pass
+    result = {"status": "ok", "file_url": model.getURL(),
+              "already_open": True,
+              "message": "Already open: made it the active document; "
+                         "nothing was loaded again."}
+    if doc_id:
+        result["doc_id"] = doc_id
+    if not active:
+        result["warning"] = (
+            "The document is open but not the active one yet. Pass "
+            "_document='id:%s' to address it explicitly." % doc_id)
+    return result
 
 
 def _is_still_open(desktop, model):
