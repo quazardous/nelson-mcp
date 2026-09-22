@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- **`doc_open` on a file that was already open loaded it a second time**
+  (GitHub #40). The result was two documents over one file, two `doc_id`s
+  both reported active, and closing either one removed the lock file while
+  the other stayed open, so another application could open the file for
+  writing without warning. `doc_open` now switches to the open document
+  and returns its `doc_id` with `already_open: true`. `doc_list_open` marks
+  the active document by identity, not by URL and title
+- **`/health` could report a stale active document after `doc_open`**
+  (GitHub #41). It answers from a snapshot kept by document events, which
+  a document loaded over MCP did not always update. The snapshot is now
+  refreshed at the end of every tool call, on the main thread
+- **A chart name freed by a delete was never used again** (GitHub #32,
+  follow-up): new charts now get the lowest free `Chart_N`
+- **Some Calc errors carried their reason in `error` instead of
+  `message`** (GitHub #33, follow-up). Every error result now has
+  `message`; `error` stays for clients that read it
+
 ## [0.14.0] — 2026-09-16
 
 **Writer content is now exchanged as Markdown by default.** An agent that

@@ -520,6 +520,18 @@ def check_open_is_active(h):
     opened = h.call("doc_open", file_path=path)
     if opened.get("status") != "ok":
         raise Fail("doc_open failed: %s" % opened)
+    # GitHub #41: /health answered from a snapshot that only tools/list
+    # refreshed, so right after doc_open it named no document, or the
+    # previous one. Ask it first, before any other call can repair it.
+    with urllib.request.urlopen(
+            "http://localhost:%d/health" % h.port, timeout=5) as r:
+        health = json.loads(r.read()).get("document") or {}
+    if health.get("doc_id") != opened.get("doc_id") or \
+            health.get("doc_type") != "writer":
+        raise Fail("/health after doc_open names %s, not the document just "
+                   "opened (%s)" % ({k: health.get(k) for k in
+                                     ("available", "doc_type", "doc_id")},
+                                    opened.get("doc_id")))
     info = h.call("doc_info")
     if info.get("status") != "ok":
         raise Fail("call right after doc_open failed: %s" % info)
@@ -541,7 +553,8 @@ def check_open_is_active(h):
             "_resolved", {}).get("doc_id"):
         raise Fail("doc_close's _resolved is not the document it closed: %s"
                    % closed.get("_resolved"))
-    return "first opened document is the active one; one document per answer"
+    return ("first opened document is the active one, /health names it; "
+            "one document per answer")
 
 
 def check_save_as_keeps_original(h):
@@ -936,6 +949,9 @@ def check_calc_sheet_targets(h):
     if note.get("status") == "ok":
         raise Fail("#33: calc_comment accepted a prefix that disagrees with "
                    "sheet_name")
+    if not note.get("message"):
+        raise Fail("#33: calc_comment's error has no message (only error): "
+                   "%s" % note)
     missing = h.call("calc_write_range", start_cell="Nope.A1", values=[["x"]])
     if "Available" not in json.dumps(missing):
         raise Fail("#33: an unknown sheet on write does not list the sheets: "
@@ -969,9 +985,19 @@ def check_calc_sheet_targets(h):
     if names("Data Sheet") != [second.get("chart_name")]:
         raise Fail("#31: sheet_name did not place the chart: Data Sheet=%s"
                    % names("Data Sheet"))
+    # A freed name is used again (GitHub #32 follow-up): the lowest free
+    # number, not one past the count.
+    h.call("calc_chart", action="delete", chart_name=first.get("chart_name"),
+           sheet_name="Summary")
+    third = h.call("calc_chart", action="create", chart_type="bar",
+                   data_range="'Data Sheet'.A1:B3", sheet_name="Summary")
+    if third.get("chart_name") != first.get("chart_name"):
+        raise Fail("#32: the freed name %s was not reused (got %s)"
+                   % (first.get("chart_name"), third.get("chart_name")))
     h.expect_error("No sheet named 'Nope'")
-    return ("conflicts refused, sheets listed, clean address; charts on "
-            "the sheet asked for, names %s/%s"
+    return ("conflicts refused with a message, sheets listed, clean "
+            "address; charts on the sheet asked for, names %s/%s, freed "
+            "name reused"
             % (first.get("chart_name"), second.get("chart_name")))
 
 
@@ -1816,6 +1842,48 @@ def check_change_author(h):
                   "print('null')\n")
 
 
+def check_open_twice(h):
+    """doc_open on an open file switches to it (GitHub #40).
+
+    It used to load the file again: a second document over the same file,
+    two doc_ids both reported active, and closing either removed the lock
+    file while the other stayed open. The first open here comes from
+    outside Nelson, as in the report.
+    """
+    path = h.doc("open_twice.odt")
+    h.reset()
+    h.call("doc_create", doc_type="writer", path=path)
+    h.call("doc_close")
+    outside = h.uno_run(
+        "p=PropertyValue(); p.Name='Hidden'; p.Value=False\n"
+        "d=desktop.loadComponentFromURL(%r,'_blank',0,(p,))\n"
+        "print(json.dumps(bool(d)))\n" % ("file://" + path))
+    if outside is None:
+        return "SKIPPED — uno module unavailable to open the file outside Nelson"
+    first = h.call("doc_open", file_path=path)
+    again = h.call("doc_open", file_path=path)
+    if not first.get("already_open") or not again.get("already_open"):
+        raise Fail("doc_open loaded an open file again: %s / %s"
+                   % (first, again))
+    if first.get("doc_id") != again.get("doc_id"):
+        raise Fail("two doc_ids for one open file: %s, %s"
+                   % (first.get("doc_id"), again.get("doc_id")))
+    docs = h.call("doc_list_open").get("documents", [])
+    mine = [d for d in docs if (d.get("url") or "").endswith("open_twice.odt")]
+    if len(mine) != 1:
+        raise Fail("doc_list_open lists the file %d times" % len(mine))
+    if sum(1 for d in docs if d.get("is_active")) != 1:
+        raise Fail("not exactly one active document: %s"
+                   % [(d.get("title"), d.get("is_active")) for d in docs])
+    lock = os.path.join(os.path.dirname(path),
+                        ".~lock.open_twice.odt#")
+    if not os.path.exists(lock):
+        raise Fail("no lock file for the open document")
+    h.call("doc_close", _document="id:%s" % first["doc_id"])
+    return "second doc_open switched to the open file: one doc_id, one " \
+           "active, lock held"
+
+
 def check_formula_fill(h):
     """A single formula on a range shifts its relative references (#2633).
 
@@ -1880,6 +1948,7 @@ CHECKS = [
     ("mutation classification", check_mutation_classification),
     ("document round-trip", check_round_trip),
     ("open is active (#34)", check_open_is_active),
+    ("open twice (#40)", check_open_twice),
     ("save-as keeps original", check_save_as_keeps_original),
     ("doc_id uniqueness", check_doc_ids_distinct),
     ("listing leaves documents alone", check_listing_leaves_documents_alone),
