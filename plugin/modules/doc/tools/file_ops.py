@@ -473,8 +473,10 @@ class OpenDocument(ToolBase):
     description = (
         "Open an existing document file in LibreOffice, by path. A document "
         "that is already open is not loaded again: it is made active and "
-        "its doc_id returned, with already_open: true. Use doc_recent when "
-        "the user names a document but not its path."
+        "its doc_id returned, with already_open: true. A locked, "
+        "password-protected or damaged file is not opened: the error says "
+        "which (document_locked, password_required, document_damaged). Use "
+        "doc_recent when the user names a document but not its path."
     )
     parameters = {
         "type": "object",
@@ -482,6 +484,12 @@ class OpenDocument(ToolBase):
             "file_path": {
                 "type": "string",
                 "description": "Absolute path to the document file.",
+            },
+            "read_only": {
+                "type": "boolean",
+                "description": (
+                    "Open read-only (default false). Opens a document that "
+                    "someone else has locked, without taking the lock."),
             },
         },
         "required": ["file_path"],
@@ -498,15 +506,29 @@ class OpenDocument(ToolBase):
         else:
             url = file_path
 
+        refuser = None
         try:
             desktop = _get_desktop()
             existing = _find_open(desktop, url)
             if existing is not None:
                 return _switch_to(ctx, desktop, existing)
-            new_doc = desktop.loadComponentFromURL(url, "_blank", 0, ())
+            refuser = _QuestionRefuser()
+            props = [_prop("InteractionHandler", refuser)]
+            if kwargs.get("read_only"):
+                props.append(_prop("ReadOnly", True))
+            new_doc = desktop.loadComponentFromURL(url, "_blank", 0,
+                                                   tuple(props))
         except Exception as exc:
+            if refuser is not None and refuser.asked:
+                return _refused(refuser, url)
             log.exception("OpenDocument failed: %s", exc)
             return {"status": "error", "error": str(exc)}
+        if new_doc is None:
+            if refuser.asked:
+                return _refused(refuser, url)
+            return {"status": "error", "code": "not_loaded",
+                    "message": "LibreOffice did not load %s." % url,
+                    "retryable": False}
 
         active = _make_active(desktop, new_doc)
 
@@ -678,6 +700,175 @@ def _describe_document(model):
     except Exception:
         pass
     return info
+
+
+def _prop(name, value):
+    p = PropertyValue()
+    p.Name, p.Value = name, value
+    return p
+
+
+def _refused(refuser, url):
+    """doc_open's error for a load LibreOffice stopped to ask about."""
+    from plugin.modules.doc.load_questions import describe
+    from plugin.modules.doc.load_questions import infer_kind
+    kind, info = refuser.asked[0]
+    try:
+        path = uno.fileUrlToSystemPath(url)
+    except Exception:
+        path = None
+    if kind == "unknown":
+        kind = infer_kind(path)
+    log.info("doc_open: refused LibreOffice's %s for %s", kind, url)
+    return describe(kind, info, path)
+
+
+def _question_refuser_class():
+    import unohelper
+    # XInteractionHandler2 extends XInteractionHandler: naming both breaks
+    # the class's method resolution order.
+    from com.sun.star.task import XInteractionHandler2
+
+    class QuestionRefuser(unohelper.Base, XInteractionHandler2):
+        """Refuse every question LibreOffice asks while loading.
+
+        Without a handler, the question became a modal dialog nobody could
+        answer: doc_open waited for the timeout and every later call queued
+        behind it (a lock file left by a crash was enough). The request is
+        remembered so doc_open can say what LibreOffice wanted.
+        """
+
+        def __init__(self):
+            self.asked = []
+
+        def handle(self, request):
+            self.handleInteractionRequest(request)
+
+        def handleInteractionRequest(self, request):
+            continuations = request.getContinuations()
+            question = None
+            try:
+                question = request.getRequest()
+            except Exception:
+                # pyuno on Python 3.14 cannot convert a UNO exception
+                # returned as a value ("AttributeError: args"); the offered
+                # continuations still say enough.
+                log.debug("doc_open: interaction request unreadable",
+                          exc_info=True)
+            kind = _request_kind(question)
+            offered = _offered(continuations)
+            if "XInteractionFilterOptions" in offered and \
+                    _accept_default_options(question, continuations):
+                # The CSV/text import dialog: take LibreOffice's defaults,
+                # as a headless load always did. Nothing is decided here.
+                return True
+            if kind == "unknown" and ("XInteractionPassword" in offered or
+                                      "XInteractionPassword2" in offered):
+                kind = "DocumentPasswordRequest"
+            info = _field(question, "UserInfo") or _field(question, "TimeInfo")
+            self.asked.append((kind, info))
+            # Abort if offered, else disapprove: never approve on the
+            # user's behalf.
+            _select_first(continuations,
+                          ("XInteractionAbort", "XInteractionDisapprove"))
+            log.debug("doc_open: LibreOffice asked %s (%s, offered %s); "
+                      "refused", kind, info, sorted(offered))
+            return True
+
+    return QuestionRefuser
+
+
+_CONTINUATIONS = ("XInteractionAbort", "XInteractionDisapprove",
+                  "XInteractionApprove", "XInteractionRetry",
+                  "XInteractionPassword", "XInteractionPassword2",
+                  "XInteractionFilterOptions")
+
+
+def _offered(continuations):
+    """Names of the continuation interfaces LibreOffice offers."""
+    found = set()
+    for name in _CONTINUATIONS:
+        module = ("com.sun.star.document." if name == "XInteractionFilterOptions"
+                  else "com.sun.star.task.")
+        try:
+            wanted = uno.getTypeByName(module + name)
+        except Exception:
+            continue
+        for continuation in continuations:
+            try:
+                if continuation.queryInterface(wanted):
+                    found.add(name)
+                    break
+            except Exception:
+                continue
+    return found
+
+
+def _field(obj, name):
+    """A request's field, or None. pyuno raises UNO exceptions, not
+    AttributeError, for a field the struct does not have."""
+    try:
+        return getattr(obj, name)
+    except Exception:
+        return None
+
+
+def _request_kind(question):
+    """The short UNO name of an interaction request (LockedDocumentRequest)."""
+    if question is None:
+        return "unknown"
+    for candidate in (_field(question, "typeName"),
+                      _field(type(question), "__pyunostruct__"),
+                      type(question).__name__):
+        if candidate and candidate not in ("Exception", "object"):
+            return str(candidate).rsplit(".", 1)[-1]
+    return "unknown"
+
+
+def _accept_default_options(question, continuations):
+    """Answer an import-options request with the options it proposed."""
+    wanted = uno.getTypeByName(
+        "com.sun.star.document.XInteractionFilterOptions")
+    for continuation in continuations:
+        try:
+            options = continuation.queryInterface(wanted)
+        except Exception:
+            continue
+        if options:
+            try:
+                proposed = _field(question, "rProperties")
+                if proposed is None:
+                    proposed = continuation.getFilterOptions()
+                continuation.setFilterOptions(proposed)
+                continuation.select()
+                return True
+            except Exception:
+                log.debug("doc_open: default import options refused",
+                          exc_info=True)
+    return False
+
+
+def _select_first(continuations, names):
+    for name in names:
+        wanted = uno.getTypeByName("com.sun.star.task." + name)
+        for continuation in continuations:
+            try:
+                if continuation.queryInterface(wanted):
+                    continuation.select()
+                    return name
+            except Exception:
+                continue
+    return None
+
+
+_REFUSER_CLASS = None
+
+
+def _QuestionRefuser():
+    global _REFUSER_CLASS
+    if _REFUSER_CLASS is None:
+        _REFUSER_CLASS = _question_refuser_class()
+    return _REFUSER_CLASS()
 
 
 def _same_file(url_a, url_b):

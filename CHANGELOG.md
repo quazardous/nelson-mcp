@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- **`doc_open` hung for 60 s, then failed with a 504, when LibreOffice had a
+  question.** It loaded with no interaction handler, so a file locked by
+  someone else (or by a crashed session), a password or a damaged file opened
+  a dialog nobody could answer. Every later call queued behind it. It now
+  answers at once: `document_locked` (with who holds the lock and since
+  when), `password_required` or `document_damaged`, never retryable. Nelson
+  never removes a lock file and never approves anything on the user's
+  behalf. A CSV still opens: its import dialog takes the defaults
+
+### Added
+
+- **`doc_open` takes `read_only`**, to read a document someone else has
+  locked without taking the lock
+
 ## [0.14.1] — 2026-09-22
 
 Fixes from braklo's testing of 0.14.0. The most important is `doc_open`

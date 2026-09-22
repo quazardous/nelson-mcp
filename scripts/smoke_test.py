@@ -1910,6 +1910,73 @@ def check_open_twice(h):
            "active, lock held"
 
 
+def check_open_answers_questions(h):
+    """doc_open answers when LibreOffice would ask a question (#2836).
+
+    With no interaction handler, a question during a load (a lock file, a
+    password, a damaged file) opened a dialog nobody could answer: doc_open
+    waited 60 s and ended in a 504, and every later call queued behind it.
+    Each case must now come back at once with its own code, a CSV must still
+    open (its import dialog takes the defaults), and read_only must open a
+    locked file without touching the lock.
+    """
+    h.reset()
+    locked, damaged = h.doc("locked.odt"), h.doc("damaged.odt")
+    secret, csv = h.doc("secret.odt"), h.doc("data.csv")
+    h.call("doc_create", doc_type="writer", path=locked)
+    h.call("doc_close")
+    lock = os.path.join(os.path.dirname(locked), ".~lock.locked.odt#")
+    with open(lock, "w") as f:
+        f.write("Ana Lopez,otherhost,ana,22.09.2026 10:00,file:///x;")
+    with open(locked, "rb") as f:
+        head = f.read(3000)
+    with open(damaged, "wb") as f:
+        f.write(head)
+    with open(csv, "w") as f:
+        f.write("name,value\nalpha,1\nbeta,2\n")
+    made = h.uno_run(
+        "p=PropertyValue(); p.Name='Hidden'; p.Value=True\n"
+        "d=desktop.loadComponentFromURL('private:factory/swriter','_blank',"
+        "0,(p,))\n"
+        "d.getText().setString('secret')\n"
+        "f=PropertyValue(); f.Name='FilterName'; f.Value='writer8'\n"
+        "w=PropertyValue(); w.Name='Password'; w.Value='x'\n"
+        "d.storeToURL(%r,(f,w))\n"
+        "print(json.dumps(True))\n" % ("file://" + secret))
+
+    def timed(**args):
+        t0 = time.time()
+        result = h.call("doc_open", **args)
+        return result, time.time() - t0
+
+    for path, code in ((locked, "document_locked"),
+                       (damaged, "document_damaged"))\
+            + (((secret, "password_required"),) if made else ()):
+        got, took = timed(file_path=path)
+        if got.get("code") != code or took > 10:
+            raise Fail("%s: expected %s at once, got %s after %.1fs"
+                       % (os.path.basename(path), code,
+                          got.get("code") or got.get("status"), took))
+    if "Ana Lopez" not in h.call("doc_open", file_path=locked).get(
+            "message", ""):
+        raise Fail("document_locked does not name who holds the lock")
+    ro = h.call("doc_open", file_path=locked, read_only=True)
+    if ro.get("status") != "ok":
+        raise Fail("read_only did not open the locked file: %s" % ro)
+    with open(lock) as f:
+        if "Ana Lopez" not in f.read():
+            raise Fail("opening read-only touched the other user's lock")
+    h.call("doc_close")
+    opened = h.call("doc_open", file_path=csv)
+    if opened.get("status") != "ok":
+        raise Fail("a CSV no longer opens: %s" % opened)
+    h.call("doc_close")
+    os.remove(lock)
+    return "locked, damaged%s refused at once with their code; read_only " \
+           "opens a locked file, lock kept; CSV opens" \
+           % (", password" if made else "")
+
+
 def check_formula_fill(h):
     """A single formula on a range shifts its relative references (#2633).
 
@@ -1975,6 +2042,7 @@ CHECKS = [
     ("document round-trip", check_round_trip),
     ("open is active (#34)", check_open_is_active),
     ("open twice (#40)", check_open_twice),
+    ("open answers questions", check_open_answers_questions),
     ("save-as keeps original", check_save_as_keeps_original),
     ("doc_id uniqueness", check_doc_ids_distinct),
     ("listing leaves documents alone", check_listing_leaves_documents_alone),
