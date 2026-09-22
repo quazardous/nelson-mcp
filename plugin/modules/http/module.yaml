@@ -64,7 +64,7 @@ config:
     default: false
     widget: checkbox
     label: Enable Config API (/api/config)
-    helper: "Expose HTTP endpoints to read and write configuration remotely."
+    helper: "Lets an agent read and change Nelson's settings over HTTP. Access, network, tunnel, debug, launcher, folder and provider settings stay reserved to this dialog."
     public: true
 
   use_ssl:

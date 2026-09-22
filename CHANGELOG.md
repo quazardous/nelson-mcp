@@ -26,7 +26,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - **README: "Let the agent configure Nelson"**: what the config API is for,
-  how to switch it on, and what it cannot change
+  how to switch it on, and what it cannot change. `API.md` documents the
+  reserved settings, the `403` and masked secrets, and the current `/health`
+  response; the option's help text in Options says what stays reserved
 
 ## [0.14.2] — 2026-09-22
 
