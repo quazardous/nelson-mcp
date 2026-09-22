@@ -432,8 +432,12 @@ test:
 # Live check: installs the built .oxt into a throwaway profile, runs
 # LibreOffice headless and drives it over MCP. Unlike `test`, this can see
 # UNO behaviour — which is where the bugs that reached releases all were.
+# SOFFICE=/opt/libreoffice26.8/program/soffice runs either smoke against
+# another LibreOffice installed next to the system one.
+SOFFICE ?=
+
 smoke: build
-	python3 $(SCRIPTS)/smoke_test.py
+	SOFFICE="$(SOFFICE)" python3 $(SCRIPTS)/smoke_test.py
 
 # ── wbox ─────────────────────────────────────────────────────────────────────
 # LibreOffice with its real GUI inside a nested wbox compositor, driven from
@@ -449,7 +453,7 @@ WBOX_CONFIG := dev/lo-wbox/config.yaml
 WBOX_CTL    = $(WBOX_PYTHON) $(SCRIPTS)/wbox_ctl.py
 
 smoke-wbox: build
-	WBOX_PYTHON="$(WBOX_PYTHON)" python3 $(SCRIPTS)/smoke_test.py --wbox
+	SOFFICE="$(SOFFICE)" WBOX_PYTHON="$(WBOX_PYTHON)" python3 $(SCRIPTS)/smoke_test.py --wbox
 
 # Cold starts with a document on the command line (GitHub #35/#37): runs the
 # dev instance, so deploy the code under test first (make wbox-deploy).

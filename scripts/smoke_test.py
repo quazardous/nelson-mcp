@@ -126,6 +126,12 @@ class Harness:
 
     def launch(self):
         soffice = self._find("soffice")
+        try:
+            version = subprocess.run([soffice, "--version"], capture_output=True,
+                                     text=True, timeout=60).stdout.strip()
+        except Exception:
+            version = "?"
+        print("  %s (%s)" % (version or "LibreOffice: unknown version", soffice))
         env = dict(os.environ)
         env["NELSON_LOG_PATH"] = self.log_path
         # The config API lets check_auth_token turn the token on and off live
@@ -383,6 +389,15 @@ class Harness:
     # -- helpers ----------------------------------------------------
 
     def _find(self, binary):
+        # SOFFICE=/opt/libreoffice26.8/program/soffice tests another
+        # LibreOffice installed next to the system one: its unopkg sits in
+        # the same directory.
+        chosen = os.environ.get("SOFFICE")
+        if chosen:
+            cand = os.path.join(os.path.dirname(chosen), binary)
+            if os.path.exists(cand):
+                return cand
+            raise Fail("%s not found next to SOFFICE=%s" % (binary, chosen))
         found = shutil.which(binary)
         if found:
             return found
