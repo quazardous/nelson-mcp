@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.14.1] — 2026-09-22
+
+Fixes from braklo's testing of 0.14.0. The most important is `doc_open`
+on a file that was already open, which could leave it open with no lock
+file (GitHub #40).
 
 ### Fixed
 
