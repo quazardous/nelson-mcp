@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.14.3] — 2026-09-22
+
+The config API can no longer undo the protections set for an agent, and
+with LibreOffice's KDE interface a call right after opening a document no
+longer lands on the previous one.
 
 ### Fixed
 
