@@ -21,8 +21,10 @@ on:
         type: boolean
         default: false
 
+# One group per event and ref: a manual run (publish_registry) must not cancel
+# the push run of the same commit, which leaves the commit marked unsuccessful.
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
