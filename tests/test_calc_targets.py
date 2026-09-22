@@ -69,9 +69,14 @@ def test_chart_names_are_unique_across_sheets():
     assert name != "Chart_0"
 
 
-def test_chart_name_skips_gaps():
-    doc = Doc([Sheet("A", ["Chart_1"]), Sheet("B", ["Chart_2"])])
-    assert CellManipulator(CalcBridge(doc))._unique_chart_name() == "Chart_3"
+def test_chart_name_is_the_lowest_free_number():
+    doc = Doc([Sheet("A", ["Chart_0", "Chart_2"]), Sheet("B", ["Chart_3"])])
+    assert CellManipulator(CalcBridge(doc))._unique_chart_name() == "Chart_1"
+
+
+def test_chart_name_skips_names_taken_on_other_sheets():
+    doc = Doc([Sheet("A", ["Chart_0"]), Sheet("B", ["Chart_1"])])
+    assert CellManipulator(CalcBridge(doc))._unique_chart_name() == "Chart_2"
 
 
 def test_sheet_names_compare_like_calc():

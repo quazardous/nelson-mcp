@@ -926,10 +926,11 @@ class CellManipulator:
             raise
 
     def _unique_chart_name(self):
-        """A chart name no sheet uses yet.
+        """The lowest-numbered ``Chart_N`` no sheet uses yet.
 
         Chart names are unique per document, not per sheet, so counting the
         target sheet's charts collides as soon as two sheets have one (#32).
+        A name freed by a delete is used again (GitHub #32, follow-up).
         """
         taken = set()
         sheets = self.bridge.doc.getSheets()
@@ -942,7 +943,7 @@ class CellManipulator:
             taken.update(self.bridge.doc.getEmbeddedObjects().getElementNames())
         except Exception:
             pass
-        n = len(taken)
+        n = 0
         while "Chart_%d" % n in taken:
             n += 1
         return "Chart_%d" % n
