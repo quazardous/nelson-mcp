@@ -15,6 +15,11 @@ on:
     tags: ["v*"]
   pull_request:
   workflow_dispatch:
+    inputs:
+      publish_registry:
+        description: "Publish server.json to the MCP registry (as release tags do)"
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -100,3 +105,37 @@ jobs:
           name: smoke-profile
           path: /tmp/nelson-smoke-*
           if-no-files-found: ignore
+
+  # The official MCP registry lists Nelson from server.json (no package: the
+  # server runs inside LibreOffice, so websiteUrl points to the install
+  # instructions). Published on release tags after the smoke passes, or by
+  # hand with the publish_registry input. OIDC: no secret; the repository's
+  # identity grants the io.github.quazardous namespace.
+  registry:
+    needs: smoke
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.publish_registry
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      PUBLISHER_VERSION: v1.8.1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: server.json advertises the released version
+        run: |
+          want=$(python3 -c "from plugin.version import EXTENSION_VERSION as v; print(v)")
+          got=$(python3 -c "import json; print(json.load(open('server.json'))['version'])")
+          echo "plugin $want, server.json $got"
+          test "$want" = "$got"
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then test "v$want" = "${GITHUB_REF_NAME}"; fi
+
+      - name: Install mcp-publisher ${{ env.PUBLISHER_VERSION }}
+        run: |
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/$PUBLISHER_VERSION/mcp-publisher_linux_amd64.tar.gz" \
+            | tar xz mcp-publisher
+
+      - run: ./mcp-publisher validate
+      - run: ./mcp-publisher login github-oidc
+      - run: ./mcp-publisher publish

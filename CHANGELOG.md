@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Changed
+
+- **Nelson is published to the official MCP registry.** `server.json` was
+  never accepted: its description was over the registry's 100-character
+  limit, and it declared `http://localhost:8766/mcp` as a remote, which the
+  registry refuses. It now has no remote and points to the install
+  instructions, as the registry prescribes for servers embedded in an
+  application. The CI publishes it on every release tag, after the smoke
+
 ## [0.14.3] — 2026-09-22
 
 The config API can no longer undo the protections set for an agent, and

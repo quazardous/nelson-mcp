@@ -108,6 +108,13 @@ CHANGELOG section present, `server.json` advertising the same version, and the
 built `.oxt` verified to carry the Windows payload. `make test` must be green
 before you start.
 
+Pushing the tag also publishes `server.json` to the official MCP registry
+(the `registry` job in `.github/workflows/ci.yml`, after the smoke, through
+GitHub OIDC; no secret). The registry refuses a `localhost` URL in `remotes`
+and a description over 100 characters, so `server.json` declares no remote:
+`websiteUrl` points to the install instructions, the documented shape for a
+server embedded in an application. Check it with `mcp-publisher validate`.
+
 Two things the script can only *remind* you of, because neither can be
 automated. It prints both after publishing:
 
