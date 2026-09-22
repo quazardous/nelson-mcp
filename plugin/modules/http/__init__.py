@@ -306,36 +306,34 @@ class HttpModule(ModuleBase):
         })
 
     def _handle_config_get(self, body, headers, query):
-        """GET /api/config — read config values.
+        """GET /api/config — read config values; secrets read as "***".
 
         Query params:
           ?key=ai_ollama.instances   → single key
+          ?module=writer             → all keys of a module
           ?prefix=ai_ollama          → all keys with prefix
           (none)                     → all config
         """
+        from plugin.modules.http.config_api_policy import shown
         cfg = self._services.config
+
+        def show(k, v):
+            return shown(k, v, getattr(cfg, "_manifest", {}).get(k))
 
         key = (query.get("key") or [None])[0]
         if key:
-            val = cfg.get(key)
-            return (200, {"key": key, "value": val})
+            return (200, {"key": key, "value": show(key, cfg.get(key))})
 
         module = (query.get("module") or [None])[0]
         prefix = (query.get("prefix") or [None])[0]
         all_config = cfg.get_dict()
-
         if module:
-            p = module if module.endswith(".") else module + "."
-            filtered = {k: v for k, v in all_config.items()
-                        if k.startswith(p)}
-            return (200, {"config": filtered})
-
+            prefix = module if module.endswith(".") else module + "."
         if prefix:
-            filtered = {k: v for k, v in all_config.items()
-                        if k.startswith(prefix)}
-            return (200, {"config": filtered})
-
-        return (200, {"config": all_config})
+            all_config = {k: v for k, v in all_config.items()
+                          if k.startswith(prefix)}
+        return (200, {"config": {k: show(k, v)
+                                 for k, v in all_config.items()}})
 
     def _handle_config_set(self, body, headers, query):
         """POST /api/config — write config values.
@@ -344,6 +342,20 @@ class HttpModule(ModuleBase):
         """
         if not body or not isinstance(body, dict):
             return (400, {"error": "Body must be a JSON object of key-value pairs"})
+
+        from plugin.modules.http.config_api_policy import refused_keys
+        refused = refused_keys(body)
+        if refused:
+            # Refuse the whole batch: a partial write would leave the agent
+            # guessing what applied.
+            log.warning("Config API refused reserved settings: %s", refused)
+            return (403, {
+                "error": "reserved_setting",
+                "message": ("These settings can only be changed in Tools > "
+                            "Options > Nelson, not through the config API: "
+                            "%s. Nothing was written." % ", ".join(refused)),
+                "refused": refused,
+            })
 
         cfg = self._services.config
         errors = []

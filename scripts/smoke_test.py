@@ -85,6 +85,7 @@ class Harness:
         self.verbose = verbose
         self.keep = keep
         self.wbox = wbox
+        self.extra_config = ""
         self.vcl = os.environ.get("VCL") or "gtk3"
         self.wbox_config = None
         self.profile = tempfile.mkdtemp(prefix="nelson-smoke-")
@@ -144,12 +145,12 @@ class Harness:
         print("  %s (%s)" % (version or "LibreOffice: unknown version", soffice))
         env = dict(os.environ)
         env["NELSON_LOG_PATH"] = self.log_path
-        # The config API lets check_auth_token turn the token on and off live
-        # on this throwaway instance, so every other check still runs against
-        # the default, token-less configuration most users have.
+        # The config API lets checks tune behaviour settings live on this
+        # throwaway instance. Settings that protect Nelson (the token first)
+        # cannot go through it: check_auth_token restarts with them instead.
         env["NELSON_SET_CONFIG"] = (
             "core.log_level=DEBUG,http.port=%d,http.enable_config_api=true"
-            % self.port)
+            % self.port) + self.extra_config
         cmd = [
             soffice, "--nologo", "--norestore", "--nolockcheck",
             "-env:UserInstallation=file://%s" % self.profile,
@@ -204,13 +205,25 @@ class Harness:
                 with urllib.request.urlopen(
                         "http://localhost:%d/health" % self.port, timeout=3):
                     return
+            except urllib.error.HTTPError as e:
+                if e.code == 401:        # up, with an access token set
+                    return
+                last = e
+                time.sleep(1)
             except Exception as e:                       # not up yet
                 last = e
                 time.sleep(1)
         raise Fail("server never answered /health on port %d within %ds (%s)"
                    % (self.port, BOOT_TIMEOUT, last))
 
-    def stop(self):
+    def relaunch(self, extra_config):
+        """Restart LibreOffice on the same profile with more settings, as a
+        user who changed them in Options and restarted would."""
+        self._stop_process()
+        self.extra_config = "," + extra_config
+        self.launch()
+
+    def _stop_process(self):
         if self.wbox and self.wbox_config:
             self._wbox("down")
             # A hung soffice.bin outlives the compositor that launched it.
@@ -223,6 +236,9 @@ class Harness:
                 self.proc.wait(timeout=20)
             except subprocess.TimeoutExpired:
                 self.proc.kill()
+
+    def stop(self):
+        self._stop_process()
         if self.keep:
             print("\nkept: profile=%s docs=%s" % (self.profile, self.workdir))
             return
@@ -818,11 +834,12 @@ def check_session_semantics(h):
 
 
 def check_auth_token(h):
-    """Once an access token is set, nothing gets in without it.
+    """The access token cannot be changed through the config API, and once
+    set it keeps out whoever does not carry it.
 
-    Set live through the config API, so this also proves the token applies
-    without a restart. Restored at the end: the checks after this one, and the
-    default configuration, are token-less.
+    Settings that protect Nelson are reserved to Options, so the token is
+    set the way a user does: in the configuration, then LibreOffice restarts.
+    Runs last (before the log check) and leaves the token set.
     """
     base = "http://localhost:%d" % h.port
     token = "smoke-%s" % os.urandom(8).hex()
@@ -839,44 +856,48 @@ def check_auth_token(h):
             req.add_header("Authorization", authorization)
         try:
             with urllib.request.urlopen(req, timeout=30) as r:
-                return r.status
+                return r.status, json.loads(r.read() or b"{}")
         except urllib.error.HTTPError as e:
-            return e.code
+            return e.code, json.loads(e.read() or b"{}")
 
-    def set_token(value, authorization=None):
-        status = send("/api/config", authorization,
-                      data=json.dumps({"http.auth_token": value}).encode())
-        if status != 200:
-            raise Fail("setting http.auth_token through /api/config returned "
-                       "%s" % status)
-
-    if send("/mcp") != 200:
+    status, answer = send("/api/config", data=json.dumps(
+        {"writer.max_content_chars": 60000, "http.auth_token": token,
+         "launcher.terminal": "sh"}).encode())
+    if status != 403 or answer.get("refused") != ["http.auth_token",
+                                                  "launcher.terminal"]:
+        raise Fail("the config API should refuse reserved settings with 403: "
+                   "%s %s" % (status, answer))
+    status, answer = send("/api/config?key=writer.max_content_chars",
+                          method="GET", data=None)
+    if answer.get("value") == 60000:
+        raise Fail("a refused batch still wrote its allowed settings")
+    if send("/mcp")[0] != 200:
         raise Fail("default configuration should need no token")
 
-    set_token(token)
-    try:
-        bearer = "Bearer %s" % token
-        results = {
-            "no token": send("/mcp"),
-            "wrong token": send("/mcp", "Bearer wrong"),
-            "bearer": send("/mcp", bearer),
-            "query token": send("/mcp?token=%s" % token),
-            "health, no token": send("/health", method="GET", data=None),
-        }
-        expected = {"no token": 401, "wrong token": 401, "bearer": 200,
-                    "query token": 200, "health, no token": 401}
-        wrong = {k: v for k, v in results.items() if v != expected[k]}
-        if wrong:
-            raise Fail("with a token set: %s (expected %s)"
-                       % (wrong, {k: expected[k] for k in wrong}))
-    finally:
-        set_token("", "Bearer %s" % token)
-
-    if send("/mcp") != 200:
-        raise Fail("clearing the token did not reopen the server to local "
-                   "clients")
+    h.relaunch("http.auth_token=%s" % token)
+    bearer = "Bearer %s" % token
+    results = {
+        "no token": send("/mcp")[0],
+        "wrong token": send("/mcp", "Bearer wrong")[0],
+        "bearer": send("/mcp", bearer)[0],
+        "query token": send("/mcp?token=%s" % token)[0],
+        "health, no token": send("/health", method="GET", data=None)[0],
+    }
+    expected = {"no token": 401, "wrong token": 401, "bearer": 200,
+                "query token": 200, "health, no token": 401}
+    wrong = {k: v for k, v in results.items() if v != expected[k]}
+    if wrong:
+        raise Fail("with a token set: %s (expected %s)"
+                   % (wrong, {k: expected[k] for k in wrong}))
+    status, answer = send("/api/config?key=http.auth_token", bearer,
+                          method="GET", data=None)
+    if status != 200 or answer.get("value") != "***":
+        raise Fail("the config API showed the token instead of masking it: "
+                   "%s %s" % (status, answer))
     h.expect_error("Rejected unauthenticated")
-    return "401 without it, 200 with header or ?token=, applied live"
+    h.expect_error("Config API refused reserved settings")
+    return "reserved settings refused (403, nothing written); token: 401 " \
+           "without it, 200 with header or ?token=, masked when read"
 
 
 def check_heading_bookmarks(h):
@@ -2061,7 +2082,6 @@ CHECKS = [
     ("doc_close truthful (#36)", check_close_reports_truth),
     ("browser origin refused", check_origin_rejected),
     ("session semantics (#38)", check_session_semantics),
-    ("access token", check_auth_token),
     ("heading bookmarks (#2644)", check_heading_bookmarks),
     ("heading content by path", check_heading_content_duplicates),
     ("caches follow the document", check_caches_follow_the_document),
@@ -2071,6 +2091,8 @@ CHECKS = [
     ("markdown exchange (#2635)", check_markdown_exchange),
     ("close after rewrite (#2651)", check_close_after_rewrite),
     ("report building blocks (#2634)", check_report_building_blocks),
+    # Restarts LibreOffice with a token and leaves it set: keep it last.
+    ("access token", check_auth_token),
     ("log clean", check_log_clean),          # last: sees everything above
 ]
 

@@ -35,6 +35,7 @@ Everything is set in **Tools > Options > Nelson**. For example, the HTTP page se
 ## Features
 
 - **145 document tools** — read content, edit text, manage styles, insert images, handle tables, charts, conditional formatting, hyperlinks, track changes, page headers/footers, navigate headings, search, and more. The list is filtered by the active document type, so a client sees only what applies (97 with a Writer document, 50 with Calc)
+- **Self-configuring agents** — with the config API on, an agent reads and changes Nelson's settings itself (read limits, exchange format, the name on its changes), while the settings that protect you stay reserved to Options. See [Let the agent configure Nelson](#let-the-agent-configure-nelson)
 - **Custom MCP endpoints** — expose only the tools your agent needs. Built-in presets (minimal, writer-edit, writer-read, calc, gallery) or create your own filtered endpoints
 - **Writer, Calc, Draw, Impress** — tools adapt to the active document type
 - **Calc `=PROMPT()`** — call an LLM directly from a spreadsheet cell
@@ -71,6 +72,37 @@ Open a document in LibreOffice, then ask your AI client to read or edit it.
 
 **For AI agents:** see [`QUICKSTART.md`](QUICKSTART.md) — a step-by-step guide for LLM agents on how to discover documents, navigate structure, and use tools effectively.
 
+## Let the agent configure Nelson
+
+An agent doesn't have to stop and ask you to open Options. With the **config API** switched on, it reads and changes Nelson's settings itself, over the same HTTP server, and changes apply at once. For example, it can:
+- raise the read limit before a long document;
+- switch to HTML to rewrite a formatted one;
+- sign its tracked changes with its own name.
+
+Switch it on in **Tools > Options > Nelson > Http > Enable Config API**, then:
+
+```bash
+# Read one setting, a module, or everything
+curl 'http://localhost:8766/api/config?key=writer.max_content_chars'
+curl 'http://localhost:8766/api/config?module=writer'
+
+# Change several at once
+curl -X POST http://localhost:8766/api/config \
+     -H 'Content-Type: application/json' \
+     -d '{"writer.max_content_chars": 200000, "writer.change_author": "AI agent"}'
+```
+
+Add `-H 'Authorization: Bearer <token>'` once an access token is set.
+
+The API tunes how Nelson behaves. It can't undo what protects you. These settings are **reserved to Options**, and a request that touches one is refused with `403` and changes nothing:
+- `http.*`: the token, the address, allowed origins, SSL, and the config API switch itself;
+- `tunnel.*` and `debug.*`;
+- `launcher.*`: the commands Nelson runs;
+- `*.instances`: the folders tools can reach, and the AI providers' endpoints and keys;
+- `core.force_track_changes`.
+
+Secrets such as the token and API keys read back as `***`.
+
 ## Security
 
 Whoever can talk to Nelson can read and edit every document open in
@@ -85,8 +117,9 @@ and other people:
 | **Reachable from the network, or through a tunnel** | Nelson **refuses** to bind anywhere but `localhost`, and refuses to start a tunnel, **until a token is set**. |
 
 Set the token in **Options > Nelson MCP > HTTP > Access Token**; it applies
-without a restart. Keep **Enable Config API** and the debug API off on any
-machine that is reachable from elsewhere.
+without a restart. The config API can't change it or any other protective
+setting (see above), but it still reads and changes the rest: keep it and the
+debug API off on any machine that is reachable from elsewhere.
 
 Before exposing Nelson through a tunnel, read the warning at the top of
 [`docs/howto/connect-chatgpt-tailscale.md`](docs/howto/connect-chatgpt-tailscale.md).

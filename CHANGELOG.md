@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Security
+
+- **The config API could undo the protections set for an agent.**
+  `POST /api/config` wrote any setting. An agent with access could clear the
+  access token, change the address, switch off the guard against disabling
+  change recording, set the command a launcher runs, or widen the folders its
+  tools reach. `GET` also returned the token and providers' API keys in clear.
+  The settings that decide what is exposed, what runs and what can be reached
+  are now reserved to Options:
+  - `http.*`, `tunnel.*`, `debug.*`, `launcher.*`;
+  - `*.instances`;
+  - `core.force_track_changes`.
+
+  A request that touches one is refused with `403` and writes nothing, and
+  secrets read back as `***`. Everything else (read limits, exchange format,
+  the name on tracked changes, MCP endpoints) stays open to the agent
+
+### Added
+
+- **README: "Let the agent configure Nelson"**: what the config API is for,
+  how to switch it on, and what it cannot change
+
 ## [0.14.2] — 2026-09-22
 
 `doc_open` no longer hangs when LibreOffice has a question about the file
