@@ -2121,6 +2121,9 @@ def main():
     ap.add_argument("--keep", action="store_true",
                     help="keep the profile and documents for inspection")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--only", action="append", default=[], metavar="NAME",
+                    help="run only the checks whose name contains NAME "
+                         "(repeatable); the log check always runs last")
     ap.add_argument("--wbox", action="store_true",
                     help="run LibreOffice's GUI in a wbox compositor "
                          "(offscreen unless WBOX_VISIBLE=1)")
@@ -2143,7 +2146,10 @@ def main():
         h.launch()
         print("  server up on port %d\n" % h.port, flush=True)
 
-        for name, fn in CHECKS:
+        checks = [(n, f) for n, f in CHECKS
+                  if not args.only or n == "log clean"
+                  or any(o.lower() in n.lower() for o in args.only)]
+        for name, fn in checks:
             try:
                 detail = fn(h)
                 print("  PASS  %-26s %s" % (name, detail or ""))
@@ -2162,13 +2168,13 @@ def main():
             h.stop()
 
     if failures:
-        print("\n%d of %d checks failed:" % (len(failures), len(CHECKS)))
+        print("\n%d of %d checks failed:" % (len(failures), len(checks)))
         for name, why in failures:
             print("  - %s: %s" % (name, why))
         h.stop()
         return 1
 
-    print("\nall %d checks passed" % len(CHECKS))
+    print("\nall %d checks passed" % len(checks))
     return 0
 
 

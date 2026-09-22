@@ -332,8 +332,10 @@ def _make_active(desktop, model):
 
     Activating the frame is synchronous and needs no event loop, which
     matters: tools run on the main thread, so waiting or sleeping here would
-    block the very loop that performs the activation. It is also what the
-    `_document` path already does, which is why that path never raced.
+    block the very loop that performs the activation. The document is also
+    pinned as the active one for a moment (DocumentService.pin_active):
+    with the KDE/Qt interface focus can bounce back to the previous window
+    right after the switch (#2850).
 
     Returns True when the model is the current component afterwards.
     """
@@ -342,6 +344,15 @@ def _make_active(desktop, model):
         frame.activate()
     except Exception:
         log.debug("Could not activate the new document's frame", exc_info=True)
+    try:
+        from plugin.modules.core.services.document import DocumentService
+        DocumentService.pin_active(model)
+    except Exception:
+        log.debug("Could not pin the active document", exc_info=True)
+    return _is_current(desktop, model)
+
+
+def _is_current(desktop, model):
     try:
         current = desktop.getCurrentComponent()
     except Exception:

@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **With LibreOffice's KDE interface, the call right after `doc_open` or
+  `doc_create` could land on the previous document.** The window manager can
+  hand focus back to the previous window for about 100 ms after the switch,
+  and the next call arrives within milliseconds. Nelson now keeps the
+  document a tool just made active as the active one for two seconds, unless
+  it is closed. Measured with the new KDE smoke mode: the opening checks
+  failed about one run in three, and now pass 12 of 12
+
 ### Security
 
 - **The config API could undo the protections set for an agent.**

@@ -373,10 +373,42 @@ class DocumentService(ServiceBase):
                 )
         return self._desktop
 
+    # The document a tool just made active (doc_open, doc_create), and when.
+    # With the KDE/Qt interface the window manager can hand focus back to
+    # the previous window for a moment after the switch: getCurrentComponent
+    # then answers the old document for ~100 ms, and the next call, arriving
+    # within milliseconds, lands on it (#2850). For PIN_SECONDS after a
+    # tool's switch, the document it chose stays the active one.
+    PIN_SECONDS = 2.0
+    _pinned = None
+
+    @classmethod
+    def pin_active(cls, model):
+        cls._pinned = (model, time.monotonic())
+
+    @classmethod
+    def _pinned_model(cls):
+        pinned = cls._pinned
+        if pinned is None:
+            return None
+        model, since = pinned
+        if time.monotonic() - since > cls.PIN_SECONDS:
+            cls._pinned = None
+            return None
+        try:
+            model.getCurrentController().getFrame()   # still open?
+        except Exception:
+            cls._pinned = None
+            return None
+        return model
+
     def get_active_document(self):
         """Return the active UNO document model, or None."""
         from plugin.framework.main_thread import warn_if_off_main_thread
         warn_if_off_main_thread("get_active_document")
+        pinned = self._pinned_model()
+        if pinned is not None:
+            return pinned
         desktop = self._get_desktop()
         if desktop is None:
             log.warning("get_active_document: desktop is None")

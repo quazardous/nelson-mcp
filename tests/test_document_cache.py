@@ -162,3 +162,33 @@ def test_doc_key_of_a_closed_document_registers_nothing():
     assert svc.doc_key(Closed(doc)) == known
     assert svc.doc_key(Closed(Model())) is None
     assert len(DocumentCache._entries) == count
+
+
+class _Open:
+    def getCurrentController(self):
+        return self
+
+    def getFrame(self):
+        return object()
+
+
+class _Closed:
+    def getCurrentController(self):
+        raise RuntimeError("DisposedException")
+
+
+def test_a_pinned_document_stays_active_then_expires(monkeypatch):
+    """#2850: focus can bounce back to the previous window under KDE."""
+    from plugin.modules.core.services import document as mod
+    svc = mod.DocumentService.__new__(mod.DocumentService)
+    now = [100.0]
+    monkeypatch.setattr(mod.time, "monotonic", lambda: now[0])
+    svc._get_desktop = lambda: None           # the desktop would say "old"
+    doc = _Open()
+    mod.DocumentService.pin_active(doc)
+    assert svc.get_active_document() is doc
+    now[0] += mod.DocumentService.PIN_SECONDS + 0.1
+    assert svc.get_active_document() is None
+    mod.DocumentService.pin_active(_Closed())
+    assert svc.get_active_document() is None
+    assert mod.DocumentService._pinned is None
