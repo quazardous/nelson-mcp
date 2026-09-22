@@ -1,5 +1,7 @@
 # Nelson MCP
 
+[![CI](https://github.com/quazardous/nelson-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/quazardous/nelson-mcp/actions/workflows/ci.yml)
+
 A LibreOffice extension that turns your documents into an MCP server. External AI clients connect over HTTP and get full access to document tools — reading, editing, navigating, formatting, and more.
 
 Works with any MCP-compatible client: Claude Code, OpenCode, Goose, ollmcp, etc.
