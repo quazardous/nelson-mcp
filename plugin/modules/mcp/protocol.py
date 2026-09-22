@@ -609,6 +609,7 @@ class MCPProtocolHandler:
         t0 = time.perf_counter()
         result = registry.execute(tool_name, context, **arguments)
         elapsed = time.perf_counter() - t0
+        self._refresh_active_document()
 
         if isinstance(result, dict):
             result["_elapsed_ms"] = round(elapsed * 1000, 1)
@@ -620,6 +621,24 @@ class MCPProtocolHandler:
                 self._enrich_result(result, doc, doc_svc, doc_type)
 
         return result
+
+    def _refresh_active_document(self):
+        """Bring /health's snapshot up to date after a tool call.
+
+        A document loaded over MCP raises its events on a UNO bridge
+        thread; the watcher only posts a refresh then, which may run before
+        the document is current, so /health kept the previous one until
+        something else refreshed it (GitHub #41). Tool calls run on the
+        main thread, so refreshing here adds no UNO call off it.
+        """
+        watcher = self.services.get("active_document")
+        if watcher is None:
+            return
+        try:
+            watcher.refresh()
+        except Exception:
+            log.debug("active document refresh after a tool call failed",
+                      exc_info=True)
 
     @staticmethod
     def _document_identity(doc, doc_svc, doc_type):
