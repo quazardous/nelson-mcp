@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+
+- **`document_locked` named the login instead of the machine** (GitHub #40).
+  A LibreOffice lock file holds the full name, the login, the host, the time
+  and the profile URL, in that order; Nelson read the second field as the
+  host. "locked by Test User on test" now reads "on otherhost", and
+  `locked_by` carries the right `user` and `host`
+
 ### Changed
 
 - **Nelson is published to the official MCP registry.** `server.json` was

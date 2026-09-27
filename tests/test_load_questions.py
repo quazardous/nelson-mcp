@@ -18,23 +18,25 @@ def _locked(tmp_path, content):
 
 
 def test_lock_owner_reads_the_lock_file(tmp_path):
-    path = _locked(tmp_path, "Ana Lopez,laptop,ana,22.09.2026 10:00,"
+    # LibreOffice writes: full name, login, host, time, profile URL.
+    path = _locked(tmp_path, "Ana Lopez,ana,laptop,22.09.2026 10:00,"
                              "file:///home/ana/.config/libreoffice/4;")
     owner = lock_owner(path)
     assert owner["name"] == "Ana Lopez"
+    assert owner["user"] == "ana"
     assert owner["host"] == "laptop"
     assert owner["since"] == "22.09.2026 10:00"
 
 
 def test_lock_owner_falls_back_to_the_user_and_tolerates_junk(tmp_path):
-    assert lock_owner(_locked(tmp_path, ",pc,bob,01.01.2026 09:00,x;"))[
+    assert lock_owner(_locked(tmp_path, ",bob,pc,01.01.2026 09:00,x;"))[
         "name"] == "bob"
     assert "name" not in lock_owner(_locked(tmp_path, "garbage"))
     assert lock_owner(str(tmp_path / "nothing.odt")) is None
 
 
 def test_locked_document_names_the_holder(tmp_path):
-    path = _locked(tmp_path, "Ana Lopez,laptop,ana,22.09.2026 10:00,x;")
+    path = _locked(tmp_path, "Ana Lopez,ana,laptop,22.09.2026 10:00,x;")
     err = describe("LockedDocumentRequest", "Ana", path)
     assert err["code"] == "document_locked"
     assert "Ana Lopez on laptop since 22.09.2026 10:00" in err["message"]
@@ -65,7 +67,7 @@ def test_other_questions_have_their_own_code(kind, code):
 def test_infer_kind_from_the_file(tmp_path):
     import zipfile
     from plugin.modules.doc.load_questions import infer_kind
-    locked = _locked(tmp_path, "Ana,pc,ana,22.09.2026 10:00,x;")
+    locked = _locked(tmp_path, "Ana,ana,pc,22.09.2026 10:00,x;")
     assert infer_kind(locked) == "LockedDocumentRequest"
     broken = tmp_path / "broken.odt"
     broken.write_bytes(b"PK\x03\x04 not really a zip")

@@ -1948,7 +1948,7 @@ def check_open_answers_questions(h):
     h.call("doc_close")
     lock = os.path.join(os.path.dirname(locked), ".~lock.locked.odt#")
     with open(lock, "w") as f:
-        f.write("Ana Lopez,otherhost,ana,22.09.2026 10:00,file:///x;")
+        f.write("Ana Lopez,ana,otherhost,22.09.2026 10:00,file:///x;")
     with open(locked, "rb") as f:
         head = f.read(3000)
     with open(damaged, "wb") as f:

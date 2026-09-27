@@ -23,8 +23,10 @@ _PASSWORD = ("DocumentPasswordRequest", "DocumentPasswordRequest2",
 def lock_owner(path):
     """Who LibreOffice's lock file next to *path* names, or None.
 
-    The file is ``.~lock.<name>#`` and holds one line:
-    ``Full Name,host,user,DD.MM.YYYY HH:MM,profile-url;``.
+    The file is ``.~lock.<name>#`` and holds one line, in the order
+    LibreOffice writes it (svl LockFileComponent: OOOUSERNAME, SYSUSERNAME,
+    LOCALHOST, EDITTIME, USERURL):
+    ``Full Name,login,host,DD.MM.YYYY HH:MM,profile-url;``.
     """
     lock = os.path.join(os.path.dirname(path),
                         ".~lock.%s#" % os.path.basename(path))
@@ -35,7 +37,7 @@ def lock_owner(path):
         return None
     if len(fields) < 4:
         return {"lock_file": lock}
-    name, host, user, since = (f.strip() for f in fields[:4])
+    name, user, host, since = (f.strip() for f in fields[:4])
     return {"name": name or user, "host": host, "user": user,
             "since": since, "lock_file": lock}
 
