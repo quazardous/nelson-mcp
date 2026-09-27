@@ -423,6 +423,15 @@ class DocumentService(ServiceBase):
                     "non-document: %s", type(comp).__name__
                 )
                 return None
+            elif not self.is_document(comp):
+                # The Start Center is a component of the desktop too, and it
+                # is not a document: it answers getCurrentComponent as soon
+                # as its window is current. /health then reported a document
+                # with no type, and a tool without _document resolved to it
+                # and failed on getURL (GitHub #43).
+                log.debug("get_active_document: current component is not a "
+                          "document (Start Center?)")
+                return None
             else:
                 log.debug("get_active_document: %s", type(comp).__name__)
             return comp
@@ -456,6 +465,19 @@ class DocumentService(ServiceBase):
                 model.supportsService("com.sun.star.drawing.DrawingDocument")
                 or model.supportsService("com.sun.star.presentation.PresentationDocument")
             )
+        except Exception:
+            return False
+
+    def is_document(self, model):
+        """Whether *model* is an office document at all.
+
+        Every document model supports OfficeDocument, whatever its type;
+        the Start Center's component (sfx2 BackingComp) supports only
+        StartModule, and has no model behind it.
+        """
+        try:
+            return bool(model.supportsService(
+                "com.sun.star.document.OfficeDocument"))
         except Exception:
             return False
 

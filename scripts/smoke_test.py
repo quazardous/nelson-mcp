@@ -468,6 +468,48 @@ def check_tools_listed(h):
     return "%d tools with no document open" % len(names)
 
 
+def check_no_document_is_no_document(h):
+    """#43: with nothing open, nothing is the active document.
+
+    In the GUI the desktop's current component is then the Start Center
+    (sfx2 BackingComp), which is not a document: /health advertised it as
+    one, with a doc_id no tool could use, and the next call resolved to it
+    and failed inside getURL. Headless has no Start Center, so the state
+    only exists in the wbox run — LibreOffice is asked which component is
+    current, so a pass here always says whether it was reached.
+    """
+    h.reset()
+    current = h.uno_run(
+        "c=desktop.getCurrentComponent()\n"
+        "print(json.dumps([None, False] if c is None else "
+        "[c.getImplementationName(), "
+        "bool(c.supportsService('com.sun.star.document.OfficeDocument'))]))\n")
+    h.tool_names()                 # tools/list refreshes /health's snapshot
+    with urllib.request.urlopen(
+            "http://localhost:%d/health" % h.port, timeout=5) as r:
+        health = json.loads(r.read()).get("document") or {}
+    if health.get("available") or health.get("doc_id"):
+        raise Fail("/health advertises a document with nothing open: %s "
+                   "(current component: %s)" % (health, current))
+    info = h.call("doc_info")
+    if info.get("code") != "no_document":
+        raise Fail("doc_info with nothing open answers %s, not no_document"
+                   % {k: info.get(k) for k in ("status", "code", "message")})
+    docs = h.call("doc_list_open")
+    if docs.get("count"):
+        raise Fail("doc_list_open contradicts it: %s" % docs)
+    if current is None:                    # uno unavailable, not an answer
+        return ("/health and doc_info agree on nothing open; could not ask "
+                "LibreOffice which component is current (%s)"
+                % h.uno_last_error)
+    name, is_document = current
+    if is_document:
+        raise Fail("a document is still current after reset: %s" % name)
+    if name is None:
+        return "nothing current (headless), /health and doc_info agree"
+    return "%s is current, and is not a document" % name
+
+
 def check_doc_type_filtering(h):
     """The tool list narrows to the active document."""
     h.reset()
@@ -2057,6 +2099,7 @@ def check_log_clean(h):
 CHECKS = [
     ("handshake", check_handshake),
     ("tools listed", check_tools_listed),
+    ("no document is no document (#43)", check_no_document_is_no_document),
     ("doc-type filtering", check_doc_type_filtering),
     ("deprecated aliases", check_alias_still_resolves),
     ("mutation classification", check_mutation_classification),

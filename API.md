@@ -65,6 +65,9 @@ after every tool call and on document events.
 `document.pending: true` means Nelson has not read the active document yet,
 right after startup.
 
+`available: false` with LibreOffice running and no file open: the Start Center
+is a window, not a document, and no tool can work on it (GitHub #43).
+
 ### Config API
 
 > **Requires** `http.enable_config_api = true` (disabled by default; switch it
