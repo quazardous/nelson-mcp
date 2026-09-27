@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.14.4] — 2026-09-27
+
+Nelson is listed in the official MCP registry, and a locked document now
+names the machine that holds it, not the login.
 
 ### Fixed
 
