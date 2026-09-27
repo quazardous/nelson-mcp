@@ -43,7 +43,17 @@ echo "  Built: $OXT_FILE"
 echo ""
 echo "--- Installing extension ---"
 
-$UNOPKG remove "$EXTENSION_ID" -env:UserInstallation="$PROFILE_URI" 2>&1 || true
+# A profile that has never had the extension has nothing to remove, and
+# unopkg then prints its own "ERROR: ... is not deployed" plus "unopkg
+# failed": in deploy.log that reads like a failed deploy. Keep its output
+# only when it is about something else.
+if ! remove_out=$($UNOPKG remove "$EXTENSION_ID" \
+        -env:UserInstallation="$PROFILE_URI" 2>&1); then
+    case "$remove_out" in
+        *"$EXTENSION_ID"*) echo "  (not installed yet, nothing to remove)" ;;
+        *) echo "$remove_out" ;;
+    esac
+fi
 sleep 1
 
 if ! $UNOPKG add "$OXT_FILE" -env:UserInstallation="$PROFILE_URI" 2>&1; then
