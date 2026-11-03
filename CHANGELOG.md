@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.14.5] — 2026-11-03
+
+With no document open, Nelson no longer reports the Start Center as one.
+
+### Fixed
+
+- **The Start Center was taken for the active document** (GitHub #43). With
+  no file open, LibreOffice's current component is the Start Center, which has
+  no model. After the first `tools/list`, `/health` reported
+  `available: true` with no `doc_type`, and `doc_info` failed with
+  `execution_error` / `getURL` while `doc_list_open` listed nothing. A document
+  is now a component that supports `com.sun.star.document.OfficeDocument`:
+  `/health` says `available: false` while nothing is open, and a tool called
+  without `_document` answers `no_document`.
+
+### Added
+
+- **A `LICENSE` file at the repository root** (GitHub #44), with the MPL 2.0
+  text, so GitHub and other tools detect the license.
+
 ## [0.14.4] — 2026-09-27
 
 Nelson is listed in the official MCP registry, and a locked document now
