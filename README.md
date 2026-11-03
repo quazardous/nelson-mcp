@@ -216,4 +216,6 @@ Nelson MCP is the result of merging and reworking two other projects:
 
 ## License
 
-MPL 2.0 — see [`extension/registration/license.txt`](extension/registration/license.txt).
+MPL 2.0 — see [`LICENSE`](LICENSE). The extension ships the same terms in
+[`extension/registration/license.txt`](extension/registration/license.txt), with the
+attribution for the code Nelson is derived from.
