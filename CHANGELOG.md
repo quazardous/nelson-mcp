@@ -4,7 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.14.6] — 2026-11-19
+
+Four fixes from user reports: undo works again, inserted text makes its own
+paragraph, tracked changes no longer read as duplicated text, and tables
+with merged cells are read in full.
 
 ### Fixed
 
