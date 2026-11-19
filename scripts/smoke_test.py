@@ -1363,6 +1363,32 @@ def check_read_with_tracked_changes(h):
     return "accepted, original and marked each read right"
 
 
+def check_irregular_table(h):
+    """#45: a merged first row does not hide the other columns."""
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full", format="html", content=(
+        "<table><tr><td colspan='2'>Header</td></tr>"
+        "<tr><td>Q1</td><td>A1</td></tr>"
+        "<tr><td>Q2</td><td>A2</td></tr></table>"))
+    listed = h.call("table_list")
+    if not listed.get("tables"):
+        raise Fail("no table was created: %s" % listed)
+    name = listed["tables"][0]["name"]
+    read = h.call("table_list", table_name=name)
+    if read.get("data") != [["Header"], ["Q1", "A1"], ["Q2", "A2"]]:
+        raise Fail("table read as %s" % read)
+    if not read.get("irregular") or read.get("cols") != 2:
+        raise Fail("irregular table not flagged as such: %s" % read)
+    wrote = h.call("table_write_row", table_name=name, row=2,
+                   values=["Q2", "changed"])
+    again = h.call("table_list", table_name=name)["data"]
+    if wrote.get("cells_written") != 2 or again[2] != ["Q2", "changed"]:
+        raise Fail("table_write_row missed the second cell: %s, %s"
+                   % (wrote, again))
+    return "merged header row, both columns read and written, flagged"
+
+
 def check_listing_leaves_documents_alone(h):
     """Nelson reads a document without marking it modified or writing to it.
 
@@ -2189,6 +2215,7 @@ CHECKS = [
     ("insert makes paragraphs (#46)", check_insert_makes_paragraphs),
     ("undo after edits (#47)", check_undo_after_edits),
     ("read with tracked changes (#48)", check_read_with_tracked_changes),
+    ("irregular table (#45)", check_irregular_table),
     ("open is active (#34)", check_open_is_active),
     ("open twice (#40)", check_open_twice),
     ("open answers questions", check_open_answers_questions),

@@ -23,6 +23,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   "Beta" by "Delta" read back as `DeltaBeta paragraph.`, which an agent took
   for duplicated text. `text_read` now reads the text as if the changes were
   accepted, and flags those paragraphs with `tracked_changes: true`.
+- **`table_list` dropped cells of Writer tables with merged cells** (GitHub
+  #45). It counted columns with `getColumns()`, which answers 1 for a table
+  whose first row is one merged cell, so every cell right of the first
+  column was left out, without a word. Tables are now read by cell name:
+  rows may differ in length, and such a table is flagged `irregular` with
+  each cell's name. `table_write_row` writes the cells the row really has
+  and says when values were left over; past 26 columns it addressed the
+  wrong cells, as Writer names column 27 `a`, not `AA`.
 
 ### Added
 

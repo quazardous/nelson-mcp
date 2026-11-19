@@ -6,6 +6,7 @@
 """Writer table tools."""
 
 import logging
+import re
 
 from plugin.framework.tool_base import ToolBase
 
@@ -49,11 +50,12 @@ class ListTables(ToolBase):
         tables = []
         for name in tables_sup.getElementNames():
             table = tables_sup.getByName(name)
-            tables.append({
-                "name": name,
-                "rows": table.getRows().getCount(),
-                "cols": table.getColumns().getCount(),
-            })
+            rows = table_rows(table)
+            entry = {"name": name, "rows": len(rows),
+                     "cols": max((len(r) for r in rows), default=0)}
+            if _irregular(rows):
+                entry["irregular"] = True
+            tables.append(entry)
         return {"status": "ok", "tables": tables, "count": len(tables)}
 
 
@@ -92,27 +94,26 @@ class ReadTable(ToolBase):
             }
 
         table = tables_sup.getByName(table_name)
-        rows = table.getRows().getCount()
-        cols = table.getColumns().getCount()
-        data = []
-        for r in range(rows):
-            row_data = []
-            for c in range(cols):
-                col_letter = _col_letter(c)
-                cell_ref = "%s%d" % (col_letter, r + 1)
-                try:
-                    row_data.append(table.getCellByName(cell_ref).getString())
-                except Exception:
-                    row_data.append("")
-            data.append(row_data)
-
-        return {
+        rows = table_rows(table)
+        data = [[table.getCellByName(n).getString() for n in row]
+                for row in rows]
+        result = {
             "status": "ok",
             "table_name": table_name,
-            "rows": rows,
-            "cols": cols,
+            "rows": len(rows),
+            "cols": max((len(r) for r in rows), default=0),
             "data": data,
         }
+        if _irregular(rows):
+            # Merged or split cells: rows differ in length, and padding
+            # them would put text under the wrong column (GitHub #45).
+            result["irregular"] = True
+            result["cell_names"] = rows
+            result["note"] = (
+                "Rows have different numbers of cells (merged or split "
+                "cells), so data is not a rectangular grid. cell_names "
+                "gives each cell's name, for table_write_cell.")
+        return result
 
 
 class WriteTableCell(ToolBase):
@@ -621,39 +622,65 @@ class WriteTableRow(ToolBase):
             return {"status": "error", "message": "Table '%s' not found." % table_name}
 
         table = tables_sup.getByName(table_name)
-        cols = table.getColumns().getCount()
+        rows = table_rows(table)
+        if not 0 <= row_idx < len(rows):
+            return {"status": "error", "code": "invalid_params",
+                    "message": "Row %d out of range (0..%d)."
+                    % (row_idx, len(rows) - 1), "retryable": False}
+        cells = rows[row_idx]
 
         written = 0
-        for c in range(min(len(values), cols)):
-            col_letter = _col_letter(c)
-            cell_ref = "%s%d" % (col_letter, row_idx + 1)
-            cell_obj = table.getCellByName(cell_ref)
-            if cell_obj is None:
-                continue
-            val = values[c]
+        for name, val in zip(cells, values):
+            cell_obj = table.getCellByName(name)
             try:
                 cell_obj.setValue(float(val))
             except (ValueError, TypeError):
                 cell_obj.setString(str(val))
             written += 1
 
-        return {
+        result = {
             "status": "ok",
             "table_name": table_name,
             "row": row_idx,
             "cells_written": written,
         }
+        if len(values) > len(cells):
+            result["warning"] = (
+                "Row %d has %d cell(s); %d value(s) were not written."
+                % (row_idx, len(cells), len(values) - len(cells)))
+        return result
 
 
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
 
-def _col_letter(c):
-    """Convert 0-based column index to Excel-style letter(s)."""
-    if c < 26:
-        return chr(ord("A") + c)
-    return "A" + chr(ord("A") + c - 26)
+_CELL_ROW = re.compile(r"^[A-Za-z]+(\d+)")
+
+
+def group_cell_names(names):
+    """Cell names grouped by row, in table order.
+
+    A Writer table is not always a grid: a merged cell leaves its row with
+    fewer cells, and getColumns() then counts too few columns for the rest
+    of the table (GitHub #45). The cell names are the truth. A cell that
+    was split carries a dotted name ("B2.1.1"); it stays in the row of the
+    cell it was split from.
+    """
+    rows = {}
+    for name in names:
+        m = _CELL_ROW.match(name)
+        if m:
+            rows.setdefault(int(m.group(1)), []).append(name)
+    return [rows[r] for r in sorted(rows)]
+
+
+def table_rows(table):
+    return group_cell_names(table.getCellNames())
+
+
+def _irregular(rows):
+    return len({len(r) for r in rows}) > 1
 
 
 def _parse_color(color_str):
