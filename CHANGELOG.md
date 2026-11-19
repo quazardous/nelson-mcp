@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- **`doc_undo` and `doc_redo` did nothing** (GitHub #47). Like every write,
+  they ran inside an undo context of their own, and LibreOffice refuses to
+  undo or redo while one is open: right after any Nelson edit, `doc_undo`
+  answered `undone: 0, can_undo: false` and left the document as it was. Each
+  Nelson call is now undone, and redone, in one step, as documented.
+- **`text_insert` joined its text to the target paragraph** (GitHub #46). With
+  `position` `before` or `after`, the text went into the target paragraph
+  behind a line break, so an entry inserted into a numbered list shared the
+  next entry's number. It now makes a paragraph of its own, and `style`
+  applies to that paragraph.
+
 ## [0.14.5] — 2026-11-03
 
 With no document open, Nelson no longer reports the Start Center as one.

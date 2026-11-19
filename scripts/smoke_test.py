@@ -1281,6 +1281,59 @@ def check_style_set(h):
                                 else "not warned (font list unavailable)")
 
 
+def _texts(h):
+    read = h.call("text_read", start_index=0, count=20)
+    return [p.get("text", "") for p in read.get("paragraphs") or []]
+
+
+def check_insert_makes_paragraphs(h):
+    """#46: text_insert before/after creates a paragraph, not a line break."""
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full",
+           content="<p>Alpha.</p><p>Beta.</p><p>Gamma.</p>")
+    h.call("text_insert", paragraph_index=1, text="Before.",
+           position="before")
+    h.call("text_insert", paragraph_index=2, text="After.",
+           position="after", style="Heading 2")
+    got = _texts(h)
+    want = ["Alpha.", "Before.", "Beta.", "After.", "Gamma."]
+    if got[:5] != want:
+        raise Fail("paragraphs are %r, expected %r" % (got, want))
+    styled = h.call("text_read", start_index=3, count=1)["paragraphs"][0]
+    if "Heading 2" not in (styled.get("style") or ""):
+        raise Fail("style went to the wrong paragraph: %r" % styled)
+    return "before and after each made a paragraph; style on the new one"
+
+
+def check_undo_after_edits(h):
+    """#47: doc_undo undoes one Nelson call, doc_redo brings it back."""
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full",
+           content="<p>Alpha.</p><p>Beta.</p><p>Gamma.</p>")
+    before = _texts(h)
+    h.call("text_insert", paragraph_index=1, text="NEW.", position="before")
+    if _texts(h) == before:
+        raise Fail("text_insert changed nothing")
+    undo = h.call("doc_undo")
+    if undo.get("undone") != 1:
+        raise Fail("doc_undo undid nothing: %s" % undo)
+    if _texts(h) != before:
+        raise Fail("after doc_undo the text is %r, expected %r"
+                   % (_texts(h), before))
+    redo = h.call("doc_redo")
+    if redo.get("redone") != 1 or "NEW." not in _texts(h):
+        raise Fail("doc_redo did not bring the edit back: %s" % redo)
+    h.call("doc_undo")
+    h.call("text_replace", search="Beta", replace="Delta",
+           case_sensitive=True, replace_all=False)
+    h.call("doc_undo")
+    if _texts(h) != before:
+        raise Fail("text_replace was not undone: %r" % _texts(h))
+    return "insert undone and redone, replace undone, one step per call"
+
+
 def check_listing_leaves_documents_alone(h):
     """Nelson reads a document without marking it modified or writing to it.
 
@@ -2104,6 +2157,8 @@ CHECKS = [
     ("deprecated aliases", check_alias_still_resolves),
     ("mutation classification", check_mutation_classification),
     ("document round-trip", check_round_trip),
+    ("insert makes paragraphs (#46)", check_insert_makes_paragraphs),
+    ("undo after edits (#47)", check_undo_after_edits),
     ("open is active (#34)", check_open_is_active),
     ("open twice (#40)", check_open_twice),
     ("open answers questions", check_open_answers_questions),

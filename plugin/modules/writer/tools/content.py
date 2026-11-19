@@ -535,17 +535,26 @@ class InsertAtParagraph(ToolBase):
                          "with table_write_cell."),
                 "retryable": False,
             }
+        from com.sun.star.text.ControlCharacter import PARAGRAPH_BREAK
+
         text = ctx.doc.getText()
         cursor = text.createTextCursorByRange(target_para.getStart())
 
+        # A new paragraph needs a PARAGRAPH_BREAK: insertString turns "\n"
+        # into a line break inside the target paragraph (GitHub #46). After
+        # each branch the cursor sits in the paragraph that holds the text.
         if position == "after":
             cursor.gotoRange(target_para.getEnd(), False)
-            text.insertString(cursor, "\n" + text_to_insert, False)
+            text.insertControlCharacter(cursor, PARAGRAPH_BREAK, False)
+            text.insertString(cursor, text_to_insert, False)
         elif position == "replace":
             cursor.gotoRange(target_para.getEnd(), True)
             cursor.setString(text_to_insert)
         else:  # before
-            text.insertString(cursor, text_to_insert + "\n", False)
+            text.insertString(cursor, text_to_insert, False)
+            text.insertControlCharacter(cursor, PARAGRAPH_BREAK, False)
+            # The break leaves the cursor at the start of the target.
+            cursor.gotoPreviousParagraph(False)
 
         # Apply style if requested
         if style:
