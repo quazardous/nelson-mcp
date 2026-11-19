@@ -36,6 +36,9 @@ class Undo(ToolBase):
     }
     doc_types = None
     is_mutation = True
+    # Never inside an undo context of its own: LibreOffice refuses to undo
+    # or redo while one is open, so the call would undo nothing (GitHub #47).
+    opens_undo_context = False
 
     def execute(self, ctx, **kwargs):
         steps = kwargs.get("steps", 1)
@@ -78,6 +81,9 @@ class Redo(ToolBase):
     }
     doc_types = None
     is_mutation = True
+    # Never inside an undo context of its own: LibreOffice refuses to undo
+    # or redo while one is open, so the call would undo nothing (GitHub #47).
+    opens_undo_context = False
 
     def execute(self, ctx, **kwargs):
         steps = kwargs.get("steps", 1)

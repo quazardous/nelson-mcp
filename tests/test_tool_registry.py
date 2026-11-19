@@ -336,6 +336,14 @@ def test_undo_context_only_for_tools_that_want_one(tool, expected):
     assert doc.log == expected
 
 
+def test_undo_and_redo_run_outside_an_undo_context():
+    # GitHub #47: inside its own context LibreOffice refuses to undo, so
+    # doc_undo answered undone: 0 after every Nelson edit.
+    from plugin.modules.doc.tools.undo import Redo, Undo
+    assert Undo.opens_undo_context is False
+    assert Redo.opens_undo_context is False
+
+
 class DisposedException(Exception):
     """Stands in for com.sun.star.lang.DisposedException."""
 
