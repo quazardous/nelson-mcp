@@ -390,7 +390,9 @@ class ReadParagraphs(ToolBase):
     description = (
         "Read a range of paragraphs by index or locator. "
         "Useful for scanning text between headings. Each paragraph comes "
-        "with its paragraph style."
+        "with its paragraph style. With tracked changes, text reads as if "
+        "they were accepted, unless the user chose otherwise; such "
+        "paragraphs carry tracked_changes: true."
     )
     parameters = {
         "type": "object",
@@ -428,26 +430,62 @@ class ReadParagraphs(ToolBase):
             resolved = doc_svc.resolve_locator(ctx.doc, locator)
             start = resolved.get("para_index", start)
 
+        from plugin.modules.writer import tracked_text
+
         doc_svc = ctx.services.document
         para_ranges = doc_svc.get_paragraph_ranges(ctx.doc)
         end = min(start + count, len(para_ranges))
 
+        # Tracked changes keep deleted text in the paragraph: walk the text
+        # portions to tell it apart (#48). Only when there are changes, as
+        # the walk costs UNO calls per portion.
+        walker = None
+        if tracked_text.document_has_changes(ctx.doc):
+            walker = tracked_text.Walker()
+            try:
+                view = ctx.services.config.proxy_for("writer").get(
+                    "tracked_changes_view")
+            except Exception:
+                view = None
+            view = tracked_text.resolve_view(view)
+
         paragraphs = []
         for i in range(start, end):
             p = para_ranges[i]
-            text = p.getString() if hasattr(p, "getString") else "[Object]"
-            entry = {"index": i, "text": text}
+            entry = {"index": i}
+            if not hasattr(p, "getString"):
+                entry["text"] = "[Object]"
+            elif walker is not None and hasattr(p, "createEnumeration"):
+                entry["_segments"] = walker.paragraph_segments(p)
+            else:
+                entry["text"] = p.getString()
             try:
                 entry["style"] = p.getPropertyValue("ParaStyleName")
             except Exception:
                 pass                                # tables and the like
             paragraphs.append(entry)
 
-        return {
-            "status": "ok",
-            "paragraphs": paragraphs,
-            "total": len(para_ranges),
-        }
+        result = {"status": "ok", "paragraphs": paragraphs,
+                  "total": len(para_ranges)}
+        # Rendered only now: a change found further down can relabel text
+        # read before it (see tracked_text.Walker).
+        changed = False
+        for entry in paragraphs:
+            segments = entry.pop("_segments", None)
+            if segments is None:
+                continue
+            entry["text"] = tracked_text.render(segments, view)
+            if tracked_text.has_changes(segments):
+                entry["tracked_changes"] = True
+                changed = True
+        if changed:
+            result["changes_view"] = view
+            result["hint"] = (
+                "Paragraphs marked tracked_changes hold changes not yet "
+                "accepted; text shows them as '%s' (setting "
+                "writer.tracked_changes_view: accepted, original or marked). "
+                "change_list lists them." % view)
+        return result
 
 
 # ------------------------------------------------------------------

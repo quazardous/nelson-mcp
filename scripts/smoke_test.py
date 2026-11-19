@@ -1334,6 +1334,35 @@ def check_undo_after_edits(h):
     return "insert undone and redone, replace undone, one step per call"
 
 
+def check_read_with_tracked_changes(h):
+    """#48: text_read does not run deleted and inserted text together."""
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full",
+           content="<p>Alpha paragraph.</p><p>Beta paragraph.</p>")
+    h.call("change_set", enabled=True)
+    h.call("text_replace", search="Beta", replace="Delta",
+           case_sensitive=True, replace_all=False)
+    seen = {}
+    try:
+        for view in ("accepted", "original", "marked"):
+            h.set_config("writer.tracked_changes_view", view)
+            read = h.call("text_read", start_index=0, count=2)
+            para = read["paragraphs"][1]
+            if not para.get("tracked_changes") \
+                    or read.get("changes_view") != view:
+                raise Fail("%s: change not flagged: %s" % (view, read))
+            seen[view] = para["text"]
+    finally:
+        h.set_config("writer.tracked_changes_view", "accepted")
+        h.call("change_set", enabled=False)
+    want = {"accepted": "Delta paragraph.", "original": "Beta paragraph.",
+            "marked": "<ins>Delta</ins><del>Beta</del> paragraph."}
+    if seen != want:
+        raise Fail("text_read gave %s, expected %s" % (seen, want))
+    return "accepted, original and marked each read right"
+
+
 def check_listing_leaves_documents_alone(h):
     """Nelson reads a document without marking it modified or writing to it.
 
@@ -2159,6 +2188,7 @@ CHECKS = [
     ("document round-trip", check_round_trip),
     ("insert makes paragraphs (#46)", check_insert_makes_paragraphs),
     ("undo after edits (#47)", check_undo_after_edits),
+    ("read with tracked changes (#48)", check_read_with_tracked_changes),
     ("open is active (#34)", check_open_is_active),
     ("open twice (#40)", check_open_twice),
     ("open answers questions", check_open_answers_questions),

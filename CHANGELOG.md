@@ -18,6 +18,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   behind a line break, so an entry inserted into a numbered list shared the
   next entry's number. It now makes a paragraph of its own, and `style`
   applies to that paragraph.
+- **`text_read` ran deleted and inserted text together** (GitHub #48). Change
+  recording keeps deleted text in the paragraph, so a tracked replace of
+  "Beta" by "Delta" read back as `DeltaBeta paragraph.`, which an agent took
+  for duplicated text. `text_read` now reads the text as if the changes were
+  accepted, and flags those paragraphs with `tracked_changes: true`.
+
+### Added
+
+- **Setting `writer.tracked_changes_view`** (Options > Nelson > Writer): how
+  `text_read` shows tracked changes. `accepted` (default) as if they were
+  accepted, `original` as before them, `marked` with insertions in `<ins>`
+  and deletions in `<del>`.
 
 ## [0.14.5] — 2026-11-03
 

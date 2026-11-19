@@ -12,6 +12,26 @@ config:
     widget: number
     label: Max Content Size
     public: true
+  tracked_changes_view:
+    type: string
+    default: accepted
+    widget: select
+    label: Tracked changes in text_read
+    public: true
+    description: >
+      How text_read shows text that has tracked changes not yet accepted or
+      rejected. 'accepted' shows the text as it reads once they are accepted:
+      inserted text in, deleted text out. 'original' shows it as it read
+      before them. 'marked' shows both, inserted text in <ins>, deleted text
+      in <del>. Change recording keeps deleted text in the document, so
+      without this a replace read back as old and new text run together.
+    options:
+      - value: accepted
+        label: As if accepted
+      - value: original
+        label: As before the changes
+      - value: marked
+        label: Marked with <ins> and <del>
   change_author:
     type: string
     default: ""
