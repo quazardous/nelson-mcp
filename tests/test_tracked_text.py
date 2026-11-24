@@ -110,3 +110,59 @@ def test_a_change_begun_before_the_window_is_recognised():
 ])
 def test_unknown_settings_fall_back_to_accepted(value, view):
     assert tt.resolve_view(value) == view
+
+
+class _MathObject:
+    def __init__(self, name, formula, clsid=tt.MATH_CLSID.upper()):
+        self.name, self.formula, self.clsid = name, formula, clsid
+
+    def getName(self):
+        return self.name
+
+    def getPropertyValue(self, name):
+        if name != "CLSID":
+            raise KeyError(name)
+        return self.clsid
+
+    def getEmbeddedObject(self):
+        return _Portion(Formula=self.formula)
+
+
+class _FramePortion(_Portion):
+    def __init__(self, *objects):
+        super().__init__(TextPortionType="Frame")
+        self.objects = objects
+
+    def createContentEnumeration(self, service):
+        return _Enum(self.objects)
+
+
+def test_a_formula_only_paragraph_is_not_empty():
+    # GitHub #49: the paragraph string leaves the formula out.
+    walker = tt.Walker()
+    segments = walker.paragraph_segments(
+        _Para(_FramePortion(_MathObject("Object1", "{a} over {b}"))))
+    assert tt.render(segments, "accepted") == "[formula: {a} over {b}]"
+    assert walker.formulas == [{"name": "Object1",
+                                "formula": "{a} over {b}"}]
+    assert not tt.has_changes(segments)
+
+
+def test_an_inline_formula_keeps_its_place_and_other_objects_are_skipped():
+    walker = tt.Walker()
+    chart = _MathObject("Chart1", "", clsid="12dcae26-281f-416f-a234-c3086127382e")
+    segments = walker.paragraph_segments(_Para(
+        text("where x = "), _FramePortion(_MathObject("Object2", "sqrt{2}")),
+        text(" here."), _FramePortion(chart)))
+    assert tt.render(segments, "accepted") == \
+        "where x = [formula: sqrt{2}] here."
+    assert [f["name"] for f in walker.formulas] == ["Object2"]
+
+
+def test_a_formula_inside_a_tracked_insertion_follows_the_view():
+    segments = tt.Walker().paragraph_segments(_Para(
+        mark("6", "Insert", True),
+        _FramePortion(_MathObject("Object3", "x^2")),
+        mark("6", "Insert", False)))
+    assert tt.render(segments, "accepted") == "[formula: x^2]"
+    assert tt.render(segments, "original") == ""

@@ -1350,7 +1350,7 @@ def check_read_with_tracked_changes(h):
             read = h.call("text_read", start_index=0, count=2)
             para = read["paragraphs"][1]
             if not para.get("tracked_changes") \
-                    or read.get("changes_view") != view:
+                    or read.get("tracked_changes_view") != view:
                 raise Fail("%s: change not flagged: %s" % (view, read))
             seen[view] = para["text"]
     finally:
@@ -1387,6 +1387,44 @@ def check_irregular_table(h):
         raise Fail("table_write_row missed the second cell: %s, %s"
                    % (wrote, again))
     return "merged header row, both columns read and written, flagged"
+
+
+def check_formulas_are_read(h):
+    """#49: a formula-only paragraph is not read as empty."""
+    path = h.doc("formulas.odt")
+    h.reset()
+    h.call("doc_create", doc_type="writer", path=path)
+    h.call("text_apply_range", target="full",
+           content="<p>Before.</p><p>After.</p>")
+    h.call("doc_save")
+    added = h.uno_run(
+        "e=desktop.getComponents().createEnumeration()\n"
+        "while e.hasMoreElements():\n"
+        "    doc=e.nextElement()\n"
+        "    if not doc.getURL().endswith('formulas.odt'): continue\n"
+        "    t=doc.getText(); p=t.createEnumeration().nextElement()\n"
+        "    cur=t.createTextCursorByRange(p.getEnd())\n"
+        "    t.insertControlCharacter(cur, 0, False)\n"
+        "    o=doc.createInstance('com.sun.star.text.TextEmbeddedObject')\n"
+        "    o.setPropertyValue('CLSID', "
+        "'078B7ABA-54FC-457F-8551-6147e776a997')\n"
+        "    o.setPropertyValue('AnchorType', uno.Enum("
+        "'com.sun.star.text.TextContentAnchorType', 'AS_CHARACTER'))\n"
+        "    t.insertTextContent(cur, o, False)\n"
+        "    o.getEmbeddedObject().setPropertyValue('Formula', "
+        "'{a} over {b}')\n"
+        "    print(json.dumps(o.getName())); break\n")
+    if not added:
+        raise Fail("could not insert a formula over UNO: %s"
+                   % h.uno_last_error)
+    read = h.call("text_read", start_index=0, count=3)["paragraphs"]
+    texts = [p.get("text") for p in read]
+    if texts != ["Before.", "[formula: {a} over {b}]", "After."]:
+        raise Fail("text_read gave %r" % texts)
+    if read[1].get("formulas") != [{"name": added,
+                                     "formula": "{a} over {b}"}]:
+        raise Fail("formula not listed: %s" % read[1])
+    return "formula-only paragraph reads as its StarMath source, listed"
 
 
 def check_listing_leaves_documents_alone(h):
@@ -2216,6 +2254,7 @@ CHECKS = [
     ("undo after edits (#47)", check_undo_after_edits),
     ("read with tracked changes (#48)", check_read_with_tracked_changes),
     ("irregular table (#45)", check_irregular_table),
+    ("formulas are read (#49)", check_formulas_are_read),
     ("open is active (#34)", check_open_is_active),
     ("open twice (#40)", check_open_twice),
     ("open answers questions", check_open_answers_questions),

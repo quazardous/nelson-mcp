@@ -392,7 +392,9 @@ class ReadParagraphs(ToolBase):
         "Useful for scanning text between headings. Each paragraph comes "
         "with its paragraph style. With tracked changes, text reads as if "
         "they were accepted, unless the user chose otherwise; such "
-        "paragraphs carry tracked_changes: true."
+        "paragraphs carry tracked_changes: true. A formula reads as "
+        "[formula: <StarMath source>] and is listed in the paragraph's "
+        "formulas, with its object name."
     )
     parameters = {
         "type": "object",
@@ -436,11 +438,14 @@ class ReadParagraphs(ToolBase):
         para_ranges = doc_svc.get_paragraph_ranges(ctx.doc)
         end = min(start + count, len(para_ranges))
 
-        # Tracked changes keep deleted text in the paragraph: walk the text
-        # portions to tell it apart (#48). Only when there are changes, as
+        # Tracked changes keep deleted text in the paragraph (#48), and a
+        # formula is not in the paragraph's string at all (#49): walk the
+        # text portions to see both. Only when the document has either, as
         # the walk costs UNO calls per portion.
         walker = None
-        if tracked_text.document_has_changes(ctx.doc):
+        view = tracked_text.DEFAULT_VIEW
+        if tracked_text.document_has_changes(ctx.doc) \
+                or tracked_text.document_has_formulas(ctx.doc):
             walker = tracked_text.Walker()
             try:
                 view = ctx.services.config.proxy_for("writer").get(
@@ -457,6 +462,8 @@ class ReadParagraphs(ToolBase):
                 entry["text"] = "[Object]"
             elif walker is not None and hasattr(p, "createEnumeration"):
                 entry["_segments"] = walker.paragraph_segments(p)
+                if walker.formulas:
+                    entry["formulas"] = walker.formulas
             else:
                 entry["text"] = p.getString()
             try:
@@ -479,7 +486,7 @@ class ReadParagraphs(ToolBase):
                 entry["tracked_changes"] = True
                 changed = True
         if changed:
-            result["changes_view"] = view
+            result["tracked_changes_view"] = view
             result["hint"] = (
                 "Paragraphs marked tracked_changes hold changes not yet "
                 "accepted; text shows them as '%s' (setting "

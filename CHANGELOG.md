@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- **A paragraph holding only a formula read as empty** (GitHub #49). A
+  formula is an embedded object anchored as a character, and a paragraph's
+  string leaves it out. `text_read` now puts each Math formula in the text
+  as `[formula: <StarMath source>]`, in its place, and lists it in the
+  paragraph's `formulas` with its object name.
+
+### Changed
+
+- **`text_read` names the view it applied to tracked changes
+  `tracked_changes_view`**, like the setting, instead of `changes_view`
+  (noted on GitHub #48).
+
 ## [0.14.6] — 2026-11-19
 
 Four fixes from user reports: undo works again, inserted text makes its own
