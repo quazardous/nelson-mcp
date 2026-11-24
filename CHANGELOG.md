@@ -4,7 +4,9 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.14.7] — 2026-11-24
+
+Formulas in Writer are no longer read as empty paragraphs.
 
 ### Fixed
 
