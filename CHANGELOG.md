@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.15.2] — 2026-11-24
+
+Ranges land where `text_find` says, and a partial export keeps what a
+full one does.
 
 ### Fixed
 
