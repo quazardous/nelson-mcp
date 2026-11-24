@@ -24,17 +24,22 @@ same content.
 **For tests**: compare against the saved file after closing and reopening
 it. A comparison made before the reopen does not see these changes.
 
-## Range coordinate mismatch (Writer)
+## Range offsets (Writer)
 
-**Status**: Open — affects `text_get_range(scope="range")` and `text_apply_range(target="range")`.
+**Status**: Fixed for body text (Unreleased). Open for matches in tables.
 
-Character offsets from `text_find` (cursor-based) don't match offsets used by range export (paragraph-enumeration with summed lengths). The same numeric range is interpreted in two different coordinate systems, producing corrupted output (e.g. "## ary..." instead of "## Summary...").
+Offsets from `text_find` are the length of the body text before a point,
+as LibreOffice's `getString()` counts it: table cells and tracked deletions
+count, paragraph breaks count one each, equations and other objects anchored
+as characters count nothing. `text_get_range(scope="range")` and
+`text_apply_range(target="range")` used to move there with `goRight()`,
+which steps over objects too, so every range after an equation drifted.
+They now find the position by measuring (`ops.position_at`), and a range
+that starts or ends inside a table takes the whole table.
 
-**Recommended fix**: Use cursor-based paragraph offsets — for each enumerated paragraph, measure start/end with `gotoRange(para.getStart(), True)` + `len(cursor.getString())`. This aligns range export with `text_find` coordinates.
-
-**Workaround**: Avoid `scope="range"` for section replacement. Use `target="search"` with full section text instead.
-
-Workaround: use `target="search"` with full section text instead of range coordinates.
+**Still open**: a `text_find` match inside a table cell reports an offset
+counted from the start of that cell, not of the body, so it cannot be used
+as a range. Use `table_write_cell` for cells.
 
 ## AI Horde improvements
 

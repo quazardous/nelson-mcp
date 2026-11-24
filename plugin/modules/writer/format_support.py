@@ -208,94 +208,6 @@ def _ensure_html_linebreaks(content):
 _PARAGRAPH_BREAK = 0
 
 
-def _range_to_content_via_temp_doc(model, ctx, start, end, max_chars,
-                                   config_svc, fmt=None):
-    """Export a character range to content via a hidden temp document."""
-    fmt = resolve_export_format(config_svc, fmt)
-    temp_doc = None
-    try:
-        smgr = ctx.getServiceManager()
-        desktop = smgr.createInstanceWithContext(
-            "com.sun.star.frame.Desktop", ctx
-        )
-        load_props = (_create_property_value("Hidden", True),)
-        temp_doc = desktop.loadComponentFromURL(
-            "private:factory/swriter", "_default", 0, load_props
-        )
-        if not temp_doc or not hasattr(temp_doc, "getText"):
-            return ""
-
-        temp_text = temp_doc.getText()
-        temp_cursor = temp_text.createTextCursor()
-        text = model.getText()
-        enum = text.createEnumeration()
-        first_para = True
-        added_any = False
-
-        while enum.hasMoreElements():
-            el = enum.nextElement()
-            if not hasattr(el, "getString"):
-                continue
-            try:
-                style = el.getPropertyValue("ParaStyleName")
-            except Exception:
-                style = ""
-            style = style or ""
-            para_text = el.getString()
-
-            # Compute paragraph start offset
-            start_cursor = model.getText().createTextCursor()
-            start_cursor.gotoStart(False)
-            start_cursor.gotoRange(el.getStart(), True)
-            para_start = len(start_cursor.getString())
-            para_end = para_start + len(para_text)
-
-            if para_end <= start or para_start >= end:
-                continue
-            if para_start < start or para_end > end:
-                trim_start = max(0, start - para_start)
-                trim_end = len(para_text) - max(0, para_end - end)
-                para_text = para_text[trim_start:trim_end]
-
-            if first_para:
-                temp_cursor.gotoStart(False)
-                temp_cursor.setString(para_text)
-                temp_cursor.setPropertyValue("ParaStyleName", style)
-                first_para = False
-            else:
-                temp_cursor.gotoEnd(False)
-                temp_text.insertControlCharacter(
-                    temp_cursor, _PARAGRAPH_BREAK, False
-                )
-                temp_cursor.setPropertyValue("ParaStyleName", style)
-                temp_cursor.setString(para_text)
-            added_any = True
-
-        if not added_any:
-            return ""
-
-        filter_name = FORMAT_CONFIG[fmt]["filter"]
-        with _with_temp_buffer(None, fmt) as (path, file_url):
-            props = (_create_property_value("FilterName", filter_name),)
-            temp_doc.storeToURL(file_url, props)
-            with open(path, "r", encoding="utf-8", errors="replace") as f:
-                content = f.read()
-        if fmt == "html":
-            content = _strip_html_boilerplate(content)
-        if max_chars and len(content) > max_chars:
-            content = content[:max_chars] + "\n\n[... truncated ...]"
-        return content
-    except Exception as exc:
-        log.debug("_range_to_content_via_temp_doc failed: %s", exc)
-        return ""
-    finally:
-        if temp_doc is not None:
-            try:
-                temp_doc.close(True)
-            except Exception:
-                pass
-
-
 def document_to_content(model, ctx, services, max_chars=None,
                         scope="full", range_start=None, range_end=None,
                         fmt=None):
@@ -319,9 +231,8 @@ def document_to_content(model, ctx, services, max_chars=None,
     if scope == "selection":
         from plugin.modules.writer.ops import get_selection_range
         start, end = get_selection_range(model)
-        return _range_to_content_via_temp_doc(
-            model, ctx, start, end, max_chars, config_svc, fmt
-        )
+        return _finish(_export_copy(model, ctx, fmt, start, end) or "",
+                       fmt, max_chars)
 
     if scope == "range":
         start = int(range_start) if range_start is not None else 0
@@ -329,14 +240,16 @@ def document_to_content(model, ctx, services, max_chars=None,
         doc_len = services.document.get_document_length(model) if services else 0
         start = max(0, min(start, doc_len))
         end = min(end, doc_len)
-        return _range_to_content_via_temp_doc(
-            model, ctx, start, end, max_chars, config_svc, fmt
-        )
+        return _finish(_export_copy(model, ctx, fmt, start, end) or "",
+                       fmt, max_chars)
 
     # scope == "full"
     try:
         filter_name = FORMAT_CONFIG[fmt]["filter"]
-        content = _export_with_equation_markers(model, ctx, fmt)
+        content = None
+        from plugin.modules.writer import equations
+        if equations.math_objects(model):
+            content = _export_copy(model, ctx, fmt)
         if content is None:
             with _with_temp_buffer(None, fmt) as (path, file_url):
                 props = (_create_property_value("FilterName", filter_name),)
@@ -344,31 +257,40 @@ def document_to_content(model, ctx, services, max_chars=None,
                 with open(path, "r", encoding="utf-8",
                           errors="replace") as f:
                     content = f.read()
-        if fmt == "html":
-            content = _strip_html_boilerplate(content)
-        if max_chars and len(content) > max_chars:
-            content = content[:max_chars] + "\n\n[... truncated ...]"
-        return content
+        return _finish(content, fmt, max_chars)
     except Exception as exc:
         log.debug("document_to_content (full) failed: %s", exc)
         return ""
 
 
-def _export_with_equation_markers(model, ctx, fmt):
-    """Export *model*, each equation as [equation: <StarMath>] (GitHub #49).
+def _finish(content, fmt, max_chars):
+    if fmt == "html":
+        content = _strip_html_boilerplate(content)
+    if max_chars and len(content) > max_chars:
+        content = content[:max_chars] + "\n\n[... truncated ...]"
+    return content
 
-    The Markdown and HTML filters write an equation as its replacement
-    image, base64 inside the text: the agent got a picture instead of the
-    formula. The export runs on a hidden copy in which each equation is
-    swapped for a plain-letter token, which no filter escapes, and the
-    tokens become markers afterwards. None when there is no equation, so
-    the usual export runs.
+
+def _export_copy(model, ctx, fmt, start=None, end=None):
+    """Export a hidden copy of *model*, cut to ``[start, end)`` if given.
+
+    Two things the filters cannot do on the document itself:
+
+    - a part of it: the copy is cut to the range, offsets as text_find
+      gives them, so formatting, tables and tracked changes come out as in
+      a full export. This replaced a rebuild from paragraph strings, which
+      lost all of that (GitHub #49);
+    - equations as text: the Markdown and HTML filters write an equation as
+      its picture, base64 inside the text. In the copy each one becomes a
+      plain-letter token, which no filter escapes, and the tokens become
+      [equation: <StarMath>] afterwards.
+
+    Returns None when the export failed.
     """
     import html as html_mod
     from plugin.modules.writer import equations
+    from plugin.modules.writer.ops import get_text_cursor_at_range
 
-    if not equations.math_objects(model):
-        return None
     copy = None
     odt_fd, odt_path = tempfile.mkstemp(suffix=".odt", dir=TEMP_DIR)
     os.close(odt_fd)
@@ -380,14 +302,32 @@ def _export_with_equation_markers(model, ctx, fmt):
         copy = desktop.loadComponentFromURL(
             _file_url(odt_path), "_blank", 0,
             (_create_property_value("Hidden", True),))
+        # The copy inherits change recording: cuts and tokens would come
+        # out as tracked deletions and insertions.
+        try:
+            copy.setPropertyValue("RecordChanges", False)
+        except Exception:
+            pass
+        if start is not None:
+            if end is None or end <= start:
+                return ""
+            text = copy.getText()
+            kept = get_text_cursor_at_range(copy, start, end)
+            if kept is None:
+                return None
+            tail = text.createTextCursorByRange(kept.getEnd())
+            tail.gotoEnd(True)
+            tail.setString("")
+            head = text.createTextCursorByRange(kept.getStart())
+            head.gotoStart(True)
+            head.setString("")
         markers = {}
         for i, obj in enumerate(equations.math_objects(copy).values()):
             token = "NelsonEquation%05dMarker" % i
             markers[token] = "[equation: %s]" % equations.source(obj)
             anchor = obj.getAnchor()
-            text = anchor.getText()
-            text.insertString(anchor.getStart(), token, False)
-            text.removeTextContent(obj)
+            anchor.getText().insertString(anchor.getStart(), token, False)
+            anchor.getText().removeTextContent(obj)
         with _with_temp_buffer(None, fmt) as (path, file_url):
             copy.storeToURL(file_url, (_create_property_value(
                 "FilterName", FORMAT_CONFIG[fmt]["filter"]),))
@@ -399,7 +339,7 @@ def _export_with_equation_markers(model, ctx, fmt):
             content = content.replace(token, marker)
         return content
     except Exception as exc:
-        log.debug("export with equation markers failed: %s", exc)
+        log.debug("export of a copy failed: %s", exc)
         return None
     finally:
         if copy is not None:
@@ -609,8 +549,22 @@ def replace_preserving_format(model, target_range, new_text, ctx=None):
 
     Each single-character ``setString()`` inherits ALL character
     properties from the character it replaces.
+
+    Two cases take a plain replace instead (the new text takes the format
+    of the first character):
+
+    - change recording is on: a deleted character stays in the text, so a
+      character-by-character pass shifts on every one and garbles the
+      result ("closes" -> "ends" read "Deltandses"); one deletion and one
+      insertion is also what a reviewer wants to see;
+    - the range holds an object (an equation): it has no character in the
+      string, so the two would not line up.
+
+    Positions are taken from the range itself. They used to come from
+    goRight() from the top of the body, which drifted past equations and
+    was wrong for a range in a table cell.
     """
-    text = model.getText()
+    text = target_range.getText()
     old_text = target_range.getString()
     old_len = len(old_text)
     new_len = len(new_text)
@@ -622,12 +576,14 @@ def replace_preserving_format(model, target_range, new_text, ctx=None):
         text.insertString(cursor, new_text, False)
         return
 
-    overlap = min(old_len, new_len)
+    probe = text.createTextCursorByRange(target_range.getStart())
+    probe.goRight(old_len, True)
+    if _recording(model) or probe.getString() != old_text:
+        cursor = text.createTextCursorByRange(target_range)
+        cursor.setString(new_text)
+        return
 
-    # Absolute character offset of the range start.
-    tmp = text.createTextCursorByRange(target_range.getStart())
-    tmp.gotoStart(True)
-    start_offset = len(tmp.getString())
+    overlap = min(old_len, new_len)
 
     # Optional toolkit for UI responsiveness.
     toolkit = None
@@ -639,9 +595,7 @@ def replace_preserving_format(model, target_range, new_text, ctx=None):
         except Exception:
             pass
 
-    main_cursor = text.createTextCursor()
-    main_cursor.gotoStart(False)
-    main_cursor.goRight(start_offset, False)
+    main_cursor = text.createTextCursorByRange(target_range.getStart())
 
     for i in range(overlap):
         if i > 0 and i % 500 == 0 and toolkit:
@@ -664,14 +618,17 @@ def replace_preserving_format(model, target_range, new_text, ctx=None):
 
         main_cursor.goRight(1, False)
 
+    # main_cursor now sits after the first *overlap* characters.
     if new_len > old_len:
-        extra = text.createTextCursor()
-        extra.gotoStart(False)
-        extra.goRight(start_offset + overlap, False)
-        text.insertString(extra, new_text[old_len:], False)
+        text.insertString(main_cursor, new_text[old_len:], False)
     elif old_len > new_len:
-        leftover = text.createTextCursor()
-        leftover.gotoStart(False)
-        leftover.goRight(start_offset + new_len, False)
+        leftover = text.createTextCursorByRange(main_cursor)
         leftover.goRight(old_len - new_len, True)
         leftover.setString("")
+
+
+def _recording(model):
+    try:
+        return bool(model.getPropertyValue("RecordChanges"))
+    except Exception:
+        return False

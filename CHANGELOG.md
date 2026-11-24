@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- **Ranges after an equation landed off target** (the "range coordinate
+  mismatch" of `docs/known-issues.md`). `text_find` offsets count table
+  text and tracked deletions but not equations; `text_get_range` and
+  `text_apply_range` with a range moved there with `goRight()`, which steps
+  over equations too, so every range after one drifted. Positions are now
+  found by measuring the text, the way `text_find` counts it.
+- **A partial export lost formatting, tables, equations and tracked
+  changes.** `text_get_range` with `scope` `range` or `selection` rebuilt
+  plain paragraphs in a scratch document. It now exports a copy of the
+  document cut to the range, like a full export: headings, tables,
+  `[equation: …]` and `<del>`/`<ins>` come out as they do there.
+- **A replace under change recording garbled the text.** The
+  format-preserving replace used by `text_apply_range` for plain text went
+  character by character; with recording on, each
+  deleted character stays in place and the rest shifted ("closes" replaced
+  by "ends" read "Deltandses"). With recording on, or when the range holds
+  an equation, it now replaces in one step, which also reads as one
+  deletion and one insertion in review. It also positioned itself from the
+  top of the body, which was wrong for a range in a table cell.
+
 ## [0.15.1] — 2026-11-24
 
 Every read now shows tracked changes and equations the way `text_read`

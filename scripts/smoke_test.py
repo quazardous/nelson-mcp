@@ -1567,6 +1567,62 @@ def check_reads_agree(h):
             "agree with text_read")
 
 
+def check_ranges_follow_text_find(h):
+    """Range reads and writes land where text_find says (known-issues.md).
+
+    Offsets count table text and tracked deletions but not equations, and
+    goRight counted equations: every range after one drifted. The range
+    export also rebuilt plain text and lost equations and changes.
+    """
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full", format="html", content=(
+        "<p>Intro text.</p>"
+        "<table><tr><td>T1</td><td>T2</td></tr></table>"
+        "<p>where x is</p><h2>Summary</h2><p>Beta closes it.</p>"))
+    h.call("equation_insert", formula="x^2", paragraph_index=2,
+           display="inline")
+    h.call("change_set", enabled=True)
+    h.call("text_replace", search="Beta", replace="Delta",
+           case_sensitive=True, replace_all=False)
+    h.call("change_set", enabled=False)
+    problems = []
+
+    found = h.call("text_find", search="Summary")["ranges"][0]
+    part = h.call("text_get_range", scope="range", format="markdown",
+                  start=found["start"], end=found["end"])["content"]
+    if "Summary" not in part or "where" in part:
+        problems.append("range after an equation read %r" % part)
+
+    start = h.call("text_find", search="where")["ranges"][0]["start"]
+    end = h.call("text_find", search="closes")["ranges"][0]["end"]
+    part = h.call("text_get_range", scope="range", format="markdown",
+                  start=start, end=end)["content"]
+    for want in ("[equation: x^2]", "<del", "<ins"):
+        if want not in part:
+            problems.append("range lost %r: %r" % (want, part[:300]))
+    if not re.search(r"^## .*Summary", part, re.M):
+        problems.append("range lost the heading: %r" % part[:300])
+    if "Intro" in part or "data:image" in part:
+        problems.append("range read too much: %r" % part[:300])
+
+    hit = h.call("text_find", search="closes")["ranges"][0]
+    h.call("text_apply_range", target="range", start=hit["start"],
+           end=hit["end"], content="ends")
+    text = [p["text"] for p in
+            h.call("text_read", start_index=0, count=8)["paragraphs"]]
+    if not any(t.endswith("ends it.") for t in text) \
+            or any("closes" in t for t in text):
+        problems.append("range write missed its target: %r" % text)
+    if h.call("equation_list")["count"] != 1:
+        problems.append("range write removed the equation")
+    if problems:
+        raise Fail("; ".join(problems))
+    return ("range read and write land on text_find offsets past a table, "
+            "an equation and a tracked change; range keeps equations and "
+            "changes")
+
+
 def check_listing_leaves_documents_alone(h):
     """Nelson reads a document without marking it modified or writing to it.
 
@@ -2397,6 +2453,7 @@ CHECKS = [
     ("equations are read (#49)", check_formulas_are_read),
     ("equation tools (#49)", check_equation_tools),
     ("reads agree (#48, #49)", check_reads_agree),
+    ("ranges follow text_find", check_ranges_follow_text_find),
     ("open is active (#34)", check_open_is_active),
     ("open twice (#40)", check_open_twice),
     ("open answers questions", check_open_answers_questions),
