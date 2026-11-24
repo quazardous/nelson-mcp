@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.15.0] — 2026-11-24
+
+Equations in Writer can be listed, read, changed, inserted and deleted, and
+rewriting a paragraph no longer deletes the equations in it.
 
 ### Added
 
