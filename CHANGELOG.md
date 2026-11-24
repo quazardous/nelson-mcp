@@ -4,7 +4,10 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
-## [Unreleased]
+## [0.15.1] — 2026-11-24
+
+Every read now shows tracked changes and equations the way `text_read`
+does.
 
 ### Fixed
 
