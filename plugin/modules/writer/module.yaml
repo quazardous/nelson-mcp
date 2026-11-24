@@ -32,6 +32,23 @@ config:
         label: As before the changes
       - value: marked
         label: Marked with <ins> and <del>
+  equation_update:
+    type: string
+    default: replace
+    widget: select
+    label: How equation_set changes an equation
+    public: true
+    description: >
+      'replace' swaps the equation for a new one with the same name, place
+      and settings, so one doc_undo brings the old one back. 'in_place'
+      changes the source of the existing object, which Writer's undo does
+      not see: doc_undo will not revert it. Equations not anchored as a
+      character are always changed in place.
+    options:
+      - value: replace
+        label: Replace (undoable)
+      - value: in_place
+        label: In place (not undoable)
   change_author:
     type: string
     default: ""

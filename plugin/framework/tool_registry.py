@@ -288,6 +288,15 @@ class ToolRegistry:
                 except Exception:
                     undo_mgr = None
 
+        # Equations die silently with the text they are anchored in: note
+        # which exist, to say which a write removed (GitHub #49).
+        watch_equations = (mutates and ctx.doc is not None
+                           and ctx.doc_type == "writer"
+                           and tool.opens_undo_context
+                           and not tool.name.startswith("equation_"))
+        equations_before = _equation_names(ctx.doc) \
+            if watch_equations else None
+
         signer = self._services.get("change_author") \
             if mutates and ctx.doc is not None else None
         try:
@@ -316,6 +325,15 @@ class ToolRegistry:
                 pass
 
         _with_message(result)
+
+        if equations_before and isinstance(result, dict):
+            removed = sorted(equations_before - _equation_names(ctx.doc))
+            if removed:
+                result["equations_removed"] = removed
+                _add_warning(result, (
+                    "This call removed %d equation(s) with the text they "
+                    "were in: %s. doc_undo restores them."
+                    % (len(removed), ", ".join(removed))))
 
         # Add action_id to result for traceability
         if action_id and isinstance(result, dict):
@@ -413,3 +431,21 @@ _TRANSIENT = ("DisposedException", "TimeoutError", "ConnectionError",
 def _is_retryable(exc):
     names = {cls.__name__ for cls in type(exc).__mro__}
     return any(name in names for name in _TRANSIENT)
+
+
+def _equation_names(doc):
+    """Names of the Writer equations in *doc*; empty set if unknown.
+
+    The one Writer-specific helper here: the check must wrap every write,
+    and only the registry sees every write.
+    """
+    try:
+        from plugin.modules.writer import equations
+        return set(equations.math_objects(doc))
+    except Exception:
+        return set()
+
+
+def _add_warning(result, text):
+    previous = result.get("warning")
+    result["warning"] = "%s %s" % (previous, text) if previous else text

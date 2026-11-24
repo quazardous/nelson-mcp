@@ -4,6 +4,39 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Added
+
+- **Equation tools for Writer** (GitHub #49). `equation_list` lists the
+  equations (LibreOffice Math objects) with their StarMath source and where
+  each sits: body paragraph, table cell, frame, header or footer, inline or
+  on its own, and the number of a numbered equation; with `name` it reads
+  one, with its base font size and alignment. `equation_set` changes one,
+  `equation_insert` adds one (in its own centred paragraph, inline in a
+  paragraph, or in a table cell), `equation_delete` removes one. A formula
+  that looks broken gets a warning. Plan and findings:
+  `docs/analysis/equations-plan.md`.
+- **Setting `writer.equation_update`**: `replace` (default) swaps the
+  equation for a new one with the same name, place and settings, so one
+  `doc_undo` reverts it; `in_place` keeps the same object, which Writer's
+  undo does not see.
+
+### Fixed
+
+- **Rewriting a paragraph deleted its equations** (GitHub #49). `text_set`
+  and `text_insert` with `replace` set the paragraph's text, which deletes
+  the equations anchored in it, and `text_read` since 0.14.7 shows them as a
+  marker an agent could write back. Both now refuse such a paragraph with
+  `paragraph_has_equations`, and any other Writer write that removes
+  equations says which in `equations_removed`.
+
+### Changed
+
+- **The `text_read` marker is `[equation: …]`** and the paragraph's field
+  `equations`, matching the new tools (`[formula: …]` and `formulas` in
+  0.14.7).
+
 ## [0.14.7] — 2026-11-24
 
 Formulas in Writer are no longer read as empty paragraphs.

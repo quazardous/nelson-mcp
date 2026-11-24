@@ -392,9 +392,10 @@ class ReadParagraphs(ToolBase):
         "Useful for scanning text between headings. Each paragraph comes "
         "with its paragraph style. With tracked changes, text reads as if "
         "they were accepted, unless the user chose otherwise; such "
-        "paragraphs carry tracked_changes: true. A formula reads as "
-        "[formula: <StarMath source>] and is listed in the paragraph's "
-        "formulas, with its object name."
+        "paragraphs carry tracked_changes: true. An equation reads as "
+        "[equation: <StarMath source>] and is listed in the paragraph's "
+        "equations, with its object name; the marker is read-only, change "
+        "equations with equation_set."
     )
     parameters = {
         "type": "object",
@@ -439,13 +440,13 @@ class ReadParagraphs(ToolBase):
         end = min(start + count, len(para_ranges))
 
         # Tracked changes keep deleted text in the paragraph (#48), and a
-        # formula is not in the paragraph's string at all (#49): walk the
+        # equation is not in the paragraph's string at all (#49): walk the
         # text portions to see both. Only when the document has either, as
         # the walk costs UNO calls per portion.
         walker = None
         view = tracked_text.DEFAULT_VIEW
         if tracked_text.document_has_changes(ctx.doc) \
-                or tracked_text.document_has_formulas(ctx.doc):
+                or tracked_text.document_has_equations(ctx.doc):
             walker = tracked_text.Walker()
             try:
                 view = ctx.services.config.proxy_for("writer").get(
@@ -462,8 +463,8 @@ class ReadParagraphs(ToolBase):
                 entry["text"] = "[Object]"
             elif walker is not None and hasattr(p, "createEnumeration"):
                 entry["_segments"] = walker.paragraph_segments(p)
-                if walker.formulas:
-                    entry["formulas"] = walker.formulas
+                if walker.equations:
+                    entry["equations"] = walker.equations
             else:
                 entry["text"] = p.getString()
             try:
@@ -593,6 +594,9 @@ class InsertAtParagraph(ToolBase):
             text.insertControlCharacter(cursor, PARAGRAPH_BREAK, False)
             text.insertString(cursor, text_to_insert, False)
         elif position == "replace":
+            refused = _refuse_if_equations(target_para, para_index)
+            if refused:
+                return refused
             cursor.gotoRange(target_para.getEnd(), True)
             cursor.setString(text_to_insert)
         else:  # before
@@ -666,6 +670,9 @@ class SetParagraphText(ToolBase):
             return {"status": "error",
                     "message": "Paragraph %d not found." % para_index}
 
+        refused = _refuse_if_equations(target, para_index)
+        if refused:
+            return refused
         old_text = target.getString()
         target.setString(text)
 
@@ -1187,3 +1194,28 @@ def _preserving_search_replace(model, uno_ctx, new_text, search_string,
         if count > 200:
             break
     return count
+
+
+def _refuse_if_equations(paragraph, para_index):
+    """Refuse to rewrite a paragraph that holds equations (GitHub #49).
+
+    Setting a paragraph's text deletes the equations anchored in it, and
+    text_read shows them as [equation: ...]: writing that text back would
+    swap each equation for its marker as plain text.
+    """
+    from plugin.modules.writer import equations
+    names = equations.in_paragraph(paragraph)
+    if not names:
+        return None
+    return {
+        "status": "error",
+        "code": "paragraph_has_equations",
+        "message": ("Paragraph %d holds %d equation(s) (%s); rewriting its "
+                    "text would delete them." % (para_index, len(names),
+                                                 ", ".join(names))),
+        "hint": ("Change the text around them with text_replace, an "
+                 "equation with equation_set, or remove one with "
+                 "equation_delete."),
+        "equations": names,
+        "retryable": False,
+    }

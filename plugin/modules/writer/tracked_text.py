@@ -16,16 +16,16 @@ The setting writer.tracked_changes_view chooses what text_read returns:
 - original: the text as it read before the changes;
 - marked:   both, insertions in <ins>, deletions in <del>.
 
-Formulas (GitHub #49) are embedded objects anchored as characters: the
-paragraph's string leaves them out, so a formula-only paragraph read as
-empty. The walk puts each one in the text as [formula: <StarMath source>]
-and lists it, with its object name, in the paragraph's formulas.
+Equations (GitHub #49) are embedded Math objects anchored as characters:
+the paragraph's string leaves them out, so a paragraph holding only an
+equation read as empty. The walk puts each one in the text as
+[equation: <StarMath source>] and lists it, with its object name, in the
+paragraph's equations.
 
 render() is pure; paragraph_segments() walks UNO text portions.
 """
 
-# CLSID of LibreOffice Math objects.
-MATH_CLSID = "078b7aba-54fc-457f-8551-6147e776a997"
+from plugin.modules.writer import equations as eq
 
 VIEWS = ("accepted", "original", "marked")
 DEFAULT_VIEW = "accepted"
@@ -71,20 +71,20 @@ class Walker:
     def __init__(self):
         self.open = {}          # redline id -> kind
         self.read = []          # every segment list returned, in order
-        self.formulas = []      # formulas of the last paragraph walked
+        self.equations = []     # equations of the last paragraph walked
 
     def paragraph_segments(self, para):
         segments = []
         self.read.append(segments)
-        self.formulas = []
+        self.equations = []
         portions = para.createEnumeration()
         while portions.hasMoreElements():
             portion = portions.nextElement()
             ptype = _prop(portion, "TextPortionType")
             if ptype == "Frame":
-                for formula in _formulas_in(portion):
-                    self.formulas.append(formula)
-                    segments.append(["[formula: %s]" % formula["formula"],
+                for found in eq.in_portion(portion):
+                    self.equations.append(found)
+                    segments.append(["[equation: %s]" % found["formula"],
                                      self._kind()])
                 continue
             if ptype != "Redline":
@@ -114,38 +114,8 @@ class Walker:
                 s[1] = kind
 
 
-def _formulas_in(portion):
-    """The Math objects a Frame portion anchors, in order."""
-    found = []
-    try:
-        contents = portion.createContentEnumeration(
-            "com.sun.star.text.TextContent")
-    except Exception:
-        return found
-    while contents.hasMoreElements():
-        obj = contents.nextElement()
-        if not _is_math(obj):
-            continue
-        try:
-            source = obj.getEmbeddedObject().getPropertyValue("Formula")
-        except Exception:
-            source = ""
-        found.append({"name": obj.getName(), "formula": source})
-    return found
-
-
-def _is_math(obj):
-    clsid = _prop(obj, "CLSID")
-    return isinstance(clsid, str) and clsid.lower() == MATH_CLSID
-
-
-def document_has_formulas(doc):
-    try:
-        objects = doc.getEmbeddedObjects()
-        return any(_is_math(objects.getByName(n))
-                   for n in objects.getElementNames())
-    except Exception:
-        return False
+def document_has_equations(doc):
+    return bool(eq.math_objects(doc))
 
 
 def document_has_changes(doc):

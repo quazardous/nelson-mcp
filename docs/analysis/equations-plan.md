@@ -57,6 +57,19 @@ them before any tool is written.
 | Q7 | Does an insertion with change recording on show as a tracked change? Does a `Formula` change? | Agents edit with recording on by default. |
 | Q8 | Same answers on LibreOffice 24.2, the version #49 runs? | The reporter's setup, and the oldest supported here. |
 
+## Answers (spike of 2026-11-24, LibreOffice 26.2 and 26.8, same results)
+
+| # | Answer | Decision |
+|---|---|---|
+| Q1 | No: a change to `Formula` is invisible to Writer's undo (the context it ran in is empty). Inserting a new object and removing the old one, in one context, is undone in one step. | Setting `writer.equation_update`: `replace` (default; new object, old one's name, place and model settings, undoable) or `in_place` (same object, not undoable, said in the result). Objects not anchored as a character are always changed in place. |
+| Q2 | Yes: the object's `Size` follows the new source with no view and no `update()` call. | Nothing to do. |
+| Q3 | No property reports an error, but the MathML export of a broken formula holds an empty `<mrow/>` where an operand is missing. A deliberate `{}` does the same. | Warn, never refuse, from the MathML export; skip the check when the source has `{}`. |
+| Q4 | **Yes: `setString` on the paragraph, or on a cursor over it, deletes its equations**, and `text_set` with the text from `text_read` writes `[formula: …]` as plain text. `replaceAll` keeps them. | `text_set` and `text_insert` with `replace` refuse a paragraph that holds equations (`paragraph_has_equations`). Every other Writer write is watched by the registry, which reports `equations_removed`. |
+| Q5 | Writer's `fn` AutoText (present in an English profile, absent in a French one here) makes a 1×2 table: the equation in A1, `(1)` from a number field in B1. | `equation_list` reports `number` for an equation in a two-cell table whose other cell reads like `(1)`. Numbered insertion stays for later. |
+| Q6 | The anchor's text says where: `SwXBodyText`, `SwXCell` (with `CellName`), `SwXTextFrame`, `SwXHeadFootText`. | Location: `area` plus `paragraph_index`, or `table` and `cell`, or `frame`. |
+| Q7 | Neither an inserted equation nor a changed source becomes a tracked change. | Say so in the result when recording is on. |
+| Q8 | 24.2 is not installed here; 26.2 and 26.8 agree on every point. | Ask the #49 reporter to try on 24.2. |
+
 ## Design
 
 ### Naming

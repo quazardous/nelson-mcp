@@ -1390,7 +1390,7 @@ def check_irregular_table(h):
 
 
 def check_formulas_are_read(h):
-    """#49: a formula-only paragraph is not read as empty."""
+    """#49: an equation-only paragraph is not read as empty."""
     path = h.doc("formulas.odt")
     h.reset()
     h.call("doc_create", doc_type="writer", path=path)
@@ -1419,12 +1419,101 @@ def check_formulas_are_read(h):
                    % h.uno_last_error)
     read = h.call("text_read", start_index=0, count=3)["paragraphs"]
     texts = [p.get("text") for p in read]
-    if texts != ["Before.", "[formula: {a} over {b}]", "After."]:
+    if texts != ["Before.", "[equation: {a} over {b}]", "After."]:
         raise Fail("text_read gave %r" % texts)
-    if read[1].get("formulas") != [{"name": added,
+    if read[1].get("equations") != [{"name": added,
                                      "formula": "{a} over {b}"}]:
-        raise Fail("formula not listed: %s" % read[1])
-    return "formula-only paragraph reads as its StarMath source, listed"
+        raise Fail("equation not listed: %s" % read[1])
+    return "equation-only paragraph reads as its StarMath source, listed"
+
+
+def check_equation_tools(h):
+    """#49: equations listed, changed, inserted, deleted, kept safe."""
+    path = h.doc("equations.docx")
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full",
+           content="<p>Alpha.</p><p>Beta x is</p><p>Gamma.</p>")
+    block = h.call("equation_insert", formula="{a} over {b}",
+                   paragraph_index=0, display="block", position="after")
+    inline = h.call("equation_insert", formula="x^2", paragraph_index=2,
+                    display="inline")
+    h.call("table_create", rows=1, cols=2, paragraph_index=3,
+           position="after")
+    table = h.call("table_list")["tables"][0]["name"]
+    cell = h.call("equation_insert", formula="sqrt{2}", table_name=table,
+                  cell="B1")
+    for r in (block, inline, cell):
+        if r.get("status") != "ok":
+            raise Fail("equation_insert failed: %s" % r)
+    listed = h.call("equation_list")
+    where = {e["name"]: e for e in listed.get("equations", [])}
+    if listed.get("count") != 3:
+        raise Fail("equation_list: %s" % listed)
+    b, i, c = where[block["name"]], where[inline["name"]], where[cell["name"]]
+    if (b.get("paragraph_index"), b.get("inline")) != (1, False) \
+            or (i.get("paragraph_index"), i.get("inline")) != (2, True) \
+            or (c.get("table"), c.get("cell")) != (table, "B1"):
+        raise Fail("locations wrong: %s" % listed)
+    text = [p["text"] for p in
+            h.call("text_read", start_index=0, count=3)["paragraphs"]]
+    if text[1:] != ["[equation: {a} over {b}]", "Beta x is[equation: x^2]"]:
+        raise Fail("text_read: %r" % text)
+
+    refused = h.call("text_set", paragraph_index=1, text=text[1])
+    if refused.get("code") != "paragraph_has_equations":
+        raise Fail("text_set over an equation was not refused: %s" % refused)
+
+    changed = h.call("equation_set", name=block["name"],
+                     formula="{c} over {d}")
+    if changed.get("status") != "ok" or changed.get("mode") != "replace":
+        raise Fail("equation_set: %s" % changed)
+    now = {e["name"]: e["formula"] for e in
+           h.call("equation_list")["equations"]}
+    if now.get(block["name"]) != "{c} over {d}" or len(now) != 3:
+        raise Fail("after equation_set the name or source is off: %s" % now)
+    h.call("doc_undo")
+    now = {e["name"]: e["formula"] for e in
+           h.call("equation_list")["equations"]}
+    if now.get(block["name"]) != "{a} over {b}" or len(now) != 3:
+        raise Fail("doc_undo did not bring the old equation back: %s" % now)
+
+    bad = h.call("equation_set", name=block["name"], formula="{a over")
+    if "syntax" not in (bad.get("warning") or ""):
+        raise Fail("a broken formula gave no warning: %s" % bad)
+    h.call("doc_undo")
+
+    gone = h.call("text_delete", paragraph_index=2)
+    if gone.get("equations_removed") != [inline["name"]]:
+        raise Fail("text_delete did not report the equation: %s" % gone)
+    h.call("doc_undo")
+
+    deleted = h.call("equation_delete", name=block["name"])
+    if not deleted.get("removed_paragraph"):
+        raise Fail("equation_delete left its empty paragraph: %s" % deleted)
+    if h.call("equation_list")["count"] != 2:
+        raise Fail("equation_delete did not delete")
+
+    h.set_config("writer.equation_update", "in_place")
+    try:
+        quick = h.call("equation_set", name=inline["name"], formula="y^3")
+        if quick.get("undo") is not False or "doc_undo" not in \
+                (quick.get("warning") or ""):
+            raise Fail("in_place mode not reported: %s" % quick)
+    finally:
+        h.set_config("writer.equation_update", "replace")
+
+    h.call("doc_save", path=path)
+    h.call("doc_close", save=False)
+    h.call("doc_open", file_path=path)
+    # LibreOffice normalizes the source on DOCX export (y^3 -> {y}^{3}).
+    back = {re.sub(r"[{}\s]", "", e["formula"]) for e in
+            h.call("equation_list")["equations"]}
+    if back != {"y^3", "sqrt2"}:
+        raise Fail("after a DOCX round trip: %s" % back)
+    return ("insert (block, inline, cell), list with locations, set undone "
+            "in one step, syntax warned, rewrite refused, removal reported, "
+            "delete, in_place, DOCX round trip")
 
 
 def check_listing_leaves_documents_alone(h):
@@ -2254,7 +2343,8 @@ CHECKS = [
     ("undo after edits (#47)", check_undo_after_edits),
     ("read with tracked changes (#48)", check_read_with_tracked_changes),
     ("irregular table (#45)", check_irregular_table),
-    ("formulas are read (#49)", check_formulas_are_read),
+    ("equations are read (#49)", check_formulas_are_read),
+    ("equation tools (#49)", check_equation_tools),
     ("open is active (#34)", check_open_is_active),
     ("open twice (#40)", check_open_twice),
     ("open answers questions", check_open_answers_questions),

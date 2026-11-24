@@ -31,7 +31,8 @@ PRESETS = {
     "writer-read": [
         "doc_list_open", "doc_info", "nav_outline", "text_get_range",
         "text_read", "nav_heading_content", "text_find", "text_search",
-        "doc_stats", "image_list", "table_list", "comment_list",
+        "doc_stats", "image_list", "table_list", "equation_list",
+        "comment_list",
         "nav_resolve", "nav_tree",
     ],
     "calc": [

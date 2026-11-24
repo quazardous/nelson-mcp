@@ -58,6 +58,7 @@ _GROUP_BY_PREFIX = {
     "text": "text",
     "table": "text",
     "frame": "text",
+    "equation": "text",
     "style": "text",
     "header": "text",        # header_footer_*
     "link": "text",

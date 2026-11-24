@@ -7,6 +7,7 @@
 
 import pytest
 
+from plugin.modules.writer import equations as eq
 from plugin.modules.writer import tracked_text as tt
 
 
@@ -113,7 +114,7 @@ def test_unknown_settings_fall_back_to_accepted(value, view):
 
 
 class _MathObject:
-    def __init__(self, name, formula, clsid=tt.MATH_CLSID.upper()):
+    def __init__(self, name, formula, clsid=eq.MATH_CLSID.upper()):
         self.name, self.formula, self.clsid = name, formula, clsid
 
     def getName(self):
@@ -137,32 +138,39 @@ class _FramePortion(_Portion):
         return _Enum(self.objects)
 
 
-def test_a_formula_only_paragraph_is_not_empty():
+def test_an_equation_only_paragraph_is_not_empty():
     # GitHub #49: the paragraph string leaves the formula out.
     walker = tt.Walker()
     segments = walker.paragraph_segments(
         _Para(_FramePortion(_MathObject("Object1", "{a} over {b}"))))
-    assert tt.render(segments, "accepted") == "[formula: {a} over {b}]"
-    assert walker.formulas == [{"name": "Object1",
+    assert tt.render(segments, "accepted") == "[equation: {a} over {b}]"
+    assert walker.equations == [{"name": "Object1",
                                 "formula": "{a} over {b}"}]
     assert not tt.has_changes(segments)
 
 
-def test_an_inline_formula_keeps_its_place_and_other_objects_are_skipped():
+def test_an_inline_equation_keeps_its_place_and_other_objects_are_skipped():
     walker = tt.Walker()
     chart = _MathObject("Chart1", "", clsid="12dcae26-281f-416f-a234-c3086127382e")
     segments = walker.paragraph_segments(_Para(
         text("where x = "), _FramePortion(_MathObject("Object2", "sqrt{2}")),
         text(" here."), _FramePortion(chart)))
     assert tt.render(segments, "accepted") == \
-        "where x = [formula: sqrt{2}] here."
-    assert [f["name"] for f in walker.formulas] == ["Object2"]
+        "where x = [equation: sqrt{2}] here."
+    assert [f["name"] for f in walker.equations] == ["Object2"]
 
 
-def test_a_formula_inside_a_tracked_insertion_follows_the_view():
+def test_an_equation_inside_a_tracked_insertion_follows_the_view():
     segments = tt.Walker().paragraph_segments(_Para(
         mark("6", "Insert", True),
         _FramePortion(_MathObject("Object3", "x^2")),
         mark("6", "Insert", False)))
-    assert tt.render(segments, "accepted") == "[formula: x^2]"
+    assert tt.render(segments, "accepted") == "[equation: x^2]"
     assert tt.render(segments, "original") == ""
+
+
+def test_equations_in_a_paragraph_are_named_in_order():
+    para = _Para(text("x = "), _FramePortion(_MathObject("Object1", "a")),
+                 text(" and "), _FramePortion(_MathObject("Object2", "b")))
+    assert eq.in_paragraph(para) == ["Object1", "Object2"]
+    assert eq.in_paragraph(_Para(text("plain"))) == []
