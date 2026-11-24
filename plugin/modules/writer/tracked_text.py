@@ -114,6 +114,76 @@ class Walker:
                 s[1] = kind
 
 
+class Reader:
+    """Paragraph text as text_read shows it, for any tool that reads text.
+
+    The outline, nav_tree, heading content and the other readers used
+    getString(), which runs tracked deletions into the text and leaves
+    equations out (GitHub #48, #49). One Reader per pass over a document:
+    read in document order, it follows changes across paragraphs. When the
+    document has neither changes nor equations it is getString() and
+    costs nothing more.
+    """
+
+    def __init__(self, doc, config=None):
+        self.walker = None
+        self.view = DEFAULT_VIEW
+        if document_has_changes(doc) or document_has_equations(doc):
+            self.walker = Walker()
+            try:
+                self.view = resolve_view(config.proxy_for("writer").get(
+                    "tracked_changes_view"))
+            except Exception:
+                pass
+
+    def text(self, para):
+        if self.walker is None or not hasattr(para, "createEnumeration"):
+            return para.getString()
+        try:
+            return render(self.walker.paragraph_segments(para), self.view)
+        except Exception:
+            return para.getString()
+
+
+def reader(doc, services=None):
+    config = None
+    try:
+        config = services.get("config") if services else None
+    except Exception:
+        pass
+    return Reader(doc, config)
+
+
+def deletions(doc):
+    """(start, end) text ranges of the tracked deletions in *doc*."""
+    found = []
+    try:
+        enum = doc.getRedlines().createEnumeration()
+    except Exception:
+        return found
+    while enum.hasMoreElements():
+        redline = enum.nextElement()
+        if _prop(redline, "RedlineType") == "Delete":
+            start, end = (_prop(redline, "RedlineStart"),
+                          _prop(redline, "RedlineEnd"))
+            if start is not None and end is not None:
+                found.append((start, end))
+    return found
+
+
+def in_deletion(found, deleted):
+    """True when the text range *found* lies inside a tracked deletion."""
+    text = found.getText()
+    for start, end in deleted:
+        try:
+            if text.compareRegionStarts(start, found.getStart()) >= 0 \
+                    and text.compareRegionEnds(found.getEnd(), end) >= 0:
+                return True
+        except Exception:
+            continue                # another text (table, frame): skip
+    return False
+
+
 def document_has_equations(doc):
     return bool(eq.math_objects(doc))
 

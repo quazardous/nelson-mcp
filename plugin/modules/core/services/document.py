@@ -547,6 +547,8 @@ class DocumentService(ServiceBase):
         the heading unambiguously even when titles repeat.
         """
         try:
+            from plugin.modules.writer import tracked_text
+            rd = tracked_text.reader(model, getattr(self, "_services", None))
             text = model.getText()
             enum = text.createEnumeration()
             headings = []
@@ -561,7 +563,7 @@ class DocumentService(ServiceBase):
                 if level > 0:
                     headings.append({
                         "level": level,
-                        "title": para.getString().strip(),
+                        "title": rd.text(para).strip(),
                         "para_index": index,
                     })
             return self._nest_headings(headings)

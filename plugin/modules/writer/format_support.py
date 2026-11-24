@@ -336,19 +336,81 @@ def document_to_content(model, ctx, services, max_chars=None,
     # scope == "full"
     try:
         filter_name = FORMAT_CONFIG[fmt]["filter"]
-        with _with_temp_buffer(None, fmt) as (path, file_url):
-            props = (_create_property_value("FilterName", filter_name),)
-            model.storeToURL(file_url, props)
-            with open(path, "r", encoding="utf-8", errors="replace") as f:
-                content = f.read()
-            if fmt == "html":
-                content = _strip_html_boilerplate(content)
-            if max_chars and len(content) > max_chars:
-                content = content[:max_chars] + "\n\n[... truncated ...]"
-            return content
+        content = _export_with_equation_markers(model, ctx, fmt)
+        if content is None:
+            with _with_temp_buffer(None, fmt) as (path, file_url):
+                props = (_create_property_value("FilterName", filter_name),)
+                model.storeToURL(file_url, props)
+                with open(path, "r", encoding="utf-8",
+                          errors="replace") as f:
+                    content = f.read()
+        if fmt == "html":
+            content = _strip_html_boilerplate(content)
+        if max_chars and len(content) > max_chars:
+            content = content[:max_chars] + "\n\n[... truncated ...]"
+        return content
     except Exception as exc:
         log.debug("document_to_content (full) failed: %s", exc)
         return ""
+
+
+def _export_with_equation_markers(model, ctx, fmt):
+    """Export *model*, each equation as [equation: <StarMath>] (GitHub #49).
+
+    The Markdown and HTML filters write an equation as its replacement
+    image, base64 inside the text: the agent got a picture instead of the
+    formula. The export runs on a hidden copy in which each equation is
+    swapped for a plain-letter token, which no filter escapes, and the
+    tokens become markers afterwards. None when there is no equation, so
+    the usual export runs.
+    """
+    import html as html_mod
+    from plugin.modules.writer import equations
+
+    if not equations.math_objects(model):
+        return None
+    copy = None
+    odt_fd, odt_path = tempfile.mkstemp(suffix=".odt", dir=TEMP_DIR)
+    os.close(odt_fd)
+    try:
+        model.storeToURL(_file_url(odt_path), (
+            _create_property_value("FilterName", "writer8"),))
+        desktop = ctx.getServiceManager().createInstanceWithContext(
+            "com.sun.star.frame.Desktop", ctx)
+        copy = desktop.loadComponentFromURL(
+            _file_url(odt_path), "_blank", 0,
+            (_create_property_value("Hidden", True),))
+        markers = {}
+        for i, obj in enumerate(equations.math_objects(copy).values()):
+            token = "NelsonEquation%05dMarker" % i
+            markers[token] = "[equation: %s]" % equations.source(obj)
+            anchor = obj.getAnchor()
+            text = anchor.getText()
+            text.insertString(anchor.getStart(), token, False)
+            text.removeTextContent(obj)
+        with _with_temp_buffer(None, fmt) as (path, file_url):
+            copy.storeToURL(file_url, (_create_property_value(
+                "FilterName", FORMAT_CONFIG[fmt]["filter"]),))
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                content = f.read()
+        for token, marker in markers.items():
+            if fmt == "html":
+                marker = html_mod.escape(marker, quote=False)
+            content = content.replace(token, marker)
+        return content
+    except Exception as exc:
+        log.debug("export with equation markers failed: %s", exc)
+        return None
+    finally:
+        if copy is not None:
+            try:
+                copy.close(True)
+            except Exception:
+                pass
+        try:
+            os.unlink(odt_path)
+        except OSError:
+            pass
 
 
 # ---------------------------------------------------------------------------
@@ -504,6 +566,11 @@ def find_text_ranges(model, ctx, search, start=0, limit=None,
                 cursor.goRight(n, False)
                 remaining -= n
 
+        # Searching finds tracked deletions too; flag those matches, as the
+        # text no longer reads that way (GitHub #48).
+        from plugin.modules.writer import tracked_text
+        deleted = tracked_text.deletions(model)
+
         matches = []
         found = model.findNext(cursor, sd)
         while found:
@@ -513,11 +580,10 @@ def find_text_ranges(model, ctx, search, start=0, limit=None,
             m_start = len(measure.getString())
             matched_text = found.getString()
             m_end = m_start + len(matched_text)
-            matches.append({
-                "start": m_start,
-                "end": m_end,
-                "text": matched_text,
-            })
+            match = {"start": m_start, "end": m_end, "text": matched_text}
+            if deleted and tracked_text.in_deletion(found, deleted):
+                match["in_deletion"] = True
+            matches.append(match)
             if limit and len(matches) >= limit:
                 break
             found = model.findNext(found, sd)

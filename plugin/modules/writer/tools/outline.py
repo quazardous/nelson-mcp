@@ -106,6 +106,8 @@ class GetHeadingContent(ToolBase):
 
         # Collect body paragraphs until the next heading of equal or
         # higher level (or end of document).
+        from plugin.modules.writer import tracked_text
+        rd = tracked_text.reader(ctx.doc, ctx.services)
         paragraphs = []
         for i in range(start_idx + 1, len(para_ranges)):
             if len(paragraphs) >= max_paragraphs:
@@ -119,7 +121,7 @@ class GetHeadingContent(ToolBase):
                 level = 0
             if level > 0 and level <= heading_level:
                 break
-            paragraphs.append(p.getString())
+            paragraphs.append(rd.text(p))
 
         return {
             "status": "ok",

@@ -380,12 +380,14 @@ class ReadSection(ToolBase):
             anchor = section.getAnchor()
 
             # Extract paragraphs within the section
+            from plugin.modules.writer import tracked_text
+            rd = tracked_text.reader(ctx.doc, ctx.services)
             enum = anchor.createEnumeration()
             paragraphs = []
             while enum.hasMoreElements():
                 para = enum.nextElement()
                 if para.supportsService("com.sun.star.text.Paragraph"):
-                    paragraphs.append(para.getString())
+                    paragraphs.append(rd.text(para))
                 else:
                     paragraphs.append("[Table]")
 
@@ -475,7 +477,9 @@ class ResolveBookmark(ToolBase):
                 element = para_ranges[para_idx]
                 if element.supportsService("com.sun.star.text.Paragraph"):
                     try:
-                        result["text"] = element.getString()
+                        from plugin.modules.writer import tracked_text
+                        result["text"] = tracked_text.reader(
+                            ctx.doc, ctx.services).text(element)
                         result["outline_level"] = element.getPropertyValue(
                             "OutlineLevel"
                         )

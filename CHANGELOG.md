@@ -4,6 +4,27 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+
+- **`text_get_range` exported each equation as a base64 PNG image** (GitHub
+  #49). LibreOffice's Markdown and HTML filters write an embedded object as
+  its picture, so an agent got about 700 bytes of image instead of the
+  formula, and writing that content back turned equations into images. The
+  full-document export now shows each equation as `[equation: <StarMath>]`,
+  like `text_read`.
+- **The outline, heading content and document tree ran tracked deletions
+  into the text and left equations out** (GitHub #48, #49). `nav_outline`
+  read a heading "Beta" replaced by "Delta" as "Intro BetaDelta", and a
+  paragraph holding only an equation as empty. `nav_outline`,
+  `nav_heading_content`, `nav_tree`, section and bookmark reads and the
+  proximity view now read text as `text_read` does, following
+  `writer.tracked_changes_view`.
+- **`text_search` found tracked deletions**: it now searches the text as
+  `text_read` shows it. **`text_find`**, whose positions count deleted
+  text, flags a match inside a tracked deletion with `in_deletion: true`.
+
 ## [0.15.0] — 2026-11-24
 
 Equations in Writer can be listed, read, changed, inserted and deleted, and

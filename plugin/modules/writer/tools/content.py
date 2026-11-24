@@ -375,7 +375,12 @@ class FindText(ToolBase):
             ctx.doc, ctx.ctx, search,
             start=start, limit=limit, case_sensitive=case_sensitive,
         )
-        return {"status": "ok", "ranges": ranges}
+        result = {"status": "ok", "ranges": ranges}
+        if any(r.get("in_deletion") for r in ranges):
+            result["hint"] = (
+                "Ranges with in_deletion are inside tracked deletions: that "
+                "text is no longer in the document as it reads.")
+        return result
 
 
 # ------------------------------------------------------------------

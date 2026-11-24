@@ -25,6 +25,12 @@ class TreeService:
         events.subscribe("document:cache_invalidated",
                          self._on_cache_invalidated)
 
+    def _reader(self, doc):
+        """Paragraph text as text_read shows it (tracked changes, equations)."""
+        from plugin.modules.writer import tracked_text
+        return tracked_text.reader(
+            doc, getattr(self._doc_svc, "_services", None))
+
     def _on_cache_invalidated(self, doc=None, **_kw):
         if doc is None:
             self._tree_cache.clear()
@@ -49,6 +55,7 @@ class TreeService:
 
         text = doc.getText()
         enum = text.createEnumeration()
+        rd = self._reader(doc)
         root = {"level": 0, "text": "root", "para_index": -1,
                 "children": [], "body_paragraphs": 0}
         stack = [root]
@@ -72,7 +79,7 @@ class TreeService:
                            and stack[-1]["level"] >= outline_level):
                         stack.pop()
                     node = {"level": outline_level,
-                            "text": element.getString(),
+                            "text": rd.text(element),
                             "para_index": para_index,
                             "children": [], "body_paragraphs": 0}
                     stack[-1]["children"].append(node)
@@ -182,6 +189,7 @@ class TreeService:
     # ── Content strategies ─────────────────────────────────────────
 
     def _get_body_preview(self, doc, heading_para_index, max_chars=100):
+        rd = self._reader(doc)
         text = doc.getText()
         enum = text.createEnumeration()
         idx = 0
@@ -204,7 +212,7 @@ class TreeService:
                     pass
                 if outline_level > 0:
                     break
-                para_text = element.getString().strip()
+                para_text = rd.text(element).strip()
                 if para_text:
                     preview_parts.append(para_text)
                     if sum(len(p) for p in preview_parts) >= max_chars:
@@ -217,6 +225,7 @@ class TreeService:
         return full_preview
 
     def _get_full_body_text(self, doc, heading_para_index):
+        rd = self._reader(doc)
         text = doc.getText()
         enum = text.createEnumeration()
         idx = 0
@@ -239,7 +248,7 @@ class TreeService:
                     pass
                 if outline_level > 0:
                     break
-                parts.append(element.getString())
+                parts.append(rd.text(element))
             idx += 1
 
         return "\n".join(parts)
@@ -370,6 +379,7 @@ class TreeService:
                              heading_bookmark=None, locator=None,
                              content_strategy="first_lines", depth=1):
         """Get children of a heading (body paragraphs + sub-headings)."""
+        rd = self._reader(doc)
         if locator is not None and heading_para_index is None:
             resolved = self._doc_svc.resolve_locator(doc, locator)
             heading_para_index = resolved.get("para_index")
@@ -431,7 +441,7 @@ class TreeService:
                     break
                 if outline_level > 0:
                     break
-                para_text = element.getString()
+                para_text = rd.text(element)
                 preview = (para_text[:100] + "..."
                            if len(para_text) > 100 else para_text)
                 if content_strategy == "full":

@@ -1516,6 +1516,57 @@ def check_equation_tools(h):
             "delete, in_place, DOCX round trip")
 
 
+def check_reads_agree(h):
+    """Every read shows tracked changes and equations as text_read does."""
+    h.reset()
+    h.call("doc_create", doc_type="writer")
+    h.call("text_apply_range", target="full", format="html", content=(
+        "<h1>Intro Beta</h1><p>Beta paragraph.</p><p>Gamma.</p>"
+        "<h1>Second</h1><p>where x is</p>"))
+    h.call("equation_insert", formula="{a} over {b}", paragraph_index=2,
+           display="block", position="after")
+    h.call("equation_insert", formula="x^2", paragraph_index=5,
+           display="inline")
+    h.call("change_set", enabled=True)
+    h.call("text_replace", search="Beta", replace="Delta",
+           case_sensitive=True, replace_all=True)
+    h.call("change_set", enabled=False)
+    problems = []
+
+    titles = [n["title"] for n in h.call("nav_outline")["outline"]]
+    if titles != ["Intro Delta", "Second"]:
+        problems.append("nav_outline titles %r" % titles)
+    content = h.call("nav_heading_content", heading_path="1")
+    if content.get("heading_title") != "Intro Delta" \
+            or content.get("paragraphs", [])[:3] != [
+                "Delta paragraph.", "Gamma.", "[equation: {a} over {b}]"]:
+        problems.append("nav_heading_content %s" % content)
+    tree = h.call("nav_tree", content_strategy="full")["children"]
+    bodies = [n.get("body_text", "") for n in tree]
+    if "BetaDelta" in "".join(bodies) or "[equation: x^2]" not in bodies[-1]:
+        problems.append("nav_tree bodies %r" % bodies)
+
+    if h.call("text_search", pattern="Beta", backend="direct",
+              case_sensitive=True).get("count") != 0:
+        problems.append("text_search finds deleted text")
+    found = h.call("text_find", search="Beta")["ranges"]
+    if len(found) != 2 or not all(r.get("in_deletion") for r in found):
+        problems.append("text_find Beta not flagged: %s" % found)
+    if any(r.get("in_deletion") for r in
+           h.call("text_find", search="Delta")["ranges"]):
+        problems.append("text_find flags inserted text")
+
+    for fmt in ("markdown", "html"):
+        text = h.call("text_get_range", scope="full", format=fmt)["content"]
+        if "data:image" in text or "[equation: {a} over {b}]" not in text \
+                or "[equation: x^2]" not in text:
+            problems.append("text_get_range %s: %r" % (fmt, text[:300]))
+    if problems:
+        raise Fail("; ".join(problems))
+    return ("outline, heading content, tree, search, find and get_range "
+            "agree with text_read")
+
+
 def check_listing_leaves_documents_alone(h):
     """Nelson reads a document without marking it modified or writing to it.
 
@@ -2345,6 +2396,7 @@ CHECKS = [
     ("irregular table (#45)", check_irregular_table),
     ("equations are read (#49)", check_formulas_are_read),
     ("equation tools (#49)", check_equation_tools),
+    ("reads agree (#48, #49)", check_reads_agree),
     ("open is active (#34)", check_open_is_active),
     ("open twice (#40)", check_open_twice),
     ("open answers questions", check_open_answers_questions),

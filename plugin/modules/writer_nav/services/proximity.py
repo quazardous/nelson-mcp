@@ -262,6 +262,8 @@ class ProximityService:
         start_idx = max(0, center_idx - radius)
         end_idx = min(total - 1, center_idx + radius)
         text_obj = doc.getText()
+        from plugin.modules.writer import tracked_text
+        rd = tracked_text.reader(doc, getattr(self._doc_svc, "_services", None))
 
         result = {
             "center_para_index": center_idx,
@@ -290,7 +292,7 @@ class ProximityService:
                     level = el.getPropertyValue("OutlineLevel")
                 except Exception:
                     pass
-                text = el.getString()
+                text = rd.text(el)
                 entry = {
                     "para_index": i,
                     "text": text[:200] if len(text) > 200 else text,

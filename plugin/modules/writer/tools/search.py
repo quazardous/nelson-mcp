@@ -204,11 +204,15 @@ class SearchInDocument(ToolBase):
         para_ranges = doc_svc.get_paragraph_ranges(doc)
         para_count = len(para_ranges)
 
+        # The text as text_read shows it: no tracked deletions run into it
+        # (per writer.tracked_changes_view), equations as markers.
+        from plugin.modules.writer import tracked_text
+        rd = tracked_text.reader(doc, ctx.services)
         para_texts = []
         for para in para_ranges:
             try:
                 if para.supportsService("com.sun.star.text.Paragraph"):
-                    para_texts.append(para.getString())
+                    para_texts.append(rd.text(para))
                 else:
                     para_texts.append("")
             except Exception:
