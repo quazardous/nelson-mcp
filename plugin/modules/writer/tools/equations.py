@@ -66,7 +66,11 @@ class ListEquations(ToolBase):
         "name, StarMath source, and where each sits (body paragraph_index, "
         "table and cell, frame, header/footer; inline when it shares its "
         "paragraph with text; number for a numbered equation). Give name to "
-        "read one equation with its base font size and alignment.")
+        "read one equation with its base font size and alignment. Names "
+        "hold while the document is open; reopening a .docx renumbers them "
+        "in document order, so list again after a reopen. LibreOffice "
+        "normalizes the source (spacing, braces, '+-' as '\u00b1'): compare "
+        "formulas loosely.")
     parameters = {
         "type": "object",
         "properties": {

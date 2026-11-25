@@ -16,6 +16,23 @@ same content.
   run boundaries change and explicit run properties can be dropped. The
   StarMath source is normalized too: `{b_1}` reads back as
   `{{b} rsub {1}}`.
+- **Equation names**: a `.docx` does not store object names, so on reopen
+  the equations are named `Object1`, `Object2`… in document order. A name
+  taken before a save and reopen may point to another equation: list them
+  again after a reopen.
+- **Equation source**: spacing, braces and symbols are normalized:
+  `sum from {i=1} to {n} i` reads back `sum from {i = 1} to {n} {i}`, and
+  `+-` reads back as `±`. Compare formulas loosely, not as strings.
+- **Tracked changes**: the changes themselves survive (authors, the text
+  with all accepted, the text with all rejected), but not their count:
+  adjacent deletions are merged and paragraph-mark changes become empty
+  `<w:ins>` elements. Counting `w:ins`/`w:del` reports a change where there
+  is none; compare the accepted and rejected texts instead.
+- **Package parts and settings**: empty parts (`footnotes.xml`,
+  `endnotes.xml`, `webSettings.xml`…) are dropped, a single footer can come
+  back as one per page style (`footer1` to `footer3`), and `settings.xml`
+  loses Word's `w:rsid` entries and other Word-only settings. A structural
+  diff of the package looks large for a save that changed nothing.
 - **Unused section properties**: a header or footer distance with no header
   or footer is not kept: `w:header="720"` comes back as `w:header="0"`.
 - **Layout metrics**: LibreOffice lays out the re-exported file again, and

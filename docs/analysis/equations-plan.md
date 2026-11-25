@@ -2,6 +2,9 @@
 
 *Written 2026-11-24, after 0.14.7. Tracks GitHub #49.*
 
+*Since 0.15.0 the marker is `[equation: …]` and the field `equations`;
+`[formula: …]` below is the 0.14.7 name, kept as written then.*
+
 ## Where we are
 
 A Writer equation is an embedded LibreOffice Math object (CLSID

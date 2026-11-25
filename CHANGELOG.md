@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Documentation
+
+- `docs/known-issues.md`: what a DOCX round trip does to equation names
+  (renumbered on reopen), equation sources, tracked-change counts, and
+  package parts; `equation_list` says to list again after a reopen
+  (GitHub #49).
+
 ## [0.15.2] — 2026-11-24
 
 Ranges land where `text_find` says, and a partial export keeps what a
